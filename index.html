@@ -1,0 +1,2355 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EXC Analyzer</title>
+    <meta name="description"
+        content="A professional command-line tool for advanced GitHub repository intelligence, security auditing, and content analysis.">
+    <meta name="keywords"
+        content="EXC Analyzer, GitHub analyzer, repository intelligence, security audit, dork scan, open source analysis, CLI tool, Python security tool">
+    <meta name="author" content="EXC Analyzer">
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+    <meta name="theme-color" content="#0a0a0c">
+    <meta name="application-name" content="EXC Analyzer">
+
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="EXC Analyzer">
+    <meta property="og:description"
+        content="Advanced GitHub repository intelligence for security auditing, contributor analysis, and public-code scanning.">
+    <meta property="og:url" content="/" id="og-url-meta">
+    <meta property="og:image" content="logo.png">
+    <meta property="og:site_name" content="EXC Analyzer">
+    <meta property="og:locale" content="en_US">
+    <link rel="canonical" href="/" id="canonical-link">
+    <link rel="me" href="https://www.instagram.com/exc.analyzer/">
+    <link rel="me" href="https://www.youtube.com/@exc-analyzer">
+    <script type="application/ld+json">
+        {
+            "@context": "https://schema.org",
+            "@type": "SoftwareApplication",
+            "name": "EXC Analyzer",
+            "applicationCategory": "DeveloperApplication",
+            "operatingSystem": "Windows, Linux, macOS",
+            "url": "/",
+            "description": "Advanced GitHub repository intelligence for security auditing, contributor analysis, and public-code scanning.",
+            "sameAs": [
+                "https://github.com/exc-analyzer/exc",
+                "https://www.instagram.com/exc.analyzer/",
+                "https://www.youtube.com/@exc-analyzer"
+            ]
+        }
+    </script>
+    <script>
+        (function () {
+            try {
+                var canonical = document.getElementById('canonical-link');
+                var ogUrl = document.getElementById('og-url-meta');
+                var cleanUrl = window.location.origin + window.location.pathname;
+                if (canonical) canonical.setAttribute('href', cleanUrl);
+                if (ogUrl) ogUrl.setAttribute('content', cleanUrl);
+            } catch (e) {
+            }
+        })();
+    </script>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            /* Color Palette - Deep Dark & Vibrant Accents */
+            --bg-body: #0a0a0c;
+            --bg-surface: #13131f;
+            /* Slightly lighters for cards */
+            --bg-glass: rgba(19, 19, 31, 0.7);
+
+            --primary: #6366f1;
+            /* Indigo 500 */
+            --primary-glow: #4f46e5;
+            /* Indigo 600 */
+            --secondary: #8b5cf6;
+            /* Violet 500 */
+            --accent: #ec4899;
+            /* Pink 500 */
+
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+
+            --border-color: rgba(255, 255, 255, 0.1);
+            --border-hover: rgba(99, 102, 241, 0.5);
+
+            --font-main: 'Inter', sans-serif;
+
+            --container-width: 1200px;
+            --header-height: 80px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+            scrollbar-width: none;
+            /* Firefox */
+        }
+
+        body::-webkit-scrollbar {
+            display: none;
+            /* Chrome, Safari, Opera */
+        }
+
+        body {
+            font-family: var(--font-main);
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            line-height: 1.6;
+            overflow-x: hidden;
+            -ms-overflow-style: none;
+            /* IE/Edge */
+        }
+
+        /* --- Scroll Indicator --- */
+        .scroll-indicator {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            opacity: 1;
+            transition: opacity 0.5s ease;
+            pointer-events: none;
+            animation: bounce 2s infinite;
+        }
+
+        .scroll-indicator.hidden {
+            opacity: 0;
+        }
+
+        @keyframes bounce {
+
+            0%,
+            20%,
+            50%,
+            80%,
+            100% {
+                transform: translateX(-50%) translateY(0);
+            }
+
+            40% {
+                transform: translateX(-50%) translateY(-10px);
+            }
+
+            60% {
+                transform: translateX(-50%) translateY(-5px);
+            }
+        }
+
+        /* --- Background Effects --- */
+        .bg-glow {
+            position: fixed;
+            width: 600px;
+            height: 600px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, rgba(10, 10, 12, 0) 70%);
+            top: -100px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: -1;
+            pointer-events: none;
+            animation: pulse-glow 10s infinite alternate;
+        }
+
+        .bg-glow-2 {
+            position: fixed;
+            width: 500px;
+            height: 500px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(236, 72, 153, 0.08) 0%, rgba(10, 10, 12, 0) 70%);
+            bottom: -100px;
+            right: -100px;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* --- Common Utilities --- */
+        .container {
+            max-width: var(--container-width);
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-decoration: none;
+            border: 1px solid transparent;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-glow) 100%);
+            color: white;
+            box-shadow: 0 4px 14px 0 rgba(99, 102, 241, 0.39);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.23);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border-color: var(--border-color);
+            color: var(--text-main);
+            backdrop-filter: blur(10px);
+        }
+
+        .btn-outline:hover {
+            border-color: var(--text-muted);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .gradient-text {
+            background: linear-gradient(to right, #818cf8, #c084fc, #f472b6, #818cf8);
+            background-size: 200% auto;
+            animation: gradient-move 4s linear infinite;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        @keyframes gradient-move {
+            to {
+                background-position: 200% center;
+            }
+        }
+
+        /* --- Header --- */
+        header {
+            height: var(--header-height);
+            display: flex;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(12px);
+            background: rgba(10, 10, 12, 0.95);
+            /* Keep opacity fix */
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            transition: transform 0.3s ease, background-color 0.3s ease;
+            /* Smart Scroll Transitions */
+        }
+
+        /* Smart Navbar States */
+        header.nav-hidden {
+            transform: translateY(-100%);
+        }
+
+        header.nav-scrolled {
+            background: rgba(10, 10, 12, 0.85);
+            /* Slightly more transparent when scrolling up */
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .nav_content {
+            display: flex;
+            justify-content: space-between;
+            /* Revert to space-between */
+            align-items: center;
+            width: 100%;
+            /* Removed stack styling */
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 700;
+            font-size: 1.25rem;
+            color: var(--text-main);
+            text-decoration: none;
+            transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .logo:active {
+            transform: scale(0.92);
+        }
+
+
+
+        nav ul {
+            display: flex;
+            list-style: none;
+            gap: 32px;
+        }
+
+        nav a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        nav a:hover {
+            color: var(--text-main);
+        }
+
+        .mobile-menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--text-main);
+            cursor: pointer;
+        }
+
+        /* --- Hero Section --- */
+        .hero {
+            padding: 80px 0;
+            text-align: center;
+            position: relative;
+            /* Vertical Centering */
+            min-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 400px;
+            height: 400px;
+            background-image: url('logo.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            opacity: 0.25;
+            filter: blur(10px);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .hero h1 {
+            font-size: clamp(3rem, 5vw, 4.5rem);
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 24px;
+            letter-spacing: -0.02em;
+        }
+
+        .hero p {
+            font-size: 1.25rem;
+            color: var(--text-muted);
+            max-width: 700px;
+            margin: 0 auto 40px;
+        }
+
+        .hero-actions {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+        }
+
+        .product-hunt-embed {
+            margin-top: 24px;
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            color: var(--text-muted);
+        }
+
+        .product-hunt-embed span {
+            font-size: 0.82rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+
+        .product-hunt-embed img {
+            display: block;
+            width: 250px;
+            max-width: 100%;
+            height: auto;
+            transition: transform 0.2s ease, filter 0.2s ease;
+            filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.28));
+        }
+
+        .product-hunt-embed:hover img {
+            transform: translateY(-2px);
+            filter: drop-shadow(0 12px 30px rgba(0, 0, 0, 0.34));
+        }
+
+
+
+        /* --- Features Grid --- */
+        .features {
+            padding: 100px 0;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .section-header h2 {
+            font-size: 2.5rem;
+            margin-bottom: 16px;
+        }
+
+        .section-header p {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 24px;
+        }
+
+        .card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            padding: 32px;
+            border-radius: 16px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card:hover {
+            border-color: var(--border-hover);
+            transform: translateY(-5px);
+            background: linear-gradient(to bottom right, var(--bg-surface), rgba(99, 102, 241, 0.05));
+        }
+
+        .card-icon {
+            width: 48px;
+            height: 48px;
+            background: rgba(99, 102, 241, 0.1);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            color: var(--primary);
+        }
+
+        .card h3 {
+            font-size: 1.25rem;
+            margin-bottom: 12px;
+        }
+
+        .card p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            flex-grow: 1;
+        }
+
+        /* --- Step Labels --- */
+        .step-label {
+            color: #ec4899;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-right: 8px;
+        }
+
+        /* --- Step Numbers --- */
+        .step-number {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            background: rgba(236, 72, 153, 0.15);
+            color: #ec4899;
+            border-radius: 50%;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-right: 10px;
+            border: 1px solid rgba(236, 72, 153, 0.3);
+        }
+
+        /* --- Terminal Command Blocks --- */
+        .terminal-cmd {
+            display: block;
+            background: #0f0f12;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px 16px;
+            font-family: 'Fira Code', 'Consolas', monospace;
+            font-size: 0.9rem;
+            color: var(--accent);
+            position: relative;
+            padding-left: 32px;
+            transition: all 0.2s ease;
+        }
+
+        .terminal-cmd::before {
+            content: '$';
+            position: absolute;
+            left: 12px;
+            color: #4ade80;
+            font-weight: bold;
+        }
+
+        .terminal-cmd:hover {
+            border-color: var(--border-hover);
+            box-shadow: 0 0 12px rgba(99, 102, 241, 0.15);
+        }
+
+        /* --- Installation (Tabs) --- */
+        .installation {
+            padding: 80px 0;
+            background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.02) 50%, transparent);
+        }
+
+        .tabs {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 32px;
+            background: rgba(255, 255, 255, 0.03);
+            width: fit-content;
+            margin: 0 auto 32px auto;
+            padding: 6px;
+            border-radius: 12px;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            padding: 10px 24px;
+            color: var(--text-muted);
+            cursor: pointer;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.2s;
+            font-size: 0.95rem;
+        }
+
+        .tab-btn.active {
+            background: var(--primary);
+            /* Theme Color Highlight */
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+            /* Glow effect */
+            transform: translateY(-1px);
+        }
+
+        .code-block {
+            max-width: 700px;
+            margin: 0 auto;
+            background: #1e1e2e;
+            border-radius: 12px;
+            padding: 18px 24px;
+            /* Reduced vertical padding */
+            position: relative;
+            border: 1px solid var(--border-color);
+            font-family: 'Fira Code', monospace;
+            display: flex;
+            /* Vertically align content */
+            align-items: center;
+            min-height: 60px;
+            /* Ensure consistent height */
+            overflow: hidden;
+            transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+        }
+
+        .code-block.is-switching {
+            animation: terminalSoftSwitch 0.34s ease;
+        }
+
+        @keyframes terminalSoftSwitch {
+            0% {
+                opacity: 0.88;
+                transform: translateY(4px) scale(0.995);
+                filter: saturate(0.92);
+            }
+
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+                filter: saturate(1);
+            }
+        }
+
+        .code-block::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            padding: 0 14px;
+            font-family: Inter, sans-serif;
+            font-size: 0.78rem;
+            letter-spacing: 0.01em;
+            opacity: 0;
+            border-bottom: 1px solid transparent;
+            pointer-events: none;
+        }
+
+        .code-block.os-windows,
+        .code-block.os-linux,
+        .code-block.os-macos {
+            padding-top: 48px;
+        }
+
+        .code-block.os-windows {
+            background: linear-gradient(180deg, #111a2e 0%, #0e1728 100%);
+            border-color: rgba(68, 131, 255, 0.45);
+            box-shadow: inset 0 0 0 1px rgba(120, 168, 255, 0.15);
+        }
+
+        .code-block.os-windows::before {
+            content: 'Windows PowerShell';
+            opacity: 1;
+            color: #d4e5ff;
+            background: linear-gradient(90deg, #1f3f74 0%, #1a3767 100%);
+            border-bottom-color: rgba(122, 168, 255, 0.45);
+        }
+
+        .code-block.os-linux {
+            background: linear-gradient(180deg, #151718 0%, #111314 100%);
+            border-color: rgba(81, 109, 78, 0.6);
+            box-shadow: inset 0 0 0 1px rgba(123, 175, 92, 0.12);
+        }
+
+        .code-block.os-linux::before {
+            content: 'user@ubuntu: ~';
+            opacity: 1;
+            color: #d3eec2;
+            background: linear-gradient(90deg, #2a2d30 0%, #1e2124 100%);
+            border-bottom-color: rgba(122, 173, 91, 0.35);
+        }
+
+        .code-block.os-macos {
+            background: linear-gradient(180deg, #191723 0%, #141220 100%);
+            border-color: rgba(124, 111, 176, 0.5);
+            box-shadow: inset 0 0 0 1px rgba(194, 169, 255, 0.14);
+        }
+
+        .code-block.os-macos::before {
+            content: '●  ●  ●      zsh';
+            opacity: 1;
+            color: #ede8ff;
+            background: linear-gradient(90deg, #3d3752 0%, #342f47 100%);
+            border-bottom-color: rgba(193, 169, 255, 0.35);
+        }
+
+        .code-block.os-windows .copy-btn,
+        .code-block.os-linux .copy-btn,
+        .code-block.os-macos .copy-btn {
+            top: 7px;
+            right: 10px;
+            transform: none;
+        }
+
+        .code-block.os-windows .prompt {
+            color: #9fc5ff;
+        }
+
+        .code-block.os-linux .prompt {
+            color: #8ee28f;
+        }
+
+        .code-block.os-macos .prompt {
+            color: #d8c6ff;
+        }
+
+        .code-content {
+            display: none;
+            color: #a5b0c5;
+            width: 100%;
+            /* Take full width */
+        }
+
+        /* ... existing styles ... */
+
+        /* Quick Start Specific Spacing */
+        #quickstart {
+            margin-top: 120px;
+            /* Extra separation */
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            /* Subtle separator line */
+            padding-top: 80px;
+            min-height: 90vh;
+            /* Push footer down */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .code-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            right: 16px;
+            width: 36px;
+            height: 36px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0;
+            cursor: pointer;
+            color: var(--text-muted);
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(6px);
+        }
+
+        .copy-btn:hover {
+            background: rgba(255, 255, 255, 0.14);
+            color: var(--text-main);
+            border-color: var(--border-hover);
+        }
+
+        .cmd-line {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+
+        .cmd-line:last-child {
+            margin-bottom: 0;
+        }
+
+        .prompt {
+            color: var(--accent);
+            user-select: none;
+        }
+
+        .cmd {
+            color: #fff;
+        }
+
+        .comment {
+            color: #565f89;
+            font-style: italic;
+        }
+
+        /* --- Visual Walkthrough --- */
+        .guide-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 24px;
+        }
+
+        .guide-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .guide-body {
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .guide-body h3 {
+            font-size: 1.15rem;
+            margin: 0;
+        }
+
+        .guide-body p {
+            color: var(--text-muted);
+            font-size: 0.92rem;
+            margin: 0;
+        }
+
+        .guide-output-label {
+            color: #e7edf7 !important;
+            font-size: 0.8rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            margin: 2px 0 -4px 0;
+            opacity: 0.95;
+        }
+
+        .guide-output {
+            margin: 0;
+            padding: 14px;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            background: #0f0f12;
+            color: #a5b0c5;
+            font-family: 'Fira Code', 'Consolas', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+        }
+
+        .term-muted {
+            color: #9aa4b2;
+        }
+
+        .term-white {
+            color: #f1f5f9;
+        }
+
+        .term-code {
+            color: #f2dfa2;
+            font-weight: 600;
+        }
+
+        .term-cyan {
+            color: #35d5e3;
+        }
+
+        .term-link {
+            text-decoration: underline;
+        }
+
+        .term-success {
+            color: #39d353;
+            font-weight: 600;
+        }
+
+        .term-tip {
+            color: #efe7ae;
+            font-weight: 600;
+        }
+
+        .guide-command-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+        }
+
+        .terminal-cmd.terminal-cmd-fit {
+            display: inline-block;
+            width: auto;
+            min-width: 220px;
+            margin: 0;
+        }
+
+        .guide-copy-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--text-muted);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .guide-copy-btn:hover {
+            background: rgba(255, 255, 255, 0.14);
+            color: var(--text-main);
+            border-color: var(--border-hover);
+        }
+
+        .guide-copy-btn:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+        }
+
+        .guide-video-wrap {
+            width: 100%;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            background: #0f0f12;
+            position: relative;
+            pointer-events: auto;
+            user-select: none;
+        }
+
+        .guide-video {
+            display: block;
+            width: 100%;
+            height: auto;
+            pointer-events: none;
+        }
+
+        .guide-video-overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 16px;
+            background: rgba(10, 10, 12, 0.62);
+            backdrop-filter: blur(3px);
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: opacity 0.25s ease, visibility 0.25s ease;
+        }
+
+        .guide-video-overlay.show {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+        }
+
+        .guide-video-overlay.replay-only {
+            gap: 0;
+        }
+
+        .guide-video-overlay.replay-only .guide-video-card--scroll {
+            display: none;
+        }
+
+        .guide-video-card {
+            width: 58px;
+            height: 58px;
+            border: 1px solid var(--border-color);
+            border-radius: 999px;
+            background: rgba(19, 19, 31, 0.92);
+            color: var(--text-main);
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+        }
+
+        .guide-video-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--border-hover);
+            background: rgba(19, 19, 31, 1);
+        }
+
+        .guide-video-card i {
+            color: var(--primary);
+            width: 22px;
+            height: 22px;
+            flex-shrink: 0;
+        }
+
+        .guide-video-card--scroll i {
+            animation: guide-scroll-bounce 1.1s ease-in-out infinite;
+        }
+
+        @keyframes guide-scroll-bounce {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            35% {
+                transform: translateY(4px);
+            }
+
+            70% {
+                transform: translateY(1px);
+            }
+        }
+
+        .command-reference {
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.04), rgba(99, 102, 241, 0.06));
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            backdrop-filter: blur(8px);
+            box-shadow: 0 8px 22px rgba(0, 0, 0, 0.2);
+        }
+
+        .command-reference h4 {
+            margin: 0;
+            font-size: 1rem;
+            color: var(--text-main);
+        }
+
+        .command-reference p {
+            margin: 0;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .command-ref-item {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .command-ref-code {
+            display: inline-block;
+            width: fit-content;
+            font-family: 'Fira Code', 'Consolas', monospace;
+            font-size: 0.85rem;
+            color: var(--accent);
+            background: #0f0f12;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 8px 10px;
+        }
+
+        /* --- Footer --- */
+        footer {
+            border-top: 1px solid var(--border-color);
+            padding: 60px 0;
+            margin-top: 80px;
+            background: rgba(10, 10, 12, 0.5);
+        }
+
+        .footer-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 24px;
+        }
+
+        .social-links {
+            display: flex;
+            gap: 20px;
+        }
+
+        .social-links a {
+            color: var(--text-muted);
+            transition: color 0.2s;
+        }
+
+        .social-links a:hover {
+            color: var(--primary);
+        }
+
+        /* --- Animations --- */
+        @keyframes pulse-glow {
+            0% {
+                opacity: 0.5;
+                transform: translateX(-50%) scale(0.9);
+            }
+
+            100% {
+                opacity: 0.8;
+                transform: translateX(-50%) scale(1.1);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .reveal {
+            opacity: 1;
+            transform: none;
+            transition: none;
+        }
+
+        .reveal.active {
+            opacity: 1;
+            transform: none;
+        }
+
+        @keyframes success-pop {
+            0% {
+                transform: scale(0.5);
+                opacity: 0;
+            }
+
+            50% {
+                transform: scale(1.2);
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .icon-success {
+            animation: success-pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            color: #4ade80;
+            /* Green success color */
+        }
+
+        /* --- Toast Notification --- */
+        .toast {
+            visibility: hidden;
+            min-width: 250px;
+            background-color: rgba(10, 10, 12, 0.9);
+            color: #fff;
+            text-align: center;
+            border-radius: 8px;
+            padding: 16px;
+            position: fixed;
+            z-index: 1000;
+            left: 50%;
+            bottom: 30px;
+            transform: translateX(-50%);
+            border: 1px solid var(--border-color);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            font-size: 0.9rem;
+            opacity: 0;
+            transition: opacity 1s, bottom 1s;
+        }
+
+        .toast.show {
+            visibility: visible;
+            opacity: 1;
+            bottom: 50px;
+        }
+
+        /* --- Mobile Navigation Menu --- */
+        .mobile-menu {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            background: rgba(10, 10, 12, 0.98);
+            backdrop-filter: blur(20px);
+            z-index: 200;
+            transform: translateX(100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            padding: 80px 24px 24px;
+        }
+
+        .mobile-menu.active {
+            transform: translateX(0);
+        }
+
+        .mobile-menu-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: none;
+            border: none;
+            color: var(--text-main);
+            cursor: pointer;
+            padding: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s;
+        }
+
+        .mobile-menu-close:active {
+            transform: scale(0.9);
+        }
+
+        .mobile-menu nav ul {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            list-style: none;
+        }
+
+        .mobile-menu nav ul li {
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .mobile-menu nav ul li:last-child {
+            border-bottom: none;
+        }
+
+        .mobile-menu nav a {
+            display: block;
+            padding: 20px 0;
+            font-size: 1.25rem;
+            color: var(--text-main);
+            text-decoration: none;
+            transition: color 0.2s, padding-left 0.2s;
+        }
+
+        .mobile-menu nav a:active {
+            color: var(--primary);
+            padding-left: 8px;
+        }
+
+        /* Prevent body scroll when menu is open */
+        body.menu-open {
+            overflow: hidden;
+        }
+
+        /* --- Responsive --- */
+        /* Tablet */
+        @media (max-width: 1024px) {
+            .container {
+                padding: 0 20px;
+            }
+
+            .grid {
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            }
+        }
+
+        /* Mobile and Tablet */
+        @media (max-width: 768px) {
+            :root {
+                --header-height: 70px;
+            }
+
+            /* Header */
+            header {
+                height: var(--header-height);
+            }
+
+            .logo {
+                font-size: 1.1rem;
+            }
+
+            .logo img {
+                height: 28px !important;
+            }
+
+            nav ul {
+                display: none;
+            }
+
+            .mobile-menu-btn {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                min-width: 44px;
+                min-height: 44px;
+            }
+
+            /* Hero */
+            .hero {
+                min-height: 100vh;
+                padding: 60px 0 40px;
+            }
+
+            .hero::before {
+                width: 300px;
+                height: 300px;
+                opacity: 0.15;
+            }
+
+            .hero h1 {
+                font-size: 2rem;
+                line-height: 1.2;
+                margin-bottom: 20px;
+            }
+
+            .hero p {
+                font-size: 1rem;
+                padding: 0 16px;
+                margin-bottom: 32px;
+            }
+
+            .hero-actions {
+                flex-direction: column;
+                width: 100%;
+                padding: 0 24px;
+                gap: 12px;
+            }
+
+            .product-hunt-embed {
+                margin-top: 18px;
+            }
+
+            .hero-actions .btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .scroll-indicator {
+                bottom: 20px;
+                font-size: 0.8rem;
+            }
+
+            /* Sections */
+            .features,
+            .installation {
+                padding: 60px 0;
+            }
+
+            #quickstart {
+                margin-top: 80px;
+                padding-top: 60px;
+                min-height: auto;
+            }
+
+            .section-header {
+                margin-bottom: 40px;
+            }
+
+            .section-header h2 {
+                font-size: 1.75rem;
+            }
+
+            .section-header p {
+                font-size: 0.95rem;
+            }
+
+            /* Grid and Cards */
+            .grid {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+
+            .card {
+                padding: 24px;
+            }
+
+            .card-icon {
+                width: 40px;
+                height: 40px;
+            }
+
+            .card h3 {
+                font-size: 1.1rem;
+            }
+
+            .card p {
+                font-size: 0.9rem;
+            }
+
+            /* Installation */
+            .tabs {
+                width: 100%;
+                padding: 4px;
+                gap: 4px;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .tab-btn {
+                padding: 10px 16px;
+                font-size: 0.85rem;
+                min-height: 44px;
+                flex: 1;
+            }
+
+            .code-block {
+                padding: 16px;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .code-block.os-windows,
+            .code-block.os-linux,
+            .code-block.os-macos {
+                padding: 44px 14px 14px;
+            }
+
+            .code-block::before {
+                height: 30px;
+                padding: 0 12px;
+                font-size: 0.72rem;
+            }
+
+            .code-content {
+                font-size: 0.8rem;
+            }
+
+            .cmd-line {
+                white-space: nowrap;
+            }
+
+            .copy-btn {
+                min-width: 36px;
+                min-height: 36px;
+                width: 36px;
+                height: 36px;
+            }
+
+            .code-block.os-windows .copy-btn,
+            .code-block.os-linux .copy-btn,
+            .code-block.os-macos .copy-btn {
+                top: 4px;
+                right: 8px;
+            }
+
+            #linux-content .btn {
+                width: 100%;
+            }
+
+            /* Terminal Commands */
+            .terminal-cmd {
+                font-size: 0.85rem;
+                padding: 10px 14px 10px 28px;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                white-space: nowrap;
+            }
+
+            .guide-body {
+                padding: 18px;
+            }
+
+            .guide-video-overlay {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .guide-video-card {
+                width: 54px;
+                height: 54px;
+            }
+
+            .guide-output {
+                font-size: 0.78rem;
+            }
+
+            .terminal-cmd.terminal-cmd-fit {
+                min-width: 0;
+                flex: 1;
+            }
+
+            .guide-command-row {
+                align-items: stretch;
+            }
+
+            .terminal-cmd::before {
+                left: 10px;
+            }
+
+            /* Step Numbers */
+            .step-number {
+                width: 22px;
+                height: 22px;
+                font-size: 0.8rem;
+            }
+
+            /* Footer */
+            footer {
+                padding: 40px 0;
+                margin-top: 60px;
+            }
+
+            .footer-content {
+                flex-direction: column;
+                text-align: center;
+                gap: 32px;
+            }
+
+            .footer-content>div {
+                align-items: center !important;
+                text-align: center !important;
+            }
+
+            .social-links {
+                gap: 24px;
+            }
+
+            .social-links a {
+                min-width: 44px;
+                min-height: 44px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            /* Buttons - Touch Targets */
+            .btn {
+                min-height: 44px;
+                padding: 12px 20px;
+            }
+
+            /* Background Effects - Hide on mobile for performance */
+            .bg-glow,
+            .bg-glow-2 {
+                display: none;
+            }
+
+            /* Toast */
+            .toast {
+                min-width: 200px;
+                font-size: 0.85rem;
+                padding: 14px;
+            }
+        }
+
+        /* Small Mobile */
+        @media (max-width: 480px) {
+            .container {
+                padding: 0 16px;
+            }
+
+            .hero h1 {
+                font-size: 1.75rem;
+            }
+
+            .hero p {
+                font-size: 0.95rem;
+            }
+
+            .section-header h2 {
+                font-size: 1.5rem;
+            }
+
+            .card {
+                padding: 20px;
+            }
+
+            .tab-btn {
+                padding: 10px 12px;
+                font-size: 0.8rem;
+            }
+
+            .code-block {
+                padding: 14px;
+            }
+
+            .code-content {
+                font-size: 0.75rem;
+            }
+        }
+
+        /* Touch Device Optimizations */
+        @media (hover: none) and (pointer: coarse) {
+            .btn:active {
+                transform: scale(0.98);
+            }
+
+            .card:active {
+                transform: translateY(-2px);
+            }
+
+            .tab-btn:active {
+                transform: scale(0.98);
+            }
+        }
+
+        /* Reduced Motion Support */
+        @media (prefers-reduced-motion: reduce) {
+
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="bg-glow"></div>
+    <div class="bg-glow-2"></div>
+
+    <!-- Header -->
+    <header>
+        <div class="container nav_content">
+            <a href="#" class="logo">
+                <img src="logo.png" alt="EXC Analyzer Logo" style="height: 32px; width: auto;">
+            </a>
+            <nav>
+                <ul>
+                    <li><a href="#features">Features</a></li>
+                    <li><a href="#install">Installation</a></li>
+                    <li><a href="#quickstart">Quick Start</a></li>
+                    <li><a href="#readme-card">README</a></li>
+                </ul>
+                <button class="mobile-menu-btn" onclick="toggleMobileMenu()" aria-label="Open menu"><i
+                        data-lucide="menu"></i></button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Mobile Menu Overlay -->
+    <div class="mobile-menu" id="mobileMenu">
+        <button class="mobile-menu-close" onclick="toggleMobileMenu()" aria-label="Close menu">
+            <i data-lucide="x" size="28"></i>
+        </button>
+        <nav>
+            <ul>
+                <li><a href="#features" onclick="toggleMobileMenu()">Features</a></li>
+                <li><a href="#install" onclick="toggleMobileMenu()">Installation</a></li>
+                <li><a href="#quickstart" onclick="toggleMobileMenu()">Quick Start</a></li>
+                <li><a href="#readme-card" onclick="toggleMobileMenu()">README</a></li>
+            </ul>
+        </nav>
+    </div>
+
+    <!-- Hero -->
+    <section class="hero container reveal">
+        <h1>
+            <span class="gradient-text">EXC</span> Analyzer
+        </h1>
+        <p>
+            "A robust Python framework for comprehensive GitHub insights."
+        </p>
+        <div class="hero-actions">
+            <a href="#install" class="btn btn-primary">
+                Get Started
+                <i data-lucide="arrow-right" size="18"></i>
+            </a>
+            <a href="https://github.com/exc-analyzer/exc" target="_blank" class="btn btn-outline">
+                <i data-lucide="github" size="18"></i>
+                View on GitHub
+                <i data-lucide="external-link" size="14" style="margin-left: 2px; opacity: 0.6;"></i>
+            </a>
+        </div>
+
+        <a class="product-hunt-embed" href="https://www.producthunt.com/products/exc-analyzer?embed=true&amp;utm_source=badge-featured&amp;utm_medium=badge&amp;utm_campaign=badge-exc-analyzer" target="_blank" rel="noopener noreferrer" aria-label="View EXC Analyzer on Product Hunt">
+            <span>Featured on Product Hunt</span>
+            <img alt="EXC Analyzer - Advanced GitHub repository auditing and secret scanning CLI | Product Hunt" width="250" height="54" src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1165134&amp;theme=dark&amp;t=1780764890258">
+        </a>
+
+        <!-- Scroll Indicator -->
+        <div class="scroll-indicator">
+            Scroll Down
+            <i data-lucide="chevron-down"></i>
+        </div>
+
+
+    </section>
+
+    <!-- Features -->
+    <section id="features" class="container features">
+        <div class="section-header reveal">
+            <h2>Powerful Capabilities</h2>
+            <p>Everything you need to audit and analyze open source codebases.</p>
+        </div>
+
+        <div class="grid">
+            <div class="card reveal">
+                <div class="card-icon"><i data-lucide="search"></i></div>
+                <h3>Intelligence Gathering</h3>
+                <p>Deep-dive into repository metadata, contributor impact, and historical anomalies to understand the
+                    pulse of any project.</p>
+            </div>
+            <div class="card reveal">
+                <div class="card-icon"><i data-lucide="shield-check"></i></div>
+                <h3>Security Auditing</h3>
+                <p>Score repository security posture, audit GitHub Actions workflows, and scan for hardcoded secrets in
+                    commits and files.</p>
+            </div>
+            <div class="card reveal">
+                <div class="card-icon"><i data-lucide="radar"></i></div>
+                <h3>Dork Scanning</h3>
+                <p>Powerfully search public code using GitHub dorks to find sensitive exposures before attackers do.</p>
+            </div>
+            <div class="card reveal">
+                <div class="card-icon"><i data-lucide="user-check"></i></div>
+                <h3>User Profiling</h3>
+                <p>Analyze user activity patterns, potential anomalies, and contributions to identify key maintainers
+                    and suspicious actors.</p>
+            </div>
+            <div class="card reveal">
+                <div class="card-icon"><i data-lucide="activity"></i></div>
+                <h3>Smart Rate-Limiting</h3>
+                <p>Provides seamless analytical continuity by leveraging automated quota management with built-in pause
+                    and retry logic.</p>
+            </div>
+            <div class="card reveal">
+                <div class="card-icon"><i data-lucide="globe"></i></div>
+                <h3>Localization</h3>
+                <p>Infrastructure open to community support and ready for global expansion.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Installation -->
+    <section id="install" class="installation">
+        <div class="container">
+            <div class="section-header reveal">
+                <h2>Install in Seconds</h2>
+                <p>Choose your platform and start analyzing.</p>
+            </div>
+
+            <!-- Toast Notification -->
+            <div id="toast" class="toast">Should we interpret your request as a definitive commitment to download EXC
+                Analyzer?</div>
+
+            <div class="tabs reveal">
+                <button class="tab-btn active" onclick="openTab('windows', event)">Windows</button>
+                <button class="tab-btn" onclick="openTab('linux', event)">Linux</button>
+                <button class="tab-btn" onclick="openTab('macos', event)">macOS</button>
+            </div>
+
+            <!-- Dynamic content area for buttons/extras -->
+            <div id="linux-content" class="tab-extra reveal"
+                style="display: none; flex-direction: column; align-items: center; margin-bottom: 24px;">
+                <p style="color: var(--text-muted); margin-bottom: 12px; font-size: 0.95rem;">
+                    Get <strong id="release-version-text">v1.3.1</strong> from <strong>GitHub</strong> to get started.
+                </p>
+                <a id="linux-download-btn" href="https://github.com/exc-analyzer/exc/releases/download/v1.3.1/exc-analyzer_1.3.1-1_all.deb"
+                    target="_blank" class="btn btn-primary" style="animation: fadeIn 0.5s ease;">
+                    <i data-lucide="download"></i>
+                    <span id="release-download-text">Download .deb (v1.3.1)</span>
+                </a>
+            </div>
+
+            <div id="install-terminal" class="code-block reveal os-windows">
+                <button class="copy-btn" onclick="copyCode()" title="Copy to clipboard">
+                    <i data-lucide="copy" size="16"></i>
+                </button>
+
+                <div id="windows" class="code-content active">
+                    <div class="cmd-line"><span class="prompt">PS C:\></span> <span class="cmd">pip install
+                            exc-analyzer</span></div>
+                </div>
+
+                <div id="linux" class="code-content">
+                    <div class="cmd-line"><span class="prompt">user@linux:~$</span> <span class="cmd" id="linux-install-cmd">sudo dpkg -i
+                            exc-analyzer_1.3.1-1_all.deb</span></div>
+                    <div class="cmd-line"><span class="prompt">user@linux:~$</span> <span class="cmd">sudo apt-get install -f</span>
+                    </div>
+                </div>
+
+                <div id="macos" class="code-content">
+                    <div class="cmd-line"><span class="prompt">macbook:~ %</span> <span class="cmd">brew install python3</span>
+                    </div>
+                    <div class="cmd-line"><span class="prompt">macbook:~ %</span> <span class="cmd">pip3 install
+                            exc-analyzer</span></div>
+                </div>
+            </div>
+            <!-- Moved System Requirements here to fill empty space -->
+            <p style="text-align: center; color: var(--text-muted); margin-top: 24px; font-size: 0.9rem; opacity: 0.8;">
+                <i data-lucide="info" style="width: 14px; height: 14px; margin-right: 6px; vertical-align: middle;"></i>
+                System Requirements: Python 3.9+, pip/pipx, 500MB+ disk space.
+            </p>
+        </div>
+    </section>
+
+    <!-- Quick Start -->
+    <section id="quickstart" class="container features">
+        <div class="section-header reveal">
+            <h2>Quick Start</h2>
+            <p>Below you can find realistic command examples and sample CLI output.</p>
+        </div>
+
+        <div class="guide-grid">
+            <article class="guide-card reveal">
+                <div class="guide-body">
+                    <h3><span class="step-number">1</span> GitHub Authentication</h3>
+                    <p>On first run, the CLI requests the access required for the tool to function. Follow the staged flow below.</p>
+                    <div class="guide-command-row">
+                        <code class="terminal-cmd terminal-cmd-fit">exc login</code>
+                        <button class="guide-copy-btn" onclick="copyCommand(this, 'exc login')" title="Copy command" aria-label="Copy exc login command">
+                            <i data-lucide="copy" size="16"></i>
+                        </button>
+                    </div>
+                    <div class="guide-video-wrap" aria-hidden="true">
+                        <video id="login-guide-video" class="guide-video" muted playsinline preload="none" poster="images/tutorial/login-step.svg" controlslist="nodownload nofullscreen noremoteplayback" disablepictureinpicture tabindex="-1">
+                            <source data-src="exc-login-example.mp4" type="video/mp4">
+                        </video>
+                        <div id="login-guide-overlay" class="guide-video-overlay">
+                            <button type="button" class="guide-video-card" onclick="replayGuideVideo('login-guide-video', 'login-guide-overlay')" aria-label="Replay tutorial video">
+                                <i data-lucide="rotate-ccw"></i>
+                            </button>
+                            <button type="button" class="guide-video-card guide-video-card--scroll" onclick="scrollGuideDetails('login-guide-video', 'login-guide-overlay')" aria-label="Scroll down to inspect details">
+                                <i data-lucide="arrow-down"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <p class="guide-output-label">1) Permission and consent prompt</p>
+                    <pre class="guide-output"><span class="term-muted">- This tool requests access to repositories for ANALYSIS purposes only.
+- IT DOES NOT PERFORM ANY WRITE, MODIFY, OR TRIGGER OPERATIONS.
+
+- Permissions are managed by GitHub and can be revoked at any time.</span>
+
+<span class="term-white">Do you want to continue? (y/N):</span></pre>
+
+                    <p>Users can choose <strong>Y</strong> to continue or <strong>N</strong> to cancel. To proceed, select <strong>Y</strong>.</p>
+
+                    <p class="guide-output-label">2) Device code and browser step</p>
+                    <pre class="guide-output"><span class="term-muted">========================================
+[ACTION] First copy your one-time code:</span> <span class="term-code">9A24-9C5C</span>
+<span class="term-muted">========================================</span>
+
+<span class="term-white">URL:</span> <span class="term-cyan term-link">https://github.com/login/device</span>
+
+<span class="term-white">Press ENTER to open GitHub in your browser...</span></pre>
+
+                    <p>Press <strong>Enter</strong> to open GitHub automatically, or open the URL manually. On the opened page, enter the one-time code <strong>9A24-9C5C</strong> to grant access.<br><strong>Note:</strong> your one-time code will be different on your device; this is only a sample output.</p>
+
+                    <p class="guide-output-label">3) Successful sign-in output</p>
+                    <pre class="guide-output"><span class="term-success">[SUCCESS] Authentication successful! Welcome, &lt;username&gt;.</span>
+<span class="term-tip">Let's start the initial analysis using: exc analysis &lt;owner/repo&gt;.</span></pre>
+
+                    <p class="guide-output-label">4) Output when cancelled</p>
+                    <pre class="guide-output"><span class="term-muted">[CANCELLED] Authentication cancelled by user.</span></pre>
+
+                    <p style="color: var(--text-muted); font-size: 0.85rem; opacity: 0.85;">Note: To revoke account access and sign out, use the <strong>exc logout</strong> command.</p>
+                </div>
+            </article>
+
+            <article class="guide-card reveal">
+                <div class="guide-body">
+                    <h3><span class="step-number">2</span> Repository Analysis</h3>
+                    <p>This command produces a structured analysis report in multiple stages, from repository metadata to completion status.</p>
+                    <div class="guide-command-row">
+                        <code class="terminal-cmd terminal-cmd-fit">exc analysis torvalds/linux</code>
+                        <button class="guide-copy-btn" onclick="copyCommand(this, 'exc analysis torvalds/linux')" title="Copy command" aria-label="Copy exc analysis command">
+                            <i data-lucide="copy" size="16"></i>
+                        </button>
+                    </div>
+                    <div class="guide-video-wrap" aria-hidden="true">
+                        <video id="analysis-guide-video" class="guide-video" muted playsinline preload="none" poster="images/tutorial/analysis-step.svg" controlslist="nodownload nofullscreen noremoteplayback" disablepictureinpicture tabindex="-1">
+                            <source data-src="exc-analysis-example.mp4" type="video/mp4">
+                        </video>
+                        <div id="analysis-guide-overlay" class="guide-video-overlay">
+                            <button type="button" class="guide-video-card" onclick="replayGuideVideo('analysis-guide-video', 'analysis-guide-overlay')" aria-label="Replay analysis video">
+                                <i data-lucide="rotate-ccw"></i>
+                            </button>
+                            <button type="button" class="guide-video-card guide-video-card--scroll" onclick="scrollGuideDetails('analysis-guide-video', 'analysis-guide-overlay')" aria-label="Scroll down to inspect analysis details">
+                                <i data-lucide="arrow-down"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <p class="guide-output-label">1) Repository information</p>
+                    <pre class="guide-output"><span class="term-cyan">[*] Repository Information</span>
+<span class="term-white">Name</span>          : torvalds/linux
+<span class="term-white">Description</span>   : Linux kernel source tree
+<span class="term-white">Created At</span>    : 04 Sep 2011 (14 years ago)
+<span class="term-white">Last Updated</span>  : 27 Feb 2026 (5 minutes ago)
+<span class="term-white">Stars</span>         : 219687
+<span class="term-white">Forks</span>         : 60665
+<span class="term-white">Default Branch</span>: master
+<span class="term-white">License</span>       : Other
+<span class="term-white">Open Issues</span>   : 0</pre>
+                    <p>This section gives the repository’s identity and activity baseline: project age, recent update time, popularity metrics, branch default, license type, and open issue count.</p>
+
+                    <p class="guide-output-label">2) Language distribution</p>
+                    <pre class="guide-output"><span class="term-cyan">[*] Languages</span>
+  <span class="term-white">Makefile</span>      : 0.20%
+  <span class="term-muted">C</span>             : 97.97%
+  <span class="term-white">Assembly</span>      : 0.69%
+  <span class="term-muted">C++</span>           : 0.01%
+  <span class="term-white">Shell</span>         : 0.40%
+  <span class="term-muted">Perl</span>          : 0.08%
+  <span class="term-white">Awk</span>           : 0.01%
+  <span class="term-muted">Python</span>        : 0.28%
+  <span class="term-white">UnrealScript</span>  : 0.00%
+  <span class="term-muted">Yacc</span>          : 0.01%
+  <span class="term-white">Lex</span>           : 0.00%
+  <span class="term-muted">Gherkin</span>       : 0.00%
+  <span class="term-white">XS</span>            : 0.00%
+  <span class="term-muted">Roff</span>          : 0.01%
+  <span class="term-white">Clojure</span>       : 0.00%
+  <span class="term-muted">M4</span>            : 0.00%
+  <span class="term-white">sed</span>           : 0.00%
+  <span class="term-muted">SmPL</span>          : 0.01%
+  <span class="term-white">MATLAB</span>        : 0.00%
+  <span class="term-muted">Rust</span>          : 0.32%</pre>
+                    <p>This part shows language composition by percentage. It helps identify the dominant implementation language and detect secondary tooling or build-script ecosystems.</p>
+
+                    <p class="guide-output-label">3) Commit statistics (last 100)</p>
+                    <pre class="guide-output"><span class="term-cyan">[*] Commit Statistics (Last 100)</span>
+<span class="term-white">Analyzed Commits</span> : 100
+
+  <span class="term-white">Top Committers (in last 100)</span>
+  - <span class="term-white">torvalds</span>      : 23 commits
+  - <span class="term-muted">tiwai</span>         : 5 commits
+  - <span class="term-white">kuba-moo</span>      : 5 commits
+  - <span class="term-muted">gregkh</span>        : 5 commits
+  - <span class="term-white">airlied</span>       : 4 commits</pre>
+                    <p>This snapshot focuses on short-term development momentum and author concentration. It is useful for understanding recent ownership and maintainership activity.</p>
+
+                    <p class="guide-output-label">4) Contributors summary</p>
+                    <pre class="guide-output"><span class="term-cyan">[*] Contributors</span>
+<span class="term-white">Total Contributors:</span> 0</pre>
+                    <p>This value reports the contributor count returned by the current query context. If it looks unexpected, re-run analysis or verify API scope and repository visibility.</p>
+
+                    <p class="guide-output-label">5) Issues and pull requests</p>
+                    <pre class="guide-output"><span class="term-cyan">[*] Issues and Pull Requests</span>
+<span class="term-white">Open Issues</span>   : 0
+<span class="term-muted">Total PRs</span>     : 0</pre>
+                    <p>This section summarizes operational backlog signals. Open issue and PR totals provide a quick indicator of project load and review pipeline pressure.</p>
+
+                    <p class="guide-output-label">6) Completion status</p>
+                    <pre class="guide-output"><span class="term-cyan">[INFO] Completed.</span></pre>
+                    <p>When this line appears, the analysis pipeline finished successfully and all prior blocks were generated without an interrupt.</p>
+                </div>
+            </article>
+
+            <article class="guide-card reveal">
+                <div class="guide-body">
+                    <h3><span class="step-number">3</span> Dork Scan</h3>
+                                        <p>This command runs a targeted public-code scan and returns matched repository paths with direct GitHub links.</p>
+                                        <div class="guide-command-row">
+                                                <code class="terminal-cmd terminal-cmd-fit">exc dork-scan brgkdm</code>
+                                                <button class="guide-copy-btn" onclick="copyCommand(this, 'exc dork-scan brgkdm')" title="Copy command" aria-label="Copy exc dork-scan command">
+                                                        <i data-lucide="copy" size="16"></i>
+                                                </button>
+                                        </div>
+                                        <div class="guide-video-wrap" aria-hidden="true">
+                                            <video id="dork-guide-video" class="guide-video" muted playsinline preload="none" poster="images/tutorial/dork-step.svg" controlslist="nodownload nofullscreen noremoteplayback" disablepictureinpicture tabindex="-1">
+                                                <source data-src="exc-dork-example.mp4" type="video/mp4">
+                                            </video>
+                                            <div id="dork-guide-overlay" class="guide-video-overlay">
+                                                <button type="button" class="guide-video-card" onclick="replayGuideVideo('dork-guide-video', 'dork-guide-overlay')" aria-label="Replay dork scan video">
+                                                    <i data-lucide="rotate-ccw"></i>
+                                                </button>
+                                                <button type="button" class="guide-video-card guide-video-card--scroll" onclick="scrollGuideDetails('dork-guide-video', 'dork-guide-overlay')" aria-label="Scroll down to inspect dork scan details">
+                                                    <i data-lucide="arrow-down"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <p class="guide-output-label">1) Scan starts</p>
+                                        <pre class="guide-output"><span class="term-cyan">[INFO] Searching GitHub for: brgkdm</span>
+<span class="term-white">Searching GitHub ... |</span></pre>
+                                        <p>This stage confirms the query target and shows that the scanner has started communicating with GitHub. The trailing spinner-like symbol indicates active progress while results are being collected.</p>
+
+                                        <p class="guide-output-label">2) Matched results list</p>
+                                        <pre class="guide-output"><span class="term-cyan">[INFO] Searching GitHub for: brgkdm</span>
+
+<span class="term-white">[+] brgkdm/DayZen-good-first-issue | README.md</span>
+    <span class="term-tip">-&gt; https://github.com/brgkdm/DayZen-good-first-issue/blob/5b4f3323d7c21e974053871ab3e280e790ec9c8e/README.md</span>
+
+<span class="term-white">[+] exc-analyzer/exc | pyproject.toml</span>
+    <span class="term-tip">-&gt; https://github.com/exc-analyzer/exc/blob/09e8af4183ac3dfd192598cc8e62f238b3032a2d/pyproject.toml</span>
+
+<span class="term-white">[+] sarpaltinok/Hisse-Senedi-Analizi-Projesi | README_EN.md</span>
+    <span class="term-tip">-&gt; https://github.com/sarpaltinok/Hisse-Senedi-Analizi-Projesi/blob/9e1d552e0b20dd3e4a1268db67e17e4e121f4d4c/README_EN.md</span>
+
+<span class="term-white">[+] brgkdm/special-bank | Docs/usage.md</span>
+    <span class="term-tip">-&gt; https://github.com/brgkdm/special-bank/blob/ca7b14aafc020dd24988efa60d656622cc7a8f51/Docs/usage.md</span>
+
+<span class="term-white">[+] szabgab/pydigger-data-1 | data/pypi/ex/exc-analyzer.json</span>
+    <span class="term-tip">-&gt; https://github.com/szabgab/pydigger-data-1/blob/1f76d45dccf65d94edf-b8fc596157ec738c9efb/data/pypi/ex/exc-analyzer.json</span></pre>
+                                        <p>Each hit contains three key elements: repository identifier, matched file path, and a direct immutable blob URL. This makes verification straightforward and allows fast triage of where and why the query matched.</p>
+
+                                        <p class="guide-output-label">3) Final summary and warning</p>
+                                        <pre class="guide-output"><span class="term-cyan">[INFO] Total shown: 10</span>
+<span class="term-tip">[WARNING] Use responsibly. You are legally and ethically responsible for the results of this scan.</span></pre>
+                                        <p>The summary line shows how many matches were printed to the console. The warning line is a compliance reminder: always validate findings, respect platform policies, and only use results within legal and ethical boundaries.</p>
+                </div>
+            </article>
+
+            <article class="guide-card reveal" id="readme-card">
+                <div class="guide-body">
+                    <h3>Open Full README</h3>
+                    <div class="command-reference" style="align-items: center; text-align: center;">
+                        <p>For commands and detailed information, use the official README.</p>
+
+                        <a href="https://github.com/exc-analyzer/exc/blob/main/README.md" target="_blank" rel="noopener noreferrer" class="btn btn-outline" style="width: fit-content; margin-top: 4px;">
+                            <i data-lucide="book-open" size="16"></i>
+                            Open Full README
+                        </a>
+                    </div>
+                </div>
+            </article>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container footer-content">
+            <div style="text-align: left;">
+                <a href="#" class="logo" style="margin-bottom: 12px; display: inline-flex;">EXC Analyzer</a>
+                <p style="color: var(--text-muted); font-size: 0.9rem;">Advanced GitHub Repository Intelligence Tool.
+                </p>
+                <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 4px;">&copy; 2026 EXC Analyzer. All
+                    rights reserved.</p>
+            </div>
+
+            <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 12px;">
+                <div class="social-links">
+                    <a href="mailto:exc-analyzer@outlook.com" title="Email"><i data-lucide="mail"></i></a>
+                    <a href="https://github.com/exc-analyzer/exc" target="_blank" title="GitHub"><i
+                            data-lucide="github"></i></a>
+                    <a href="https://www.instagram.com/exc.analyzer/" target="_blank" title="Instagram"><i
+                            data-lucide="instagram"></i></a>
+                    <a href="https://www.youtube.com/@exc-analyzer" target="_blank" title="YouTube"><i
+                            data-lucide="youtube"></i></a>
+                </div>
+                <p style="font-size: 0.85rem; color: var(--text-muted);">
+                    Created by <a href="https://berat-gokdemir.web.app/" target="_blank"
+                        style="color: var(--text-main); font-weight: 600; text-decoration: none; transition: color 0.2s;"
+                        onmouseover="this.style.color='var(--primary)'"
+                        onmouseout="this.style.color='var(--text-main)'">brgkdm</a>
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Force scroll to top on refresh/load
+        if (history.scrollRestoration) {
+            history.scrollRestoration = 'manual';
+        }
+        window.onbeforeunload = function () {
+            window.scrollTo(0, 0);
+        }
+
+        // Icons
+        lucide.createIcons();
+
+        // Mobile Menu Toggle
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobileMenu');
+            const body = document.body;
+
+            menu.classList.toggle('active');
+            body.classList.toggle('menu-open');
+
+            // Recreate icons for newly visible elements
+            lucide.createIcons();
+        }
+
+        // Tabs System
+        function openTab(tabName, event) {
+            // Hide all contents
+            const contents = document.querySelectorAll('.code-content');
+            contents.forEach(content => content.classList.remove('active'));
+
+            // Hide all extra contents (buttons etc)
+            const extras = document.querySelectorAll('.tab-extra');
+            extras.forEach(extra => extra.style.display = 'none');
+
+            // Deactivate all buttons
+            const buttons = document.querySelectorAll('.tab-btn');
+            buttons.forEach(btn => btn.classList.remove('active'));
+
+            // Activate selected content
+            const targetContent = document.getElementById(tabName);
+            if (targetContent) targetContent.classList.add('active');
+
+            const installTerminal = document.getElementById('install-terminal');
+            if (installTerminal) {
+                installTerminal.classList.remove('is-switching');
+                void installTerminal.offsetWidth;
+                installTerminal.classList.remove('os-windows', 'os-linux', 'os-macos');
+                const terminalClassMap = {
+                    windows: 'os-windows',
+                    linux: 'os-linux',
+                    macos: 'os-macos'
+                };
+                installTerminal.classList.add(terminalClassMap[tabName] || 'os-windows');
+                installTerminal.classList.add('is-switching');
+            }
+
+            // Activate extra content if exists (e.g. linux-content)
+            const extraContent = document.getElementById(tabName + '-content');
+            if (extraContent) {
+                extraContent.style.display = 'flex';
+                // Trigger Lucide icons for newly visible content
+                lucide.createIcons();
+            }
+
+            // Find button to activate
+            if (event) {
+                event.target.closest('button').classList.add('active');
+            } else {
+                // Manual trigger fallback
+                const btn = document.querySelector(`button[onclick*="openTab('${tabName}'"]`);
+                if (btn) btn.classList.add('active');
+            }
+        }
+
+        const RELEASE_REPO = 'exc-analyzer/exc';
+
+        async function loadLatestRelease() {
+            try {
+                const response = await fetch(`https://api.github.com/repos/${RELEASE_REPO}/releases/latest`, {
+                    headers: {
+                        'Accept': 'application/vnd.github+json'
+                    }
+                });
+
+                if (!response.ok) return;
+
+                const release = await response.json();
+                const version = release.tag_name || release.name;
+                const debAsset = (release.assets || []).find(asset => asset.name && asset.name.endsWith('.deb'));
+
+                if (!version || !debAsset || !debAsset.browser_download_url) return;
+
+                const versionText = document.getElementById('release-version-text');
+                const downloadText = document.getElementById('release-download-text');
+                const downloadBtn = document.getElementById('linux-download-btn');
+                const linuxInstallCmd = document.getElementById('linux-install-cmd');
+
+                if (versionText) versionText.textContent = version;
+                if (downloadText) downloadText.textContent = `Download .deb (${version})`;
+                if (downloadBtn) downloadBtn.href = debAsset.browser_download_url;
+                if (linuxInstallCmd) linuxInstallCmd.textContent = `sudo dpkg -i ${debAsset.name}`;
+
+                lucide.createIcons();
+            } catch (error) {
+            }
+        }
+
+        // Auto-Detect OS
+        function detectOS() {
+            const platform = navigator.platform.toLowerCase();
+            const userAgent = navigator.userAgent.toLowerCase();
+
+            if (platform.indexOf('mac') >= 0 || userAgent.indexOf('mac') >= 0) {
+                openTab('macos');
+            } else if (platform.indexOf('linux') >= 0 || userAgent.indexOf('linux') >= 0) {
+                openTab('linux');
+            } else {
+                openTab('windows'); // Default
+            }
+        }
+
+        // Run initializers on load
+        document.addEventListener('DOMContentLoaded', function () {
+            detectOS();
+            loadLatestRelease();
+
+            initGuideVideo('login-guide-video', 'login-guide-overlay');
+            initGuideVideo('analysis-guide-video', 'analysis-guide-overlay');
+            initGuideVideo('dork-guide-video', 'dork-guide-overlay');
+        });
+
+        // Copy Function
+        let isCopying = false;
+        let copyClickCount = 0;
+        let copyResetTimer = null;
+
+        function copyCode() {
+            // Easter Egg Logic
+            copyClickCount++;
+            clearTimeout(copyResetTimer);
+            copyResetTimer = setTimeout(() => { copyClickCount = 0; }, 5000); // Reset after 5s
+
+            if (copyClickCount > 5) {
+                showToast();
+                copyClickCount = 0; // Reset to avoid spamming
+                return;
+            }
+
+            if (isCopying) return; // Prevent spam clicking bug
+
+            const activeContent = document.querySelector('.code-content.active');
+            if (!activeContent) return;
+
+            const commands = Array.from(activeContent.querySelectorAll('.cmd'));
+            const text = commands.map(cmd => cmd.textContent.trim()).join('\n');
+
+            if (!text) return;
+
+            isCopying = true;
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = document.querySelector('.copy-btn');
+                // Hardcoded original state to prevent bug
+                const originalHtml = '<i data-lucide="copy" size="16"></i>';
+
+                // Add animated success icon
+                btn.innerHTML = '<i data-lucide="check" size="16" class="icon-success"></i>';
+                lucide.createIcons();
+
+                setTimeout(() => {
+                    btn.innerHTML = originalHtml;
+                    lucide.createIcons();
+                    isCopying = false;
+                }, 2000);
+            }).catch(() => { isCopying = false; });
+        }
+
+        let copyCommandLocked = false;
+
+        function copyCommand(button, text) {
+            if (copyCommandLocked || button.dataset.copying === '1') return;
+
+            copyCommandLocked = true;
+            button.dataset.copying = '1';
+            button.disabled = true;
+
+            navigator.clipboard.writeText(text).then(() => {
+                button.innerHTML = '<i data-lucide="check" size="16" class="icon-success"></i>';
+                lucide.createIcons();
+
+                setTimeout(() => {
+                    button.innerHTML = '<i data-lucide="copy" size="16"></i>';
+                    button.disabled = false;
+                    delete button.dataset.copying;
+                    lucide.createIcons();
+                }, 1500);
+            }).catch(() => {
+                button.disabled = false;
+                delete button.dataset.copying;
+            }).finally(() => {
+                setTimeout(() => {
+                    copyCommandLocked = false;
+                }, 600);
+            });
+        }
+
+        function initGuideVideo(videoId, overlayId) {
+            const video = document.getElementById(videoId);
+            const overlay = document.getElementById(overlayId);
+            if (!video || !overlay) return;
+
+            video.addEventListener('ended', function () {
+                overlay.classList.add('show');
+                lucide.createIcons();
+            });
+
+            // Rehber videolari sadece ekrana girdiginde indirilir.
+            // Onceden autoplay + preload="auto" ile her ziyaretci ~107 MB
+            // cekiyordu; Firebase Hosting'in gunluk 360 MB kotasi birkac
+            // ziyaretcide tukeniyor ve site ertesi gune kadar kapaniyordu.
+            loadGuideVideoWhenVisible(video);
+        }
+
+        function loadGuideVideoWhenVisible(video) {
+            let requested = false;
+
+            const load = function () {
+                if (requested) return;
+                requested = true;
+
+                const source = video.querySelector('source[data-src]');
+                if (source) {
+                    source.src = source.dataset.src;
+                    source.removeAttribute('data-src');
+                    video.load();
+                }
+
+                const playPromise = video.play();
+                if (playPromise && typeof playPromise.then === 'function') {
+                    playPromise.catch(() => {
+                    });
+                }
+            };
+
+            if (!('IntersectionObserver' in window)) {
+                load();
+                return;
+            }
+
+            const observer = new IntersectionObserver(function (entries) {
+                entries.forEach(function (entry) {
+                    if (entry.isIntersecting) {
+                        load();
+                        observer.disconnect();
+                    }
+                });
+            }, { rootMargin: '200px 0px' });
+
+            observer.observe(video);
+        }
+
+        function replayGuideVideo(videoId, overlayId) {
+            const video = document.getElementById(videoId);
+            const overlay = document.getElementById(overlayId);
+            if (!video || !overlay) return;
+
+            overlay.classList.remove('show');
+            video.currentTime = 0;
+
+            const playPromise = video.play();
+            if (playPromise && typeof playPromise.then === 'function') {
+                playPromise.catch(() => {
+                });
+            }
+        }
+
+        function scrollGuideDetails(videoId, overlayId) {
+            const video = document.getElementById(videoId);
+            if (!video) return;
+
+            const overlay = document.getElementById(overlayId);
+            if (overlay) {
+                overlay.classList.add('replay-only');
+            }
+
+            const guideBody = video.closest('.guide-body');
+            if (!guideBody) return;
+
+            const target = guideBody.querySelector('.guide-output-label');
+            if (!target) return;
+
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function showToast() {
+            var x = document.getElementById("toast");
+            x.className = "toast show";
+            setTimeout(function () { x.className = x.className.replace("show", ""); }, 3000); // Show for 3s
+        }
+
+        // Smart Navbar Logic
+        let lastScrollTop = 0;
+        const header = document.querySelector('header');
+        const scrollIndicator = document.querySelector('.scroll-indicator');
+
+        window.addEventListener('scroll', function () {
+            let scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+
+            // Scroll Indicator Visibility
+            if (scrollTop > 50) {
+                scrollIndicator.classList.add('hidden');
+            } else {
+                scrollIndicator.classList.remove('hidden');
+            }
+
+            if (scrollTop > lastScrollTop) {
+                // Downscroll -> Hide
+                header.classList.add('nav-hidden');
+            } else {
+                // Upscroll -> Show
+                header.classList.remove('nav-hidden');
+
+                // Transparency Toggle
+                if (scrollTop > 50) {
+                    header.classList.add('nav-scrolled');
+                } else {
+                    header.classList.remove('nav-scrolled');
+                }
+            }
+            lastScrollTop = scrollTop <= 0 ? 0 : scrollTop;
+        }, false);
+
+
+    </script>
+</body>
+
+</html>

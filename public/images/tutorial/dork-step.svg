@@ -1,0 +1,26 @@
+<svg width="1280" height="720" viewBox="0 0 1280 720" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1280" y2="720" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#17172A"/>
+      <stop offset="1" stop-color="#10101B"/>
+    </linearGradient>
+  </defs>
+  <rect width="1280" height="720" rx="28" fill="url(#bg)"/>
+  <rect x="56" y="52" width="1168" height="616" rx="20" fill="#0F0F16" stroke="#2B2B42"/>
+  <circle cx="92" cy="88" r="8" fill="#EC4899"/>
+  <circle cx="118" cy="88" r="8" fill="#F59E0B"/>
+  <circle cx="144" cy="88" r="8" fill="#10B981"/>
+  <text x="180" y="94" fill="#A5B0C5" font-family="Inter, Arial, sans-serif" font-size="20">EXC Analyzer • Dork Scan</text>
+
+  <text x="96" y="170" fill="#4ADE80" font-family="Consolas, monospace" font-size="26">$</text>
+  <text x="126" y="170" fill="#F8FAFC" font-family="Consolas, monospace" font-size="26">exc dork-scan brgkdm</text>
+
+  <text x="96" y="250" fill="#A5B0C5" font-family="Consolas, monospace" font-size="24">Target: brgkdm</text>
+  <text x="96" y="300" fill="#A5B0C5" font-family="Consolas, monospace" font-size="24">Queries Executed: 12</text>
+  <text x="96" y="350" fill="#A5B0C5" font-family="Consolas, monospace" font-size="24">Potential Exposures: 2</text>
+  <text x="96" y="400" fill="#A5B0C5" font-family="Consolas, monospace" font-size="24">Report: reports/brgkdm-dork-scan.json</text>
+
+  <rect x="96" y="454" width="1088" height="146" rx="12" fill="#161625" stroke="#3B3B5B"/>
+  <text x="124" y="505" fill="#C084FC" font-family="Consolas, monospace" font-size="22">Note:</text>
+  <text x="124" y="545" fill="#94A3B8" font-family="Consolas, monospace" font-size="22">Review findings manually before disclosure or remediation workflows.</text>
+</svg>
