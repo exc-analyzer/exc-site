@@ -77,3 +77,6 @@ node_modules/
 #  - Toplam ~107 MB; plan geregi YouTube'a tasinacaklar
 #  - Tasinana kadar deploy bu makineden yapilmali (dosyalar yerel diskte)
 *.mp4
+
+# YouTube'a tasinan rehber videolarinin yerel arsivi
+_media-archive/

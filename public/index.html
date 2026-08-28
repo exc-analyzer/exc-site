@@ -915,6 +915,49 @@
             pointer-events: none;
         }
 
+        .guide-video-facade {
+            display: block;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            border: 0;
+            background: transparent;
+            cursor: pointer;
+            position: relative;
+            line-height: 0;
+        }
+
+        .guide-video-poster {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+
+        .guide-video-play {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+
+        .guide-video-facade:hover .guide-video-play {
+            transform: translate(-50%, -50%) scale(1.06);
+            border-color: var(--border-hover);
+            background: rgba(19, 19, 31, 1);
+        }
+
+        .guide-video-facade:focus-visible .guide-video-play {
+            border-color: var(--primary);
+        }
+
+        .guide-video-frame {
+            display: block;
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            border: 0;
+        }
+
         .guide-video-overlay {
             position: absolute;
             inset: 0;
@@ -1780,18 +1823,14 @@
                             <i data-lucide="copy" size="16"></i>
                         </button>
                     </div>
-                    <div class="guide-video-wrap" aria-hidden="true">
-                        <video id="login-guide-video" class="guide-video" muted playsinline preload="none" poster="images/tutorial/login-step.svg" controlslist="nodownload nofullscreen noremoteplayback" disablepictureinpicture tabindex="-1">
-                            <source data-src="exc-login-example.mp4" type="video/mp4">
-                        </video>
-                        <div id="login-guide-overlay" class="guide-video-overlay">
-                            <button type="button" class="guide-video-card" onclick="replayGuideVideo('login-guide-video', 'login-guide-overlay')" aria-label="Replay tutorial video">
-                                <i data-lucide="rotate-ccw"></i>
-                            </button>
-                            <button type="button" class="guide-video-card guide-video-card--scroll" onclick="scrollGuideDetails('login-guide-video', 'login-guide-overlay')" aria-label="Scroll down to inspect details">
-                                <i data-lucide="arrow-down"></i>
-                            </button>
-                        </div>
+                    <div class="guide-video-wrap">
+                        <button type="button" class="guide-video-facade" data-yt="AXwwRkfK3KQ"
+                            data-title="exc login" aria-label="exc login videosunu oynat">
+                            <img class="guide-video-poster" src="images/tutorial/login-step.svg"
+                                 alt="exc login komutunun terminal ciktisi" width="1280" height="720"
+                                 loading="lazy" decoding="async">
+                            <span class="guide-video-play guide-video-card" aria-hidden="true"><i data-lucide="play"></i></span>
+                        </button>
                     </div>
                     <p class="guide-output-label">1) Permission and consent prompt</p>
                     <pre class="guide-output"><span class="term-muted">- This tool requests access to repositories for ANALYSIS purposes only.
@@ -1835,18 +1874,14 @@
                             <i data-lucide="copy" size="16"></i>
                         </button>
                     </div>
-                    <div class="guide-video-wrap" aria-hidden="true">
-                        <video id="analysis-guide-video" class="guide-video" muted playsinline preload="none" poster="images/tutorial/analysis-step.svg" controlslist="nodownload nofullscreen noremoteplayback" disablepictureinpicture tabindex="-1">
-                            <source data-src="exc-analysis-example.mp4" type="video/mp4">
-                        </video>
-                        <div id="analysis-guide-overlay" class="guide-video-overlay">
-                            <button type="button" class="guide-video-card" onclick="replayGuideVideo('analysis-guide-video', 'analysis-guide-overlay')" aria-label="Replay analysis video">
-                                <i data-lucide="rotate-ccw"></i>
-                            </button>
-                            <button type="button" class="guide-video-card guide-video-card--scroll" onclick="scrollGuideDetails('analysis-guide-video', 'analysis-guide-overlay')" aria-label="Scroll down to inspect analysis details">
-                                <i data-lucide="arrow-down"></i>
-                            </button>
-                        </div>
+                    <div class="guide-video-wrap">
+                        <button type="button" class="guide-video-facade" data-yt="qAHGc_bK1Lc"
+                            data-title="exc analysis torvalds/linux" aria-label="exc analysis torvalds/linux videosunu oynat">
+                            <img class="guide-video-poster" src="images/tutorial/analysis-step.svg"
+                                 alt="exc analysis torvalds/linux komutunun terminal ciktisi" width="1280" height="720"
+                                 loading="lazy" decoding="async">
+                            <span class="guide-video-play guide-video-card" aria-hidden="true"><i data-lucide="play"></i></span>
+                        </button>
                     </div>
 
                     <p class="guide-output-label">1) Repository information</p>
@@ -1925,18 +1960,14 @@
                                                         <i data-lucide="copy" size="16"></i>
                                                 </button>
                                         </div>
-                                        <div class="guide-video-wrap" aria-hidden="true">
-                                            <video id="dork-guide-video" class="guide-video" muted playsinline preload="none" poster="images/tutorial/dork-step.svg" controlslist="nodownload nofullscreen noremoteplayback" disablepictureinpicture tabindex="-1">
-                                                <source data-src="exc-dork-example.mp4" type="video/mp4">
-                                            </video>
-                                            <div id="dork-guide-overlay" class="guide-video-overlay">
-                                                <button type="button" class="guide-video-card" onclick="replayGuideVideo('dork-guide-video', 'dork-guide-overlay')" aria-label="Replay dork scan video">
-                                                    <i data-lucide="rotate-ccw"></i>
-                                                </button>
-                                                <button type="button" class="guide-video-card guide-video-card--scroll" onclick="scrollGuideDetails('dork-guide-video', 'dork-guide-overlay')" aria-label="Scroll down to inspect dork scan details">
-                                                    <i data-lucide="arrow-down"></i>
-                                                </button>
-                                            </div>
+                                        <div class="guide-video-wrap">
+                                            <button type="button" class="guide-video-facade" data-yt="zvfncV2owow"
+                                                data-title="exc dork-scan brgkdm" aria-label="exc dork-scan brgkdm videosunu oynat">
+                                                <img class="guide-video-poster" src="images/tutorial/dork-step.svg"
+                                                     alt="exc dork-scan brgkdm komutunun terminal ciktisi" width="1280" height="720"
+                                                     loading="lazy" decoding="async">
+                                                <span class="guide-video-play guide-video-card" aria-hidden="true"><i data-lucide="play"></i></span>
+                                            </button>
                                         </div>
 
                                         <p class="guide-output-label">1) Scan starts</p>
@@ -2143,9 +2174,7 @@
             detectOS();
             loadLatestRelease();
 
-            initGuideVideo('login-guide-video', 'login-guide-overlay');
-            initGuideVideo('analysis-guide-video', 'analysis-guide-overlay');
-            initGuideVideo('dork-guide-video', 'dork-guide-overlay');
+            initGuideVideoFacades();
         });
 
         // Copy Function
@@ -2222,92 +2251,31 @@
             });
         }
 
-        function initGuideVideo(videoId, overlayId) {
-            const video = document.getElementById(videoId);
-            const overlay = document.getElementById(overlayId);
-            if (!video || !overlay) return;
+        // Rehber videolari YouTube'da barindiriliyor. Sayfada once sadece
+        // ~1.8 KB'lik bir SVG poster durur; YouTube'a ait hicbir istek,
+        // script veya cerez kullanici oynata basana kadar yuklenmez.
+        // Videolar daha once Firebase'den servis ediliyordu ve toplam ~107 MB idi;
+        // ucretsiz katmanin gunluk 360 MB kotasini birkac ziyaretci tuketebiliyordu.
+        function initGuideVideoFacades() {
+            document.querySelectorAll('.guide-video-facade').forEach(function (facade) {
+                facade.addEventListener('click', function () {
+                    const videoId = facade.dataset.yt;
+                    if (!videoId) return;
 
-            video.addEventListener('ended', function () {
-                overlay.classList.add('show');
-                lucide.createIcons();
+                    const frame = document.createElement('iframe');
+                    frame.className = 'guide-video-frame';
+                    frame.src = 'https://www.youtube-nocookie.com/embed/'
+                        + encodeURIComponent(videoId)
+                        + '?autoplay=1&rel=0&modestbranding=1';
+                    frame.title = facade.dataset.title || 'EXC Analyzer';
+                    frame.loading = 'lazy';
+                    frame.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
+                    frame.setAttribute('allowfullscreen', '');
+                    frame.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
+
+                    facade.replaceWith(frame);
+                }, { once: true });
             });
-
-            // Rehber videolari sadece ekrana girdiginde indirilir.
-            // Onceden autoplay + preload="auto" ile her ziyaretci ~107 MB
-            // cekiyordu; Firebase Hosting'in gunluk 360 MB kotasi birkac
-            // ziyaretcide tukeniyor ve site ertesi gune kadar kapaniyordu.
-            loadGuideVideoWhenVisible(video);
-        }
-
-        function loadGuideVideoWhenVisible(video) {
-            let requested = false;
-
-            const load = function () {
-                if (requested) return;
-                requested = true;
-
-                const source = video.querySelector('source[data-src]');
-                if (source) {
-                    source.src = source.dataset.src;
-                    source.removeAttribute('data-src');
-                    video.load();
-                }
-
-                const playPromise = video.play();
-                if (playPromise && typeof playPromise.then === 'function') {
-                    playPromise.catch(() => {
-                    });
-                }
-            };
-
-            if (!('IntersectionObserver' in window)) {
-                load();
-                return;
-            }
-
-            const observer = new IntersectionObserver(function (entries) {
-                entries.forEach(function (entry) {
-                    if (entry.isIntersecting) {
-                        load();
-                        observer.disconnect();
-                    }
-                });
-            }, { rootMargin: '200px 0px' });
-
-            observer.observe(video);
-        }
-
-        function replayGuideVideo(videoId, overlayId) {
-            const video = document.getElementById(videoId);
-            const overlay = document.getElementById(overlayId);
-            if (!video || !overlay) return;
-
-            overlay.classList.remove('show');
-            video.currentTime = 0;
-
-            const playPromise = video.play();
-            if (playPromise && typeof playPromise.then === 'function') {
-                playPromise.catch(() => {
-                });
-            }
-        }
-
-        function scrollGuideDetails(videoId, overlayId) {
-            const video = document.getElementById(videoId);
-            if (!video) return;
-
-            const overlay = document.getElementById(overlayId);
-            if (overlay) {
-                overlay.classList.add('replay-only');
-            }
-
-            const guideBody = video.closest('.guide-body');
-            if (!guideBody) return;
-
-            const target = guideBody.querySelector('.guide-output-label');
-            if (!target) return;
-
-            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
         function showToast() {
