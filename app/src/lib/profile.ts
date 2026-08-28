@@ -25,9 +25,7 @@ export interface Profile {
   gh_name: string | null;
   gh_avatar_url: string | null;
   display_name: string | null;
-  custom_avatar_url: string | null;
   name_source: SourceChoice;
-  avatar_source: SourceChoice;
   bio: string | null;
   accent: AccentId;
   reputation: number;
@@ -41,8 +39,15 @@ export function shownName(p: Profile): string {
   return p.gh_name?.trim() || p.gh_login;
 }
 
+/**
+ * Profil görseli her zaman GitHub'dan gelir.
+ *
+ * Kullanıcıdan görsel yüklemek, uygunsuz içerik sorumluluğunu bize
+ * getiriyordu ve sıfır bütçeyle otomatik denetim mümkün değildi. Görseli
+ * GitHub'a bırakmak bu sorunu çözmüyor, ortadan kaldırıyor: doğrulamayı,
+ * denetlemeyi ve ihlalde hesabı kapatmayı GitHub zaten yapıyor.
+ */
 export function shownAvatar(p: Profile): string | null {
-  if (p.avatar_source === 'custom' && p.custom_avatar_url?.trim()) return p.custom_avatar_url;
   return p.gh_avatar_url;
 }
 
@@ -89,9 +94,7 @@ export async function loadMyProfile(): Promise<Profile | null> {
 
 export interface ProfilePatch {
   display_name?: string | null;
-  custom_avatar_url?: string | null;
   name_source?: SourceChoice;
-  avatar_source?: SourceChoice;
   bio?: string | null;
   accent?: AccentId;
   onboarded_at?: string;

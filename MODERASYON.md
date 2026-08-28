@@ -2,34 +2,39 @@
 
 Bu dosya, uygunsuz içerikle nasıl başa çıkıldığını anlatır.
 
-## Otomatik denetim neden yok
+## Profil görselleri: doğrulama GitHub'da
 
-Tarayıcıda çalışan bir model (nsfwjs) denendi, **çalışmadı**: paket modelini
-CDN'den çekilebilir biçimde yayınlamıyor (JSON değil, JavaScript modülü) ve
-halka açık barındırılan bir model de yok. Kendi modelimizi barındırmak
-3,5 MB'lık bir dosyayı günlük 360 MB'lık Firebase kotasına sokmak demekti.
+Kullanıcı görsel **yükleyemiyor**. Profil görseli her zaman GitHub hesabından
+gelir.
 
-Daha önemlisi: tarayıcıda çalışan bir kontrol, doğrudan Storage API'sine istek
-atan biri tarafından zaten atlanır. **Sessizce açık kalan bir kontrol, hiç
-olmayandan daha kötüdür** — koruma olduğu sanılır.
+Bu, çözemediğimiz bir sorunu ortadan kaldıran bir karar. Önce yükleme
+yapılmıştı ve tarayıcıda çalışan bir içerik taraması (nsfwjs) denendi —
+**çalışmadı**: paket modelini CDN'den çekilebilir biçimde yayınlamıyor
+(JSON değil, JavaScript modülü) ve halka açık barındırılan bir model yok.
+Kod sessizce başarısız oluyor, her görseli kabul ediyordu.
 
-Gerçek otomatik denetim isteniyorsa ücretli bir moderasyon servisi ya da
-sunucuda çalışan bir model gerekir. İkisi de sıfır bütçeyle mümkün değil.
+Ayrıca tarayıcıda çalışan bir kontrol, doğrudan Storage API'sine istek atan
+biri tarafından zaten atlanır. Sıfır bütçeyle otomatik **ve** atlanamaz bir
+denetim mümkün değil.
 
-## Bunun yerine ne var
+Görseli GitHub'a bırakmak bunu çözmüyor, gereksiz kılıyor:
 
-Atlanamayan kontroller:
+- GitHub kendi içerik denetimini zaten yapıyor
+- Hesaplar doğrulanmış; ihlalde hesabı onlar kapatıyor
+- Bizim depolayacağımız, denetleyeceğimiz, kaldıracağımız bir şey kalmıyor
+
+Görünen **ad** özelleştirilebilir kalmaya devam ediyor: metin, görselden farklı
+olarak bakıldığı anda değerlendirilebiliyor ve kimliğin yanında `@gh_login`
+her zaman duruyor.
+
+## Yorumlar için ne var
 
 | Kontrol | Nerede |
 |---|---|
-| 400×400 kırpma, WebP yeniden kodlama (EXIF ve gömülü içerik siliniyor) | tarayıcı |
-| 500 KB dosya sınırı, yalnızca webp/jpeg/png | Supabase bucket |
-| Kullanıcı başına **tek** dosya, adı kendi kimliği | Storage politikası |
-| Her görsel doğrulanmış bir GitHub hesabına bağlı | Auth |
-| Dışarıdan görsel adresi verilemez | arayüz + şema |
+| Yeni hesap ilk 24 saat yorum yazamaz | tetikleyici |
+| Saatte en fazla 20 yorum | tetikleyici |
+| Her yorum doğrulanmış bir GitHub hesabına bağlı | Auth |
 | Bildirme | `abuse_reports` |
-
-Son madde asıl korumadır: içerik kimliğe bağlı ve bildirilebilir.
 
 ## Bildirimleri görmek
 
@@ -45,23 +50,6 @@ select a.created_at,
   join public.profiles r on r.id = a.reporter_id
  where a.status = 'open'
  order by a.created_at desc;
-```
-
-## Bir görseli kaldırmak
-
-```sql
--- 1. Profildeki seçimi GitHub görseline döndür
-select public.reset_avatar('KULLANICI_UUID');
-
--- 2. Dosyayı sil
-delete from storage.objects
- where bucket_id = 'avatars'
-   and name = 'KULLANICI_UUID.webp';
-
--- 3. Bildirimi kapat
-update public.abuse_reports
-   set status = 'reviewed'
- where target_id = 'KULLANICI_UUID' and target_type = 'avatar';
 ```
 
 ## Bir yorumu kaldırmak
@@ -82,8 +70,6 @@ update public.comments
    set deleted_at = now(), body = '[kaldırıldı]'
  where author_id = 'KULLANICI_UUID';
 
--- Görselini sıfırla
-select public.reset_avatar('KULLANICI_UUID');
 ```
 
 Tekrar eden ihlallerde GitHub hesabı bilindiği için GitHub'a da bildirilebilir.

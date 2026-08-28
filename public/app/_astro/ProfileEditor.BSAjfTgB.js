@@ -1,1 +1,0 @@
-import{n as e,t}from"./ProfileEditor.gmV0IEXe.js";export{t as Avatar,e as default};

@@ -10,7 +10,6 @@ import {
   type Profile,
   type SourceChoice,
 } from '../../lib/profile';
-import { STAGE_LABELS, uploadAvatar, type UploadStage } from '../../lib/avatar';
 
 /**
  * Profil özelleştirme.
@@ -29,8 +28,6 @@ export default function ProfileEditor() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
-  const [uploading, setUploading] = useState<UploadStage | null>(null);
-  const [uploadNote, setUploadNote] = useState<string | null>(null);
 
   // Karsilama modu profilden turetiliyor: daha once kurulum yapilmadiysa
   // dugme metni ve akis degisiyor.
@@ -48,20 +45,6 @@ export default function ProfileEditor() {
     setSaved(false);
   }
 
-  async function handleUpload(file: File) {
-    setUploadNote(null);
-    const result = await uploadAvatar(file, setUploading);
-    setUploading(null);
-
-    if (result.error) {
-      setUploadNote('!' + result.error);
-      return;
-    }
-
-    patch({ custom_avatar_url: result.url, avatar_source: 'custom' });
-    setUploadNote('Yüklendi. Kaydetmeyi unutma.');
-  }
-
   async function save() {
     if (!profile) return;
     setSaving(true);
@@ -69,9 +52,7 @@ export default function ProfileEditor() {
 
     const { error } = await saveMyProfile({
       display_name: profile.display_name?.trim() || null,
-      custom_avatar_url: profile.custom_avatar_url?.trim() || null,
       name_source: profile.name_source,
-      avatar_source: profile.avatar_source,
       bio: profile.bio?.trim() || null,
       accent: profile.accent,
       onboarded_at: profile.onboarded_at ?? new Date().toISOString(),
@@ -150,63 +131,33 @@ export default function ProfileEditor() {
         {/* --- Profil görseli --- */}
         <section className="surface p-6">
           <h2 className="text-sm font-semibold">Profil görseli</h2>
-          <p className="mt-1 text-xs text-[var(--color-muted)]">
-            Bilgisayarından bir görsel seç ya da GitHub'daki görselini kullan.
-          </p>
-
-          <div className="mt-4 space-y-3">
-            <ChoiceRow
-              selected={profile.avatar_source === 'github'}
-              onSelect={() => patch({ avatar_source: 'github' })}
-              title="GitHub görselim"
-              detail={profile.gh_avatar_url ? 'Hazır' : 'GitHub görseli bulunamadı'}
-              preview={profile.gh_avatar_url}
+          <div className="mt-4 flex items-center gap-4">
+            <Avatar
+              src={profile.gh_avatar_url}
+              name={shownName(profile)}
+              accent={accentColor(profile.accent)}
+              size={56}
             />
-            <ChoiceRow
-              selected={profile.avatar_source === 'custom'}
-              onSelect={() => patch({ avatar_source: 'custom' })}
-              title="Kendi yüklediğim görsel"
-              detail={profile.custom_avatar_url ? 'Yüklendi' : 'Henüz yüklenmedi'}
-              preview={profile.custom_avatar_url}
-            />
-          </div>
-
-          {profile.avatar_source === 'custom' && (
-            <div className="mt-4 space-y-3">
-              <label className="btn btn-ghost w-full cursor-pointer">
-                <input
-                  type="file"
-                  accept="image/png,image/jpeg,image/webp,image/gif"
-                  className="sr-only"
-                  disabled={uploading !== null}
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    e.target.value = '';
-                    if (file) void handleUpload(file);
-                  }}
-                />
-                {uploading ? STAGE_LABELS[uploading] : 'Bilgisayarımdan seç'}
-              </label>
-
-              <p className="text-xs text-[var(--color-faint)]">
-                Görsel 400×400 kareye kırpılıp yeniden kodlanıyor; bu, dosyaya gömülü
-                konum bilgisi gibi verileri siliyor. Yüklediğin görsel GitHub hesabına
-                bağlı ve herkes tarafından bildirilebilir — uygunsuz içerik kaldırılır.
-              </p>
-
-              {uploadNote && (
-                <p
-                  className={`text-xs ${
-                    uploadNote.startsWith('!')
-                      ? 'text-[var(--color-bad)]'
-                      : 'text-[var(--color-muted)]'
-                  }`}
+            <div className="min-w-0 text-xs text-[var(--color-muted)]">
+              <p className="text-sm text-[var(--color-text)]">GitHub görselin kullanılıyor</p>
+              <p className="mt-1">
+                Değiştirmek için{' '}
+                <a
+                  href="https://github.com/settings/profile"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="link"
                 >
-                  {uploadNote.replace(/^!/, '')}
-                </p>
-              )}
+                  GitHub profilinden
+                </a>{' '}
+                güncelle, sonra buradan çıkıp tekrar giriş yap.
+              </p>
             </div>
-          )}
+          </div>
+          <p className="mt-4 text-xs text-[var(--color-faint)]">
+            Görsel yükleme bilerek yok. Doğrulamayı GitHub yapıyor: hesaplar doğrulanmış,
+            içerik denetimi ve ihlalde hesap kapatma onların tarafında.
+          </p>
         </section>
 
         {/* --- Hakkında --- */}
