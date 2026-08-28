@@ -10,7 +10,7 @@ import {
   type FieldSpec,
   type FieldValues,
 } from '../../engine';
-import { AuthError, GitHubClient, NotFoundError, RateLimitError } from '../../lib/github';
+import { AuthError, GitHubClient, NetworkError, NotFoundError, RateLimitError } from '../../lib/github';
 import { forgetGithubToken, getGithubToken } from '../../lib/githubToken';
 import { ResultView } from './ResultView';
 
@@ -83,6 +83,11 @@ export default function CommandConsole() {
       } else if (err instanceof RateLimitError) {
         const at = err.resetAt ? err.resetAt.toLocaleTimeString('tr-TR') : 'birazdan';
         setState({ kind: 'error', message: `GitHub API kotan doldu. ${at} sonrasında tekrar dene.` });
+      } else if (err instanceof NetworkError) {
+        setState({
+          kind: 'error',
+          message: `${err.message} — istek tarayıcıdan çıkamadı. En sık nedeni bir reklam/izleyici engelleyici ya da tarayıcı kalkanı. Brave kullanıyorsan adres çubuğundaki kalkan simgesinden bu site için Shields'ı kapatıp tekrar dene.`,
+        });
       } else if (err instanceof NotFoundError) {
         setState({ kind: 'error', message: err.message || 'Aradığın şey bulunamadı.' });
       } else {

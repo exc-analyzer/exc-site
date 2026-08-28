@@ -26,6 +26,20 @@ export class RateLimitError extends Error {
   }
 }
 
+/**
+ * fetch'in kendisi basarisiz oldu: yanit hic gelmedi.
+ * Tarayici bunu duz "Failed to fetch" diye bildirir ve hangi istegin
+ * dustugunu soylemez. Hangi adrese gidilemedigini kaydediyoruz ki hem
+ * kullaniciya anlamli bir sey soyleyebilelim hem de teshis edebilelim.
+ */
+export class NetworkError extends Error {
+  constructor(public url: string, cause?: unknown) {
+    super(`Şu adrese ulaşılamadı: ${url}`);
+    this.name = 'NetworkError';
+    this.cause = cause;
+  }
+}
+
 export class NotFoundError extends Error {
   constructor(message = 'Bulunamadı.') {
     super(message);
@@ -79,13 +93,18 @@ export class GitHubClient {
       return hit.value as GhResponse<T>;
     }
 
-    const res = await fetch(url, {
-      headers: {
-        ...(this.token ? { Authorization: `Bearer ${this.token}` } : {}),
-        Accept: 'application/vnd.github+json',
-        'X-GitHub-Api-Version': '2022-11-28',
-      },
-    });
+    let res: Response;
+    try {
+      res = await fetch(url, {
+        headers: {
+          ...(this.token ? { Authorization: `Bearer ${this.token}` } : {}),
+          Accept: 'application/vnd.github+json',
+          'X-GitHub-Api-Version': '2022-11-28',
+        },
+      });
+    } catch (err) {
+      throw new NetworkError(`${url.origin}${url.pathname}`, err);
+    }
 
     this.readRateLimit(res.headers);
 
@@ -166,15 +185,20 @@ export class GitHubClient {
   async graphql<T>(query: string, variables: Record<string, unknown>): Promise<T> {
     if (!this.token) throw new AuthError('Bu işlem için GitHub bağlantısı gerekiyor.');
 
-    const res = await fetch('https://api.github.com/graphql', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${this.token}`,
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ query, variables }),
-    });
+    let res: Response;
+    try {
+      res = await fetch('https://api.github.com/graphql', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${this.token}`,
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ query, variables }),
+      });
+    } catch (err) {
+      throw new NetworkError('https://api.github.com/graphql', err);
+    }
 
     this.readRateLimit(res.headers);
 
