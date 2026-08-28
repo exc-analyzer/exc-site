@@ -7,55 +7,58 @@ import { Badge, Card, Empty, type Tone } from './ui';
 /**
  * Son taranan raporlar.
  *
- * Bu liste olmadan hiç kimse başkasının raporunu göremez ve topluluk
- * görünmez kalır. Akış, tarama ile tartışma arasındaki köprü.
+ * Bu liste olmadan hiç kimse başkasının raporunu göremez ve topluluk görünmez
+ * kalır. Akış, tarama ile tartışma arasındaki köprü.
+ *
+ * Yükseklik sabit ve içeride kayıyor: düzenin veri miktarına göre uzayıp
+ * kısalması, yanındaki karta göre hizasının bozulması ve sayfanın her
+ * yenilemede farklı görünmesi demekti.
  */
+const VISIBLE_LIMIT = 12;
+
 export default function RecentReports() {
   const [reports, setReports] = useState<StoredReport[] | null>(null);
 
   useEffect(() => {
-    void loadRecentReports(20).then(setReports);
+    void loadRecentReports(VISIBLE_LIMIT).then(setReports);
   }, []);
 
-  if (reports === null) {
-    return (
-      <Card>
-        <div className="px-6 py-5 text-sm text-[var(--color-muted)]">Yükleniyor…</div>
-      </Card>
-    );
-  }
-
   return (
-    <Card>
-      <div className="px-6 py-5">
-        <div className="mb-4 flex items-baseline justify-between gap-4">
-          <h2 className="text-sm font-semibold">Son taranan</h2>
-          <span className="text-xs text-[var(--color-muted)]">
-            {reports.length === 0 ? 'henüz kayıt yok' : `${reports.length} rapor`}
-          </span>
-        </div>
+    <Card className="flex h-full max-h-[22rem] flex-col">
+      <div className="flex items-baseline justify-between gap-4 border-b border-[var(--color-line)] px-5 py-3.5">
+        <h2 className="text-sm font-semibold">Son taranan</h2>
+        {reports && reports.length > 0 && (
+          <span className="text-xs text-[var(--color-faint)]">{reports.length}</span>
+        )}
+      </div>
 
-        {reports.length === 0 ? (
-          <Empty>Henüz kimse tarama yapmamış. İlk sen ol.</Empty>
+      <div className="min-h-0 flex-1 overflow-y-auto px-5">
+        {reports === null ? (
+          <p className="py-4 text-sm text-[var(--color-muted)]">Yükleniyor…</p>
+        ) : reports.length === 0 ? (
+          <div className="py-4">
+            <Empty>Henüz kimse tarama yapmamış. İlk sen ol.</Empty>
+          </div>
         ) : (
           <ul className="divide-y divide-[var(--color-line)]">
             {reports.map((r) => {
               const href = reportPath(r.owner, r.repo, r.kind);
               const label = r.repo ? `${r.owner}/${r.repo}` : r.owner;
-              const scanner = r.profiles?.gh_login;
               const tone: Tone =
                 r.score === null ? 'muted' : r.score >= 90 ? 'good' : r.score >= 75 ? 'warn' : 'bad';
 
               return (
-                <li key={r.id} className="py-2.5">
-                  <a href={href ?? '#'} className="group flex items-center justify-between gap-4">
+                <li key={r.id}>
+                  <a
+                    href={href ?? '#'}
+                    className="group flex items-center justify-between gap-3 py-2.5"
+                  >
                     <span className="min-w-0">
-                      <span className="block truncate font-mono text-sm group-hover:text-sky-400">
+                      <span className="block truncate font-mono text-xs group-hover:text-[var(--color-secondary)]">
                         {label}
                       </span>
-                      <span className="mt-0.5 block text-xs text-[var(--color-muted)]">
-                        {getCommand(r.kind).name}
-                        {scanner && ` · ${scanner}`} · {relativeTime(r.updated_at)}
+                      <span className="mt-0.5 block truncate text-[11px] text-[var(--color-faint)]">
+                        {getCommand(r.kind).name} · {relativeTime(r.updated_at)}
                       </span>
                     </span>
                     {r.score !== null && <Badge tone={tone}>{r.score}</Badge>}
