@@ -173,3 +173,120 @@ export function ExternalLink({ href, children }: { href: string; children: React
     </a>
   );
 }
+
+/**
+ * Hüküm kartı — her raporun en üstünde.
+ *
+ * Ham sayı ve liste vermek kullanıcıyı yorumla baş başa bırakıyor. Önce tek
+ * cümlelik bir hüküm geliyor: "bu ne demek". Ayrıntı altında, ikinci planda.
+ */
+export function Verdict({
+  tone,
+  headline,
+  summary,
+  score,
+}: {
+  tone: Tone;
+  headline: string;
+  summary: string;
+  score?: { value: number; caption: string };
+}) {
+  const ring =
+    tone === 'good'
+      ? 'from-emerald-500/25'
+      : tone === 'warn'
+        ? 'from-amber-500/25'
+        : tone === 'bad'
+          ? 'from-red-500/25'
+          : 'from-sky-500/20';
+
+  return (
+    <div
+      className={`surface relative overflow-hidden bg-gradient-to-br ${ring} to-transparent p-6 sm:p-7`}
+    >
+      <div className="flex flex-wrap items-start justify-between gap-6">
+        <div className="min-w-0 max-w-xl">
+          <h2 className={`text-lg font-bold ${TONE_TEXT[tone]}`}>{headline}</h2>
+          <p className="mt-2 text-sm text-[var(--color-muted)]">{summary}</p>
+        </div>
+
+        {score && (
+          <div className="shrink-0 text-right">
+            <div className={`text-4xl font-bold tabular-nums ${TONE_TEXT[tone]}`}>
+              {score.value}
+              <span className="text-lg text-[var(--color-faint)]">/100</span>
+            </div>
+            <div className="text-xs text-[var(--color-muted)]">{score.caption}</div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Yapılacaklar listesi, etkiye göre sıralı.
+ *
+ * En çok puan kazandıran ya da en çok risk azaltan madde başta: kullanıcı
+ * listenin tamamını okumasa bile en önemlisini görmüş oluyor.
+ */
+export function ActionList({
+  title,
+  items,
+}: {
+  title: string;
+  items: { key: string; text: string; weight?: number }[];
+}) {
+  if (items.length === 0) return null;
+
+  return (
+    <div>
+      <SectionTitle>{title}</SectionTitle>
+      <ol className="space-y-3">
+        {items.map((item, i) => (
+          <li key={item.key} className="flex gap-3 text-sm">
+            <span
+              className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-[var(--color-raised)] text-[11px] font-semibold text-[var(--color-muted)]"
+              aria-hidden="true"
+            >
+              {i + 1}
+            </span>
+            <span className="min-w-0 flex-1">{item.text}</span>
+            {item.weight !== undefined && (
+              <span className="shrink-0 text-xs tabular-nums text-[var(--color-good)]">
+                +{item.weight}
+              </span>
+            )}
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
+/** Katlanabilir ayrıntı. Kanıt görünür olmalı ama başrolde olmamalı. */
+export function Details({ summary, children }: { summary: string; children: ReactNode }) {
+  return (
+    <details className="group">
+      <summary className="cursor-pointer list-none text-xs font-medium text-[var(--color-muted)] transition hover:text-[var(--color-text)]">
+        <span className="inline-block transition group-open:rotate-90">›</span> {summary}
+      </summary>
+      <div className="mt-4">{children}</div>
+    </details>
+  );
+}
+
+/** Küçük, tek satırlık olumlu bildirim listesi. */
+export function GoodList({ items }: { items: string[] }) {
+  if (items.length === 0) return null;
+  return (
+    <ul className="flex flex-wrap gap-x-4 gap-y-1.5">
+      {items.map((t) => (
+        <li key={t} className="flex items-center gap-1.5 text-xs text-[var(--color-muted)]">
+          <span className="text-[var(--color-good)]">✓</span>
+          {t}
+        </li>
+      ))}
+    </ul>
+  );
+}
