@@ -9,7 +9,9 @@
     "build": "astro build",
     "check": "astro check",
     "verify": "node --run _verify:bundle && node .verify-out.mjs",
-    "_verify:bundle": "esbuild scripts/verify-engine.ts --bundle --platform=node --format=esm --target=node22 --outfile=.verify-out.mjs --log-level=warning"
+    "_verify:bundle": "esbuild scripts/verify-engine.ts --bundle --platform=node --format=esm --target=node22 --outfile=.verify-out.mjs --log-level=warning",
+    "prerender": "node --run _prerender:bundle && node .prerender.mjs",
+    "_prerender:bundle": "esbuild scripts/prerender.ts --bundle --platform=node --format=esm --target=node22 --outfile=.prerender.mjs --log-level=warning"
   },
   "keywords": [],
   "author": "",

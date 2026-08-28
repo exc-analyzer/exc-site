@@ -1,0 +1,62 @@
+name: Nightly
+
+on:
+  schedule:
+    # Her gece 03:00 UTC (Türkiye saatiyle 06:00)
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+# Bu iş yalnızca okur ve dışarıya deploy eder; depoya yazmaz.
+permissions:
+  contents: read
+
+concurrency:
+  group: nightly
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Rozetler, rapor sayfaları ve site haritası
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    env:
+      PUBLIC_SUPABASE_URL: ${{ vars.PUBLIC_SUPABASE_URL }}
+      PUBLIC_SUPABASE_ANON_KEY: ${{ vars.PUBLIC_SUPABASE_ANON_KEY }}
+      PUBLIC_SITE_URL: https://exc-analyzer.web.app
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Bağımlılıkları kur
+        working-directory: app
+        run: npm ci
+
+      - name: Uygulamayı derle
+        working-directory: app
+        run: npm run build
+
+      # Rozetleri, önceden üretilmiş rapor sayfalarını ve site haritasını üretir.
+      # Aynı adım Supabase'e de dokunuyor: ücretsiz proje bir hafta hareketsiz
+      # kalırsa duraklatılıyor, bu iş her gece çalıştığı için o hiç olmuyor.
+      - name: Rozet ve sayfaları üret
+        working-directory: app
+        run: npm run prerender
+
+      - name: Firebase kimliğini hazırla
+        run: |
+          echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" > "$RUNNER_TEMP/firebase-key.json"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/firebase-key.json" >> "$GITHUB_ENV"
+
+      - name: Yayınla
+        run: npx --yes firebase-tools@15 deploy --only hosting --project exc-analyzer --non-interactive
+
+      - name: Kimliği sil
+        if: always()
+        run: rm -f "$RUNNER_TEMP/firebase-key.json"

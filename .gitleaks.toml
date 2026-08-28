@@ -1,0 +1,17 @@
+# EXC Analyzer sitesi - gitleaks yapilandirmasi
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Uretim ciktilari, bagimliliklar ve yerel ortam dosyalari"
+paths = [
+  '''app/node_modules/.*''',
+  '''app/dist/.*''',
+  '''public/app/_astro/.*''',
+
+  # .env dosyalari gitignore kapsaminda ve depoya hic girmiyor; CI'da da
+  # bulunmuyorlar. Yalnizca yerel taramada gorunup gurultu yapiyorlardi.
+  # Depoyu koruyan asil kontrol git gecmisi taramasi: birisi .env'i
+  # gitignore'dan cikarip commit'lerse orada yakalanir.
+  '''(^|/)\.env(\..*)?$''',
+]

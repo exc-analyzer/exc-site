@@ -87,3 +87,12 @@ app/.astro/
 app/dist/
 app/.env
 .verify-out.mjs
+.prerender.mjs
+
+# Gecelik is tarafindan uretilenler. Her gece yeniden olusuyor ve dogrudan
+# yayina gidiyor; depoda tutmak gereksiz gurultu yaratir.
+public/badge/
+public/sitemap.xml
+public/robots.txt
+public/app/r/*/
+public/app/u/*/
