@@ -9,6 +9,7 @@ import {
 import { ResultView } from '../console/ResultView';
 import { Card, Empty, ExternalLink } from '../console/ui';
 import { relativeTime } from '../../engine/shared';
+import { SITE_URL } from '../../lib/site';
 import Comments from './Comments';
 
 interface Target {
@@ -213,9 +214,10 @@ export default function ReportPage() {
  */
 function BadgeSnippet({ owner, repo }: { owner: string; repo: string }) {
   const [copied, setCopied] = useState(false);
-  const origin = typeof window === 'undefined' ? 'https://exc-analyzer.web.app' : window.location.origin;
-  const badgeUrl = `https://img.shields.io/endpoint?url=${encodeURIComponent(`${origin}/badge/${owner}/${repo}.json`)}`;
-  const pageUrl = `${origin}/app/r/${owner}/${repo}/security-score/`;
+  // Yayindaki adres kullaniliyor, bakilan adres degil: bu parca baskasinin
+  // deposuna gomulecek.
+  const badgeUrl = `https://img.shields.io/endpoint?url=${encodeURIComponent(`${SITE_URL}/badge/${owner}/${repo}.json`)}`;
+  const pageUrl = `${SITE_URL}/app/r/${owner}/${repo}/security-score/`;
   const markdown = `[![EXC güvenlik](${badgeUrl})](${pageUrl})`;
 
   return (

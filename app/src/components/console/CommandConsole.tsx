@@ -14,6 +14,7 @@ import { AuthError, GitHubClient, NetworkError, NotFoundError, RateLimitError } 
 import { forgetGithubToken, getGithubToken } from '../../lib/githubToken';
 import { ResultView } from './ResultView';
 import { reportPath, reportTarget, saveReport } from '../../lib/reports';
+import { SITE_URL } from '../../lib/site';
 
 type RunState =
   | { kind: 'idle' }
@@ -210,7 +211,9 @@ export default function CommandConsole() {
 
 function Permalink({ href }: { href: string }) {
   const [copied, setCopied] = useState(false);
-  const full = typeof window === 'undefined' ? href : `${window.location.origin}${href}`;
+  // Paylasilacak adres her zaman yayindaki site; yerelde calisirken
+  // kopyalanan bir localhost adresi baskasinda acilmaz.
+  const full = `${SITE_URL}${href}`;
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-3">
