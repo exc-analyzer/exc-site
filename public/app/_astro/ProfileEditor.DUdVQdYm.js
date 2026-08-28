@@ -1,1 +1,0 @@
-import{n as e,t}from"./ProfileEditor.BOCwfIkG.js";export{t as Avatar,e as default};

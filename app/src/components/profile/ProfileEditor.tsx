@@ -10,6 +10,7 @@ import {
   type Profile,
   type SourceChoice,
 } from '../../lib/profile';
+import { STAGE_LABELS, uploadAvatar, type UploadStage } from '../../lib/avatar';
 
 /**
  * Profil özelleştirme.
@@ -28,6 +29,8 @@ export default function ProfileEditor() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [uploading, setUploading] = useState<UploadStage | null>(null);
+  const [uploadNote, setUploadNote] = useState<string | null>(null);
 
   // Karsilama modu profilden turetiliyor: daha once kurulum yapilmadiysa
   // dugme metni ve akis degisiyor.
@@ -43,6 +46,24 @@ export default function ProfileEditor() {
   function patch(next: Partial<Profile>) {
     setProfile((prev) => (prev ? { ...prev, ...next } : prev));
     setSaved(false);
+  }
+
+  async function handleUpload(file: File) {
+    setUploadNote(null);
+    const result = await uploadAvatar(file, setUploading);
+    setUploading(null);
+
+    if (result.error) {
+      setUploadNote('!' + result.error);
+      return;
+    }
+
+    patch({ custom_avatar_url: result.url, avatar_source: 'custom' });
+    setUploadNote(
+      result.screened
+        ? 'Yüklendi. Kaydetmeyi unutma.'
+        : 'Yüklendi, ancak otomatik içerik taraması çalıştırılamadı. Kaydetmeyi unutma.',
+    );
   }
 
   async function save() {
@@ -134,7 +155,7 @@ export default function ProfileEditor() {
         <section className="surface p-6">
           <h2 className="text-sm font-semibold">Profil görseli</h2>
           <p className="mt-1 text-xs text-[var(--color-muted)]">
-            Kendi görselini kullanacaksan https ile başlayan bir adres ver.
+            Bilgisayarından bir görsel seç ya da GitHub'daki görselini kullan.
           </p>
 
           <div className="mt-4 space-y-3">
@@ -148,25 +169,46 @@ export default function ProfileEditor() {
             <ChoiceRow
               selected={profile.avatar_source === 'custom'}
               onSelect={() => patch({ avatar_source: 'custom' })}
-              title="Kendi görselim"
-              detail={profile.custom_avatar_url?.trim() || 'Henüz verilmedi'}
+              title="Kendi yüklediğim görsel"
+              detail={profile.custom_avatar_url ? 'Yüklendi' : 'Henüz yüklenmedi'}
               preview={profile.custom_avatar_url}
             />
           </div>
 
           {profile.avatar_source === 'custom' && (
-            <div className="mt-4">
-              <label className="label" htmlFor="avatar-url">
-                Görsel adresi
+            <div className="mt-4 space-y-3">
+              <label className="btn btn-ghost w-full cursor-pointer">
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/gif"
+                  className="sr-only"
+                  disabled={uploading !== null}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    e.target.value = '';
+                    if (file) void handleUpload(file);
+                  }}
+                />
+                {uploading ? STAGE_LABELS[uploading] : 'Bilgisayarımdan seç'}
               </label>
-              <input
-                id="avatar-url"
-                className="field"
-                value={profile.custom_avatar_url ?? ''}
-                placeholder="https://..."
-                spellCheck={false}
-                onChange={(e) => patch({ custom_avatar_url: e.target.value })}
-              />
+
+              <p className="text-xs text-[var(--color-faint)]">
+                Görsel 400×400 kareye kırpılıp yeniden kodlanıyor. Bu, dosyanın içine
+                gömülmüş konum bilgisi ve benzeri her şeyi siliyor. Uygunsuz içerik için
+                otomatik bir tarama da çalışıyor.
+              </p>
+
+              {uploadNote && (
+                <p
+                  className={`text-xs ${
+                    uploadNote.startsWith('!')
+                      ? 'text-[var(--color-bad)]'
+                      : 'text-[var(--color-muted)]'
+                  }`}
+                >
+                  {uploadNote.replace(/^!/, '')}
+                </p>
+              )}
             </div>
           )}
         </section>
