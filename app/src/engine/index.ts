@@ -102,6 +102,15 @@ const USER_FIELD: FieldSpec = {
   required: true,
 };
 
+// dork-scan gecici olarak listede degil.
+//
+// GitHub'in kod arama ucuna (api.github.com/search/...) kimlikli istek bazi
+// tarayicilarda dusuyor: ayni sunucunun /repos/... yolu ayni basliklarla
+// calisirken /search/... yolundaki CORS on kontrolu engelleniyor. Olculdu;
+// GitHub tarafinda sorun yok, engel istemcide ve URL yoluna gore karar
+// veriyor. Sebep bulunana kadar komut gorunmuyor.
+//
+// Kodu duruyor: asagidaki diziye tek bir girdi eklenince geri gelir.
 export const COMMANDS: CommandDef[] = [
   {
     id: 'analysis',
@@ -134,7 +143,7 @@ export const COMMANDS: CommandDef[] = [
     id: 'file-history',
     name: 'Dosya geçmişi',
     cli: 'exc file-history <sahip/depo> <dosya>',
-    summary: 'Tek bir dosyanın değişim geçmişi. Yol bilmiyorsan adı yeter.',
+    summary: 'Tek bir dosyanın değişim geçmişi.',
     category: 'intel',
     fields: [
       REPO_FIELD,
@@ -143,7 +152,7 @@ export const COMMANDS: CommandDef[] = [
         kind: 'text',
         label: 'Dosya',
         placeholder: 'README.md ya da src/app/main.py',
-        hint: 'Yol yazmazsan depoda aranır.',
+        hint: 'Depo içindeki tam yol.',
         required: true,
       },
       { key: 'limit', kind: 'number', label: 'Kayıt sayısı', defaultValue: 20, min: 1, max: 50 },
@@ -222,41 +231,6 @@ export const COMMANDS: CommandDef[] = [
     fields: [
       REPO_FIELD,
       { key: 'limit', kind: 'number', label: 'Commit sayısı', defaultValue: 20, min: 1, max: 50 },
-    ],
-    sensitive: true,
-  },
-  {
-    id: 'dork-scan',
-    name: 'Dork taraması',
-    cli: 'exc dork-scan <sorgu>',
-    summary: 'GitHub genelinde açıkta kalmış dosya arar.',
-    category: 'sensitive',
-    fields: [
-      {
-        key: 'query',
-        kind: 'text',
-        label: 'Sorgu',
-        placeholder: 'filename:.env DB_PASSWORD',
-        hint: 'Hazır küme seçersen boş bırakabilirsin.',
-      },
-      {
-        key: 'preset',
-        kind: 'select',
-        label: 'Hazır küme',
-        defaultValue: '',
-        options: [
-          { value: '', label: 'Yok' },
-          ...Object.entries(DORK_PRESETS).map(([value, p]) => ({ value, label: p.label })),
-        ],
-      },
-      { key: 'limit', kind: 'number', label: 'Sonuç sayısı', defaultValue: 10, min: 1, max: 100 },
-      {
-        key: 'verify',
-        kind: 'checkbox',
-        label: 'İçeriği doğrula',
-        hint: 'Dosyaları indirip gerçekten sır var mı bakar. Yavaştır ama yanlış alarmı çok azaltır.',
-        defaultValue: true,
-      },
     ],
     sensitive: true,
   },

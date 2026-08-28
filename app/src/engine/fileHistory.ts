@@ -2,10 +2,13 @@
  * Dosya değişim geçmişi.
  * Kaynak: exc_analyzer/commands/file_history.py
  *
- * Yol verilmezse (yalnızca dosya adı yazılmışsa) kod aramasıyla depo içinde
- * dosyanın yeri bulunur.
+ * CLI, yol verilmediginde dosyayi kod aramasiyla bulur. Web'de o kisayol
+ * kaldirildi: GitHub'in arama ucuna kimlikli istek bazi tarayicilarda
+ * dusuyor (ayni sunucunun /repos/... yolu calisirken /search/... yolu
+ * engelleniyor). Kisayol yerine tam yol isteniyor; komutun kendisi tamamen
+ * calisir durumda.
  */
-import { GitHubClient, NotFoundError } from '../lib/github';
+import { GitHubClient } from '../lib/github';
 
 export interface FileCommit {
   sha: string;
@@ -19,8 +22,6 @@ export interface FileHistoryResult {
   owner: string;
   repo: string;
   path: string;
-  /** Yol arama ile bulunduysa true; kullanıcıya nerede bulunduğunu söyleriz. */
-  pathWasSearched: boolean;
   commits: FileCommit[];
 }
 
@@ -31,20 +32,6 @@ interface CommitItem {
 }
 
 const MAX_LIMIT = 50;
-
-async function findPath(
-  gh: GitHubClient,
-  owner: string,
-  repo: string,
-  filename: string,
-): Promise<string | null> {
-  const res = await gh.raw<{ total_count: number; items: { path: string }[] }>(
-    '/search/code',
-    { q: `filename:${filename} repo:${owner}/${repo}` },
-  );
-  if (res.status !== 200 || !res.data?.items?.length) return null;
-  return res.data.items[0].path;
-}
 
 export async function fileHistory(
   gh: GitHubClient,
@@ -57,17 +44,9 @@ export async function fileHistory(
     throw new Error(`En fazla ${MAX_LIMIT} kayıt istenebilir.`);
   }
 
-  let path = filepath.trim();
-  let searched = false;
-
-  if (!path.includes('/')) {
-    const found = await findPath(gh, owner, repo, path);
-    if (!found) {
-      throw new NotFoundError(`"${path}" bu depoda bulunamadı.`);
-    }
-    path = found;
-    searched = true;
-  }
+  // Yol oldugu gibi gecirilir. Kok dizindeki bir dosyanin yolunda egik cizgi
+  // yoktur ("README.md") ve bu gecerlidir; commits ucu ikisini de kabul eder.
+  const path = filepath.trim();
 
   const commits = await gh.get<CommitItem[]>(`/repos/${owner}/${repo}/commits`, {
     path,
@@ -78,7 +57,6 @@ export async function fileHistory(
     owner,
     repo,
     path,
-    pathWasSearched: searched,
     commits: commits.slice(0, limit).map((c) => ({
       sha: c.sha.slice(0, 7),
       date: c.commit.author?.date ?? '',

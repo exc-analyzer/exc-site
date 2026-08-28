@@ -267,14 +267,7 @@ type FH = Extract<CommandResult, { id: 'file-history' }>['data'];
 function FileHistoryView({ data }: { data: FH }) {
   return (
     <Card>
-      <CardHead
-        title={data.path}
-        subtitle={
-          data.pathWasSearched
-            ? `${data.owner}/${data.repo} · yol arama ile bulundu`
-            : `${data.owner}/${data.repo}`
-        }
-      />
+      <CardHead title={data.path} subtitle={`${data.owner}/${data.repo}`} />
       <div className="px-6 py-5">
         {data.commits.length === 0 ? (
           <Empty>Bu dosya için commit bulunamadı.</Empty>
