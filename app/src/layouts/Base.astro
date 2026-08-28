@@ -1,0 +1,40 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  description?: string;
+}
+
+const { title, description = 'EXC Analyzer topluluğu — GitHub depolarını analiz et, bulgularını paylaş.' } = Astro.props;
+---
+
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="icon" href="/favicon.png" />
+  </head>
+  <body class="min-h-screen antialiased">
+    <header class="border-b border-[var(--color-border)]">
+      <div class="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
+        <a href="/" class="text-sm font-semibold tracking-tight">EXC Analyzer</a>
+        <nav class="flex items-center gap-5 text-sm text-[var(--color-muted)]">
+          <a href="/app/" class="hover:text-[var(--color-text)]">Uygulama</a>
+          <a href="https://github.com/exc-analyzer/exc" class="hover:text-[var(--color-text)]">GitHub</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="mx-auto max-w-5xl px-6 py-12">
+      <slot />
+    </main>
+
+    <footer class="mx-auto max-w-5xl px-6 py-10 text-xs text-[var(--color-muted)]">
+      Analizler tarayıcında, kendi GitHub hesabınla çalışır. Kodun bize gönderilmez.
+    </footer>
+  </body>
+</html>

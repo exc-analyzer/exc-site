@@ -1,0 +1,16 @@
+---
+import Base from '../layouts/Base.astro';
+import AuthPanel from '../components/AuthPanel.tsx';
+---
+
+<Base title="EXC Analyzer — Uygulama">
+  <h1 class="text-2xl font-semibold tracking-tight">Uygulama</h1>
+  <p class="mt-2 max-w-2xl text-sm text-[var(--color-muted)]">
+    GitHub hesabınla giriş yap, herkese açık depoları analiz et, bulgularını toplulukla paylaş.
+    Analiz senin tarayıcında çalışır; kendi API kotanı kullanır ve sonuçlar bize gönderilmez.
+  </p>
+
+  <div class="mt-8 max-w-xl">
+    <AuthPanel client:load />
+  </div>
+</Base>

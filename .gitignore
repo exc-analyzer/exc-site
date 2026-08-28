@@ -80,3 +80,9 @@ node_modules/
 
 # YouTube'a tasinan rehber videolarinin yerel arsivi
 _media-archive/
+
+# Astro uygulamasi
+app/node_modules/
+app/.astro/
+app/dist/
+app/.env
