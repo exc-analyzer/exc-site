@@ -49,9 +49,14 @@ jobs:
         working-directory: app
         run: npm run prerender
 
+      # Gizli deger komut satirina gomulmuyor, ortam degiskeni olarak
+      # geciriliyor: hem JSON icerigi bozulmuyor hem de kabuk yorumlamasindan
+      # gecmiyor.
       - name: Firebase kimliğini hazırla
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
         run: |
-          echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" > "$RUNNER_TEMP/firebase-key.json"
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/firebase-key.json"
           echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/firebase-key.json" >> "$GITHUB_ENV"
 
       - name: Yayınla
