@@ -61,6 +61,17 @@ export interface RateLimit {
   resetAt: Date | null;
 }
 
+/** atob yalnizca byte uretir; UTF-8 cozumlemesi ayrica yapilmali. */
+function decodeBase64Utf8(b64: string): string {
+  try {
+    const binary = atob(b64.replace(/\s/g, ''));
+    const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0));
+    return new TextDecoder('utf-8', { fatal: false }).decode(bytes);
+  } catch {
+    return '';
+  }
+}
+
 const cache = new Map<string, { at: number; value: GhResponse<unknown> }>();
 
 export function clearCache(): void {
@@ -228,6 +239,49 @@ export class GitHubClient {
     } catch {
       return null;
     }
+  }
+
+  /**
+   * Dosya icerigini API uzerinden getirir.
+   *
+   * Onceden raw.githubusercontent.com kullaniliyordu ama o adres bazi
+   * aglarda ve bazi ulkelerde engelli; olculdu, kullanicinin aginda
+   * api.github.com acikken raw kapaliydi. Contents ucu ayni veriyi
+   * base64 olarak veriyor ve zaten calistigini bildigimiz sunucuda.
+   *
+   * 1 MB ustu dosyalar bu uctan gelmez; onlar icin blob ucuna dusulur.
+   */
+  async getFileContent(
+    owner: string,
+    repo: string,
+    path: string,
+    ref?: string,
+  ): Promise<string | null> {
+    const params: Record<string, string> = {};
+    if (ref) params.ref = ref;
+
+    const res = await this.raw<{ content?: string; encoding?: string; sha?: string; size?: number }>(
+      `/repos/${owner}/${repo}/contents/${path.split('/').map(encodeURIComponent).join('/')}`,
+      Object.keys(params).length ? params : undefined,
+    );
+
+    if (res.status !== 200 || !res.data) return null;
+
+    if (res.data.encoding === 'base64' && res.data.content) {
+      return decodeBase64Utf8(res.data.content);
+    }
+
+    // Buyuk dosya: contents ucu icerik yerine yalnizca ustveri doner.
+    if (res.data.sha) {
+      const blob = await this.raw<{ content?: string; encoding?: string }>(
+        `/repos/${owner}/${repo}/git/blobs/${res.data.sha}`,
+      );
+      if (blob.status === 200 && blob.data?.encoding === 'base64' && blob.data.content) {
+        return decodeBase64Utf8(blob.data.content);
+      }
+    }
+
+    return null;
   }
 
   private readRateLimit(h: Headers): void {

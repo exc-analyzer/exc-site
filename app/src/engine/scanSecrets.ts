@@ -36,7 +36,7 @@ interface CommitListItem {
 }
 
 interface CommitDetail {
-  files?: { filename: string; status: string; raw_url?: string }[];
+  files?: { filename: string; status: string }[];
 }
 
 const MAX_LIMIT = 50;
@@ -58,12 +58,11 @@ export async function scanSecrets(
 
   await mapWithLimit(commits.slice(0, limit), 4, async (commit) => {
     const detail = await gh.raw<CommitDetail>(`/repos/${owner}/${repo}/commits/${commit.sha}`);
-    const files = (detail.data?.files ?? []).filter(
-      (f) => f.status === 'added' && f.raw_url,
-    );
+    const files = (detail.data?.files ?? []).filter((f) => f.status === 'added');
 
     await mapWithLimit(files, 6, async (file) => {
-      const content = await gh.fetchText(file.raw_url!);
+      // raw.githubusercontent.com bazi aglarda engelli; icerik API'den aliniyor.
+      const content = await gh.getFileContent(owner, repo, file.filename, commit.sha);
       filesScanned += 1;
       if (!content) return;
 

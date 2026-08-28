@@ -39,7 +39,7 @@ interface CommitListItem {
 }
 
 interface CommitDetail {
-  files?: { filename: string; status: string; raw_url?: string }[];
+  files?: { filename: string; status: string }[];
 }
 
 const MAX_TREE_FILES = 60;
@@ -66,8 +66,7 @@ export async function advancedSecrets(
     .slice(0, MAX_TREE_FILES);
 
   await mapWithLimit(suspects, 6, async (item) => {
-    const url = `https://raw.githubusercontent.com/${owner}/${repo}/HEAD/${item.path}`;
-    const content = await gh.fetchText(url, MAX_FILE_BYTES);
+    const content = await gh.getFileContent(owner, repo, item.path);
     filesScanned += 1;
     if (!content) return;
 
@@ -92,11 +91,11 @@ export async function advancedSecrets(
   await mapWithLimit(commits, 4, async (commit) => {
     const detail = await gh.raw<CommitDetail>(`/repos/${owner}/${repo}/commits/${commit.sha}`);
     const files = (detail.data?.files ?? []).filter(
-      (f) => (f.status === 'added' || f.status === 'modified') && f.raw_url,
+      (f) => f.status === 'added' || f.status === 'modified',
     );
 
     await mapWithLimit(files.slice(0, 20), 6, async (file) => {
-      const content = await gh.fetchText(file.raw_url!, MAX_FILE_BYTES);
+      const content = await gh.getFileContent(owner, repo, file.filename, commit.sha);
       filesScanned += 1;
       if (!content) return;
 

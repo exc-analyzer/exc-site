@@ -156,10 +156,16 @@ export async function dorkScan(
   }
 
   const checked = await mapWithLimit(items, 4, async (item): Promise<DorkHit> => {
-    const rawUrl = item.html_url
-      .replace('github.com', 'raw.githubusercontent.com')
-      .replace('/blob/', '/');
-    const content = await gh.fetchText(rawUrl);
+    // html_url bicimi: https://github.com/<sahip>/<depo>/blob/<ref>/<yol>
+    // Icerigi raw sunucusundan degil API'den aliyoruz; raw bazi aglarda engelli.
+    const [owner, repoName] = item.repository.full_name.split('/');
+    const refMatch = item.html_url.match(/\/blob\/([^/]+)\//);
+    const content = await gh.getFileContent(
+      owner,
+      repoName,
+      item.path,
+      refMatch ? refMatch[1] : undefined,
+    );
 
     if (content === null) {
       return {

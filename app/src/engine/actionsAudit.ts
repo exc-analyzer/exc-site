@@ -143,8 +143,9 @@ export async function actionsAudit(
 
   const workflows: WorkflowAudit[] = [];
   for (const file of files) {
-    if (!file.download_url) continue;
-    const content = await gh.fetchText(file.download_url);
+    // Icerik raw.githubusercontent.com yerine API uzerinden aliniyor;
+    // o adres bazi aglarda engelli.
+    const content = await gh.getFileContent(owner, repo, file.path);
     if (content === null) {
       workflows.push({
         name: file.name,

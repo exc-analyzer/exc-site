@@ -13,6 +13,16 @@ interface Probe {
   name: string;
   url: string;
   needsToken: boolean;
+  /**
+   * true ise yalnizca basit basliklarla gonderilir.
+   *
+   * Authorization ya da X-GitHub-Api-Version gibi bir baslik eklemek tarayiciyi
+   * CORS on kontrolu (OPTIONS) yapmaya zorlar. Bazi sunucular - ornegin
+   * raw.githubusercontent.com - on kontrolu yanitlamaz ve istek hic
+   * gonderilmeden duser. Bu ayrim, "sunucu engelli" ile "istegim yanlis"
+   * durumlarini birbirinden ayirmak icin var.
+   */
+  simple: boolean;
   note: string;
 }
 
@@ -21,25 +31,43 @@ const PROBES: Probe[] = [
     name: 'REST API',
     url: 'https://api.github.com/rate_limit',
     needsToken: false,
+    simple: false,
     note: 'Komutların çoğu bunu kullanır.',
   },
   {
-    name: 'Kod arama',
-    url: 'https://api.github.com/search/code?q=filename%3AREADME.md+repo%3Aexc-analyzer%2Fexc&per_page=1',
+    name: 'Kod arama (sade istek)',
+    url: 'https://api.github.com/search/code?q=repo%3Aexc-analyzer%2Fexc+filename%3AREADME.md&per_page=1',
+    needsToken: false,
+    simple: true,
+    note: 'Ek başlık yok, tarayıcı ön kontrol yapmaz.',
+  },
+  {
+    name: 'Kod arama (tam istek)',
+    url: 'https://api.github.com/search/code?q=repo%3Aexc-analyzer%2Fexc+filename%3AREADME.md&per_page=1',
     needsToken: true,
-    note: 'dork-scan ve dosya arama bunu kullanır.',
+    simple: false,
+    note: 'dork-scan bunu kullanır. Ön kontrol gerektirir.',
   },
   {
     name: 'GraphQL',
     url: 'https://api.github.com/graphql',
     needsToken: true,
+    simple: false,
     note: 'Depo analizi bunu kullanır.',
+  },
+  {
+    name: 'Dosya içeriği (API)',
+    url: 'https://api.github.com/repos/exc-analyzer/exc/contents/README.md',
+    needsToken: false,
+    simple: false,
+    note: 'Sır taramaları artık dosyaları buradan okur.',
   },
   {
     name: 'Ham dosya sunucusu',
     url: 'https://raw.githubusercontent.com/exc-analyzer/exc/HEAD/README.md',
     needsToken: false,
-    note: 'Sır taramaları dosya içeriğini buradan indirir.',
+    simple: true,
+    note: 'Artık kullanılmıyor; yalnızca karşılaştırma için.',
   },
 ];
 
@@ -80,13 +108,18 @@ export default function Diagnostics() {
                 },
                 body: JSON.stringify({ query: '{ viewer { login } }' }),
               })
-            : await fetch(probe.url, {
-                headers: {
-                  ...(token ? { Authorization: `Bearer ${token}` } : {}),
-                  Accept: 'application/vnd.github+json',
-                  'X-GitHub-Api-Version': '2022-11-28',
-                },
-              });
+            : probe.simple
+              ? // Basit istek: hicbir ek baslik yok, dolayisiyla on kontrol de yok.
+                // Token gonderilemedigi icin 401 donebilir - onemli degil, amac
+                // istegin sunucuya ULASIP ulasmadigini gormek.
+                await fetch(probe.url)
+              : await fetch(probe.url, {
+                  headers: {
+                    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                    Accept: 'application/vnd.github+json',
+                    'X-GitHub-Api-Version': '2022-11-28',
+                  },
+                });
 
         const ms = Math.round(performance.now() - started);
         next[probe.name] = res.ok
