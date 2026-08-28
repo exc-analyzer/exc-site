@@ -4,6 +4,36 @@ import { supabase, isConfigured } from '../lib/supabase';
 import { rememberGithubToken, getGithubToken, forgetGithubToken } from '../lib/githubToken';
 
 /**
+ * Token'in VAR olmasi gecerli oldugu anlamina gelmez. OAuth uygulamasi
+ * "expire user access tokens" acik oldugu icin token 8 saatte suresi doluyor;
+ * ayrica kullanici izni GitHub ayarlarindan istedigi an geri alabiliyor.
+ * Sunucumuz olmadigi icin yenileme yapamiyoruz, o yuzden gecerliligi
+ * kullanmadan once dogruluyoruz.
+ */
+async function isTokenUsable(token: string): Promise<boolean> {
+  try {
+    const res = await fetch('https://api.github.com/user', {
+      headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json' },
+    });
+    return res.status !== 401;
+  } catch {
+    // Ag hatasi token'in gecersiz oldugu anlamina gelmez.
+    return true;
+  }
+}
+
+async function refreshTokenState(apply: (usable: boolean) => void): Promise<void> {
+  const token = getGithubToken();
+  if (!token) {
+    apply(false);
+    return;
+  }
+  const usable = await isTokenUsable(token);
+  if (!usable) forgetGithubToken();
+  apply(usable);
+}
+
+/**
  * Web tarafinda istenen tek izinler. CLI'nin kullandigi `repo` ve `workflow`
  * kapsamlari bilerek istenmiyor: kimse bir web sitesine tum ozel depolarina
  * tam erisim vermek istemez. Ozel depo analizi CLI'da kalir.
@@ -25,8 +55,8 @@ export default function AuthPanel() {
 
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
-      setHasToken(Boolean(getGithubToken()));
       setReady(true);
+      void refreshTokenState(setHasToken);
     });
 
     const { data: sub } = supabase.auth.onAuthStateChange((event, next) => {
@@ -34,9 +64,13 @@ export default function AuthPanel() {
 
       // Supabase provider_token'i saklamaz; giris anindaki tek sansimiz bu.
       if (next?.provider_token) rememberGithubToken(next.provider_token);
-      if (event === 'SIGNED_OUT') forgetGithubToken();
+      if (event === 'SIGNED_OUT') {
+        forgetGithubToken();
+        setHasToken(false);
+        return;
+      }
 
-      setHasToken(Boolean(getGithubToken()));
+      void refreshTokenState(setHasToken);
     });
 
     return () => sub.subscription.unsubscribe();
@@ -123,7 +157,7 @@ export default function AuthPanel() {
       <p className="mt-5 text-sm text-[var(--color-muted)]">
         {hasToken
           ? 'GitHub bağlantısı hazır — taramalar senin kendi API kotanla çalışacak.'
-          : 'GitHub bağlantısı bu sekmede yok. Tarama yapmak için tekrar giriş yap.'}
+          : 'GitHub bağlantısı yok ya da süresi dolmuş. Tarama yapmak için yeniden bağlan.'}
       </p>
 
       <div className="mt-5 flex gap-3">
