@@ -1,22 +1,22 @@
 /**
- * Depo guvenlik puanlamasi.
+ * Depo güvenlik puanlaması.
  *
  * Kaynak: exc_analyzer/commands/security_score.py
  *
- * CLI'ye gore tek davranis farki bilincli bir DUZELTMEdir:
+ * CLI'ye göre tek davranış farkı bilinçli bir DÜZELTMEdir:
  *
- *   CLI, branch protection ucundan 200 disinda bir yanit alirsa 10 puan
- *   dusuruyor. Ama o uc yalnizca depoya admin erisimi olanlara aciktir;
- *   baskasinin deposunda 403/404 doner. Yani CLI, sahibi olmadigin her depoyu
- *   haksiz yere cezalandiriyor. Web'de taramalarin nerdeyse tamami baskasinin
- *   deposunda calisacagi icin bu, her raporu yaniltici hale getirirdi.
+ *   CLI, branch protection ucundan 200 dışında bir yanıt alırsa 10 puan
+ *   düşürüyor. Ama o uç yalnızca depoya admin erişimi olanlara açıktır;
+ *   başkasının deposunda 403/404 döner. Yani CLI, sahibi olmadığın her depoyu
+ *   haksız yere cezalandırıyor — torvalds/linux üzerinde ölçüldü: CLI 60/100
+ *   verip "Dal Koruması: Devre Dışı" diyor, oysa koruma var, CLI okuyamıyor.
  *
- *   Burada "bilinmiyor" ile "kapali" ayriliyor: GitHub 404 + "Branch not
- *   protected" derse depo gercekten korumasizdir ve puan duser. Yetki
- *   yetersizligi nedeniyle okunamiyorsa kriter puanlamadan tamamen cikarilir
- *   ve raporda "bilinmiyor" olarak gosterilir.
+ *   Burada "bilinmiyor" ile "kapalı" ayrılıyor: GitHub 404 + "Branch not
+ *   protected" derse depo gerçekten korumasızdır ve puan düşer. Yetki
+ *   yetersizliği nedeniyle okunamıyorsa kriter puanlamadan tamamen çıkarılır
+ *   ve raporda "bilinmiyor" olarak gösterilir.
  *
- * Ayni duzeltme CLI'ye de uygulanmalidir.
+ * Aynı düzeltme CLI'ye de uygulanmalıdır.
  */
 import { GitHubClient } from '../lib/github';
 
@@ -28,7 +28,7 @@ export interface Criterion {
   weight: number;
   status: CriterionStatus;
   detail: string;
-  /** Nasil duzeltilir. Rapor dili "utandirma" degil "su adimi at". */
+  /** Nasıl düzeltilir. Rapor dili "utandırma" değil "şu adımı at". */
   fix?: string;
 }
 
@@ -44,7 +44,7 @@ export interface SecurityScoreResult {
 }
 
 interface RepoInfo {
-  license: { spdx_id?: string | null; name?: string } | null;
+  license: { spdx_id?: string | null; name?: string | null } | null;
   has_issues: boolean;
   has_wiki: boolean;
   has_projects: boolean;
@@ -53,8 +53,8 @@ interface RepoInfo {
 }
 
 /**
- * Dosya verilen yollardan birinde var mi?
- * true = var, false = hicbirinde yok, null = emin degiliz (yetki sorunu).
+ * Dosya verilen yollardan birinde var mı?
+ * true = var, false = hiçbirinde yok, null = emin değiliz (yetki sorunu).
  */
 async function fileExists(
   gh: GitHubClient,
@@ -71,6 +71,21 @@ async function fileExists(
   return sawUnexpected ? null : false;
 }
 
+/**
+ * Lisans adını okunur hale getirir.
+ *
+ * GitHub, sınıflandıramadığı lisanslar için spdx_id alanına "NOASSERTION"
+ * yazar. Bunu ekrana basmak kimseye bir şey anlatmaz; kullanıcı lisansın
+ * bozuk olduğunu sanır. Oysa dosya vardır, GitHub sadece tanıyamamıştır.
+ */
+function licenseLabel(license: RepoInfo['license']): string {
+  if (!license) return 'Yok';
+  const spdx = license.spdx_id;
+  if (spdx && spdx !== 'NOASSERTION') return spdx;
+  if (license.name && license.name !== 'Other') return license.name;
+  return 'Var, ancak GitHub türünü tanımlayamadı';
+}
+
 export async function securityScore(
   gh: GitHubClient,
   owner: string,
@@ -84,10 +99,10 @@ export async function securityScore(
     label: 'Lisans',
     weight: 10,
     status: info.license ? 'pass' : 'fail',
-    detail: info.license?.spdx_id ?? info.license?.name ?? 'Yok',
+    detail: licenseLabel(info.license),
     fix: info.license
       ? undefined
-      : 'Depoya bir LICENSE dosyasi ekle; lisansi olmayan kod hukuken kullanilamaz.',
+      : 'Depoya bir LICENSE dosyası ekle; lisansı olmayan kod hukuken kullanılamaz.',
   });
 
   criteria.push({
@@ -95,10 +110,10 @@ export async function securityScore(
     label: 'Issue takibi',
     weight: 10,
     status: info.has_issues ? 'pass' : 'fail',
-    detail: info.has_issues ? 'Acik' : 'Kapali',
+    detail: info.has_issues ? 'Açık' : 'Kapalı',
     fix: info.has_issues
       ? undefined
-      : 'Issue sekmesini ac; guvenlik sorunlarinin bildirilebilecegi bir kanal olsun.',
+      : 'Issue sekmesini aç; güvenlik sorunlarının bildirilebileceği bir kanal olsun.',
   });
 
   criteria.push({
@@ -106,8 +121,10 @@ export async function securityScore(
     label: 'Wiki',
     weight: 5,
     status: info.has_wiki ? 'pass' : 'fail',
-    detail: info.has_wiki ? 'Acik' : 'Kapali',
-    fix: info.has_wiki ? undefined : 'Wikiyi ac ya da dokumantasyonu README icinde topla.',
+    detail: info.has_wiki ? 'Açık' : 'Kapalı',
+    fix: info.has_wiki
+      ? undefined
+      : 'Wiki’yi aç ya da dokümantasyonu README içinde topla.',
   });
 
   criteria.push({
@@ -115,25 +132,27 @@ export async function securityScore(
     label: 'Projects',
     weight: 5,
     status: info.has_projects ? 'pass' : 'fail',
-    detail: info.has_projects ? 'Acik' : 'Kapali',
-    fix: info.has_projects ? undefined : 'Projects sekmesi acikken yol haritasi izlenebilir olur.',
+    detail: info.has_projects ? 'Açık' : 'Kapalı',
+    fix: info.has_projects
+      ? undefined
+      : 'Projects sekmesi açıkken yol haritası dışarıdan izlenebilir olur.',
   });
 
   const open = info.open_issues_count ?? 0;
   criteria.push({
     id: 'open_issues',
-    label: 'Acik issue sayisi',
+    label: 'Açık issue sayısı',
     weight: open > 50 ? 10 : 5,
     status: open > 10 ? 'fail' : 'pass',
     detail: String(open),
     fix:
       open > 10
-        ? 'Biriken issuelari triyaj et; iclerinde bekleyen bir guvenlik raporu olabilir.'
+        ? 'Biriken issue’ları triyaj et; içlerinde bekleyen bir güvenlik raporu olabilir.'
         : undefined,
   });
 
-  // GitHub SECURITY.md dosyasini kokte, .github/ ve docs/ altinda arar.
-  // CLI yalnizca koke bakiyor; dosya .github/ altindaysa yanlis alarm veriyor.
+  // GitHub SECURITY.md dosyasını kökte, .github/ ve docs/ altında arar.
+  // CLI yalnızca köke bakıyor; dosya .github/ altındaysa yanlış alarm veriyor.
   const hasSecurity = await fileExists(gh, owner, repo, [
     'SECURITY.md',
     '.github/SECURITY.md',
@@ -141,17 +160,17 @@ export async function securityScore(
   ]);
   criteria.push({
     id: 'security_md',
-    label: 'Guvenlik politikasi',
+    label: 'Güvenlik politikası',
     weight: 10,
     status: hasSecurity === null ? 'unknown' : hasSecurity ? 'pass' : 'fail',
-    detail: hasSecurity === null ? 'Okunamadi' : hasSecurity ? 'Var' : 'Yok',
+    detail: hasSecurity === null ? 'Okunamadı' : hasSecurity ? 'Var' : 'Yok',
     fix:
       hasSecurity === false
-        ? 'SECURITY.md ekle: acigi bulan biri sana nasil ulasacak, orada yazsin.'
+        ? 'SECURITY.md ekle: açığı bulan biri sana nasıl ulaşacak, orada yazsın.'
         : undefined,
   });
 
-  // --- Duzeltmenin uygulandigi yer ---
+  // --- Düzeltmenin uygulandığı yer ---
   const prot = await gh.raw(
     `/repos/${owner}/${repo}/branches/${info.default_branch}/protection`,
   );
@@ -162,21 +181,21 @@ export async function securityScore(
     protDetail = 'Etkin';
   } else if (prot.status === 404 && /not protected/i.test(prot.message ?? '')) {
     protStatus = 'fail';
-    protDetail = 'Kapali';
+    protDetail = 'Kapalı';
   } else {
-    // 403 ya da baska bir 404: bu uc yalnizca admin'e acik, okuyamiyoruz.
+    // 401/403 ya da başka bir 404: bu uç yalnızca admin'e açık, okuyamıyoruz.
     protStatus = 'unknown';
-    protDetail = 'Bilinmiyor (yalnizca depo yoneticisine acik)';
+    protDetail = 'Bilinmiyor — bu bilgi yalnızca depo yöneticisine açık';
   }
   criteria.push({
     id: 'branch_protection',
-    label: `Dal korumasi (${info.default_branch})`,
+    label: `Dal koruması (${info.default_branch})`,
     weight: 10,
     status: protStatus,
     detail: protDetail,
     fix:
       protStatus === 'fail'
-        ? 'Ana dala koruma ekle: zorla push ve gozden gecirmesiz birlestirme kapansin.'
+        ? 'Ana dala koruma ekle: zorla push ve gözden geçirmesiz birleştirme kapansın.'
         : undefined,
   });
 
@@ -186,13 +205,13 @@ export async function securityScore(
   ]);
   criteria.push({
     id: 'dependabot',
-    label: 'Dependabot yapilandirmasi',
+    label: 'Dependabot yapılandırması',
     weight: 5,
     status: hasDependabot === null ? 'unknown' : hasDependabot ? 'pass' : 'fail',
-    detail: hasDependabot === null ? 'Okunamadi' : hasDependabot ? 'Var' : 'Yok',
+    detail: hasDependabot === null ? 'Okunamadı' : hasDependabot ? 'Var' : 'Yok',
     fix:
       hasDependabot === false
-        ? '.github/dependabot.yml ekle; bagimlilik guncellemeleri otomatik PR olarak gelsin.'
+        ? '.github/dependabot.yml ekle; bağımlılık güncellemeleri otomatik PR olarak gelsin.'
         : undefined,
   });
 
@@ -202,21 +221,21 @@ export async function securityScore(
   if (scan.status === 200 && Array.isArray(scan.data)) {
     const n = scan.data.length;
     scanStatus = n > 0 ? 'fail' : 'pass';
-    scanDetail = n > 0 ? `${n} acik uyari` : 'Acik uyari yok';
+    scanDetail = n > 0 ? `${n} açık uyarı` : 'Açık uyarı yok';
   } else if (scan.status === 404) {
     scanStatus = 'unknown';
-    scanDetail = 'Kod taramasi etkin degil';
+    scanDetail = 'Kod taraması etkin değil';
   } else {
     scanStatus = 'unknown';
-    scanDetail = 'Bilinmiyor (uyarilar herkese acik degil)';
+    scanDetail = 'Bilinmiyor — uyarılar herkese açık değil';
   }
   criteria.push({
     id: 'code_scanning',
-    label: 'Kod taramasi uyarilari',
+    label: 'Kod taraması uyarıları',
     weight: 10,
     status: scanStatus,
     detail: scanDetail,
-    fix: scanStatus === 'fail' ? 'Acik uyarilari gozden gecirip kapat.' : undefined,
+    fix: scanStatus === 'fail' ? 'Açık uyarıları gözden geçirip kapat.' : undefined,
   });
 
   const lost = criteria
