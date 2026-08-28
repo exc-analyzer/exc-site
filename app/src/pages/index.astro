@@ -2,6 +2,7 @@
 import Base from '../layouts/Base.astro';
 import AuthPanel from '../components/AuthPanel.tsx';
 import CommandConsole from '../components/console/CommandConsole.tsx';
+import Diagnostics from '../components/console/Diagnostics.tsx';
 ---
 
 <Base title="EXC Analyzer — Uygulama">
@@ -15,6 +16,10 @@ import CommandConsole from '../components/console/CommandConsole.tsx';
 
   <div class="mt-8 max-w-2xl">
     <AuthPanel client:load />
+  </div>
+
+  <div class="mt-6 max-w-2xl">
+    <Diagnostics client:load />
   </div>
 
   <div class="mt-12">
