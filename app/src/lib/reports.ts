@@ -55,10 +55,19 @@ export function reportTarget(result: CommandResult): ReportTarget | null {
   }
 }
 
-/** Raporun kalıcı adresi. Hassas komutlarda adres yoktur. */
+/**
+ * Raporun kalıcı adresi. Hassas komutlarda adres yoktur.
+ *
+ * Sondaki eğik çizgi bilinçli. Gecelik iş raporu
+ * `<yol>/index.html` olarak yazıyor; eğik çizgisiz istenirse Firebase önce
+ * 301 ile çizgili hâline yönlendiriyor. Henüz üretilmemiş raporlar ise
+ * yönlendirme kuralıyla doğrudan 200 dönüyordu — aynı ürün iki farklı
+ * davranıyordu. Çizgiyle ikisi de tek adımda 200 dönüyor ve canonical adres
+ * sunulan adresle birebir aynı oluyor.
+ */
 export function reportPath(owner: string, repo: string, kind: CommandId): string | null {
   if (getCommand(kind).sensitive) return null;
-  return repo ? `/app/r/${owner}/${repo}/${kind}` : `/app/u/${owner}/${kind}`;
+  return repo ? `/app/r/${owner}/${repo}/${kind}/` : `/app/u/${owner}/${kind}/`;
 }
 
 export async function saveReport(result: CommandResult): Promise<StoredReport | null> {

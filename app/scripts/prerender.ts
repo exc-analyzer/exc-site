@@ -140,10 +140,11 @@ function summaryHtml(report: Report): string {
   return rows.length > 0 ? `<ul>${rows.join('')}</ul>` : '';
 }
 
+/** Sondaki eğik çizgi, sunulan adresle canonical adresin aynı olmasını sağlar. */
 function reportUrl(report: Report): string {
   return report.repo
-    ? `/app/r/${report.owner}/${report.repo}/${report.kind}`
-    : `/app/u/${report.owner}/${report.kind}`;
+    ? `/app/r/${report.owner}/${report.repo}/${report.kind}/`
+    : `/app/u/${report.owner}/${report.kind}/`;
 }
 
 /**
@@ -223,7 +224,7 @@ async function main(): Promise<void> {
 
     // 2. Onceden uretilmis sayfa.
     const url = reportUrl(report);
-    await writeFile(`${url.replace(/^\//, '')}/index.html`, buildPage(shell, report));
+    await writeFile(`${url.replace(/^\//, '').replace(/\/$/, '')}/index.html`, buildPage(shell, report));
     pages += 1;
 
     urls.push({ loc: `${SITE}${url}`, lastmod: report.updated_at.slice(0, 10) });

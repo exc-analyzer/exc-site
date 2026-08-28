@@ -184,8 +184,8 @@ export default function ReportPage() {
                   <a
                     href={
                       s.repo
-                        ? `/app/r/${s.owner}/${s.repo}/${s.kind}`
-                        : `/app/u/${s.owner}/${s.kind}`
+                        ? `/app/r/${s.owner}/${s.repo}/${s.kind}/`
+                        : `/app/u/${s.owner}/${s.kind}/`
                     }
                     className="inline-flex rounded-full border border-[var(--color-border)] px-3 py-1 text-xs transition hover:border-[var(--color-border-hover)]"
                   >
@@ -215,7 +215,7 @@ function BadgeSnippet({ owner, repo }: { owner: string; repo: string }) {
   const [copied, setCopied] = useState(false);
   const origin = typeof window === 'undefined' ? 'https://exc-analyzer.web.app' : window.location.origin;
   const badgeUrl = `https://img.shields.io/endpoint?url=${encodeURIComponent(`${origin}/badge/${owner}/${repo}.json`)}`;
-  const pageUrl = `${origin}/app/r/${owner}/${repo}/security-score`;
+  const pageUrl = `${origin}/app/r/${owner}/${repo}/security-score/`;
   const markdown = `[![EXC güvenlik](${badgeUrl})](${pageUrl})`;
 
   return (
