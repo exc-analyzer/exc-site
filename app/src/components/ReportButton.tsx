@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { friendlyDbError } from '../lib/dbError';
 
 /**
  * Bildirme.
@@ -49,7 +50,7 @@ export default function ReportButton({
       setState('error');
       // Ayni kisi ayni hedefi bir kez bildirebilir.
       setMessage(
-        error.code === '23505' ? 'Bunu zaten bildirmiştin.' : error.message,
+        error.code === '23505' ? 'Bunu zaten bildirmiştin.' : friendlyDbError(error),
       );
       return;
     }

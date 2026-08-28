@@ -7,6 +7,7 @@
  * verse bile gerçek kimliği (@brgkdm) yanında duruyor ve taklit mümkün olmuyor.
  */
 import { supabase } from './supabase';
+import { friendlyDbError } from './dbError';
 
 export const ACCENTS = [
   { id: 'indigo', label: 'İndigo', color: '#6366f1' },
@@ -108,5 +109,5 @@ export async function saveMyProfile(patch: ProfilePatch): Promise<{ error: strin
   if (!userId) return { error: 'Giriş yapılmamış.' };
 
   const { error } = await supabase.from('profiles').update(patch).eq('id', userId);
-  return { error: error?.message ?? null };
+  return { error: friendlyDbError(error) };
 }

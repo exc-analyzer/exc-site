@@ -5,6 +5,7 @@
  * zaten somut bir konu başlığı.
  */
 import { supabase } from './supabase';
+import { friendlyDbError } from './dbError';
 
 export interface Comment {
   id: string;
@@ -54,7 +55,7 @@ export async function postComment(
 
   // Veritabani kisitlarindan gelen mesajlar kullaniciya dogrudan gosterilebilir;
   // Turkce ve anlasilir yazildilar (24 saat kurali, saatlik sinir).
-  if (error) return { comment: null, error: error.message };
+  if (error) return { comment: null, error: friendlyDbError(error) };
   return { comment: data as Comment, error: null };
 }
 

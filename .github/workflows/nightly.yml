@@ -42,6 +42,17 @@ jobs:
         working-directory: app
         run: npm run build
 
+      # Güvenlik politikalarının gerçekten tuttuğunu doğrular.
+      #
+      # Şema dosyaları herkese açık bir depoda duruyor. Bu bir zafiyet değil —
+      # kuralı Postgres sunucu tarafında uyguluyor, bilmek aşmaya yaramıyor.
+      # Ama saldırganın neyi deneyeceğini bilmesi hata payımızı daraltıyor:
+      # politikalarda bir yanlışlık olursa çabuk bulunur. Bu yüzden doğrulama
+      # "hatırlandığında" değil her gece çalışıyor.
+      - name: Güvenlik politikalarını doğrula
+        working-directory: app
+        run: npm run check:rls
+
       # Rozetleri, önceden üretilmiş rapor sayfalarını ve site haritasını üretir.
       # Aynı adım Supabase'e de dokunuyor: ücretsiz proje bir hafta hareketsiz
       # kalırsa duraklatılıyor, bu iş her gece çalıştığı için o hiç olmuyor.
