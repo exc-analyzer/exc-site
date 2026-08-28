@@ -14,6 +14,7 @@ import { supabase } from './supabase';
 import { getCommand, type CommandId, type CommandResult } from '../engine';
 
 export interface StoredReport {
+  id: string;
   owner: string;
   repo: string;
   kind: CommandId;
@@ -134,6 +135,23 @@ export async function loadTargetReports(owner: string, repo: string): Promise<St
 
   if (error) {
     console.warn('Raporlar okunamadı:', error.message);
+    return [];
+  }
+  return (data as StoredReport[]) ?? [];
+}
+
+/** Akış için son taranan raporlar. */
+export async function loadRecentReports(limit = 20): Promise<StoredReport[]> {
+  if (!supabase) return [];
+
+  const { data, error } = await supabase
+    .from('reports')
+    .select('*, profiles:created_by (gh_login, avatar_url)')
+    .order('updated_at', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.warn('Akış okunamadı:', error.message);
     return [];
   }
   return (data as StoredReport[]) ?? [];

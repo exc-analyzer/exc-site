@@ -9,6 +9,7 @@ import {
 import { ResultView } from '../console/ResultView';
 import { Card, Empty, ExternalLink } from '../console/ui';
 import { relativeTime } from '../../engine/shared';
+import Comments from './Comments';
 
 interface Target {
   owner: string;
@@ -160,6 +161,8 @@ export default function ReportPage() {
           </a>
         </div>
       </Card>
+
+      <Comments reportId={report.id} />
 
       {siblings.length > 0 && (
         <Card>
