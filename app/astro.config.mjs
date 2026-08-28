@@ -2,12 +2,12 @@ import { defineConfig } from 'astro/config';
 import react from '@astrojs/react';
 import tailwindcss from '@tailwindcss/vite';
 
-// Uygulama, mevcut tanitim sitesinin altinda /app yolunda yayinlanir.
-// Cikti dogrudan Firebase'in deploy ettigi public/app klasorune yazilir.
+// Uygulama, mevcut tanıtım sitesinin altında /app yolunda yayınlanır.
+// Çıktı doğrudan Firebase'in deploy ettiği public/app klasörüne yazılır.
 export default defineConfig({
   base: '/app',
   outDir: '../public/app',
-  // Gelistirici arac cubugu (sag alttaki yuzen menu) kapali.
+  // Geliştirici araç çubuğu (sağ alttaki yüzen menü) kapalı.
   devToolbar: { enabled: false },
   integrations: [react()],
   vite: {
