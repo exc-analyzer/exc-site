@@ -97,4 +97,21 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
 
+-- -----------------------------------------------------------------------------
+-- Tablo izinleri.
+--
+-- Proje "Automatically expose new tables" KAPALI olarak kuruldu: hicbir tablo
+-- biz acikca izin vermeden Data API uzerinden erisilebilir olmaz. Bu yuzden
+-- izinler burada tek tek veriliyor.
+--
+-- Bunlar tablo duzeyinde izinlerdir; hangi SATIRIN gorulecegini yukaridaki RLS
+-- politikalari belirler. Ikisi birlikte calisir - biri digerinin yerine gecmez.
+-- -----------------------------------------------------------------------------
+grant usage on schema public to anon, authenticated;
+
+grant select on public.profiles to anon, authenticated;
+grant insert, update on public.profiles to authenticated;
+
+-- delete bilerek verilmedi: hesap silinince cascade ile zaten gidiyor.
+
 create index if not exists profiles_gh_login_idx on public.profiles (gh_login);
