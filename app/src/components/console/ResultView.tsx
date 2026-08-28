@@ -140,7 +140,7 @@ function SecurityScoreView({ data }: { data: S }) {
         right={<Score value={data.score} tone={tone} caption={caption} />}
       />
       <div className="space-y-6 px-6 py-5">
-        <ul className="divide-y divide-[var(--color-border)]">
+        <ul className="divide-y divide-[var(--color-line)]">
           {data.criteria.map((c) => {
             const mark = c.status === 'pass' ? '✓' : c.status === 'fail' ? '✕' : '–';
             const t: Tone = c.status === 'pass' ? 'good' : c.status === 'fail' ? 'bad' : 'muted';
@@ -160,7 +160,7 @@ function SecurityScoreView({ data }: { data: S }) {
         </ul>
 
         {todo.length > 0 && (
-          <div className="rounded-lg border border-[var(--color-border)] p-4">
+          <div className="rounded-lg border border-[var(--color-line)] p-4">
             <SectionTitle>Puanı yükseltmek için</SectionTitle>
             <ol className="space-y-2 text-sm text-[var(--color-muted)]">
               {todo.map((c) => (
@@ -197,7 +197,7 @@ function ContentAuditView({ data }: { data: C }) {
         title={`${data.owner}/${data.repo}`}
         subtitle={`${data.presentCount}/${data.totalCount} standart dosya mevcut`}
       />
-      <ul className="divide-y divide-[var(--color-border)]">
+      <ul className="divide-y divide-[var(--color-line)]">
         {data.items.map((item) => {
           const tone: Tone =
             item.quality === 'ok' ? 'good' : item.quality === 'missing' ? 'bad' : item.quality === 'unknown' ? 'muted' : 'warn';
@@ -331,7 +331,7 @@ function ActionsAuditView({ data }: { data: AA }) {
             subtitle={<ExternalLink href={wf.url}>{wf.path}</ExternalLink>}
             right={<Badge tone={WF_TONE[wf.severity]}>{WF_LABEL[wf.severity]}</Badge>}
           />
-          <ul className="divide-y divide-[var(--color-border)]">
+          <ul className="divide-y divide-[var(--color-line)]">
             {wf.findings.map((f, i) => (
               <li key={i} className="px-6 py-3">
                 <div className="flex items-start gap-3">
@@ -493,7 +493,7 @@ function UserAnomalyView({ data }: { data: UAN }) {
         right={<Score value={data.riskScore} tone={tone} caption={caption} />}
       />
       <div className="space-y-8 px-6 py-5">
-        <p className="rounded-lg border border-[var(--color-border)] px-4 py-3 text-xs text-[var(--color-muted)]">
+        <p className="rounded-lg border border-[var(--color-line)] px-4 py-3 text-xs text-[var(--color-muted)]">
           Yüksek puan &quot;bu hesap kötü niyetli&quot; demek değildir. &quot;Davranışı olağandışı,
           bakmaya değer&quot; demektir.
         </p>
@@ -696,7 +696,7 @@ function DorkScanView({ data }: { data: DS }) {
           ) : (
             <ul className="space-y-5">
               {data.hits.map((hit, i) => (
-                <li key={i} className="border-l-2 border-[var(--color-border)] pl-4">
+                <li key={i} className="border-l-2 border-[var(--color-line)] pl-4">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <ExternalLink href={hit.url}>
                       <span className="font-mono text-xs">

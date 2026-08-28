@@ -1,0 +1,17 @@
+---
+import Base from '../../layouts/Base.astro';
+import ProfileEditor from '../../components/profile/ProfileEditor.tsx';
+---
+
+<Base title="Profil — EXC Analyzer">
+  <div class="mb-8 max-w-2xl">
+    <p class="eyebrow">Profil</p>
+    <h1 class="mt-2 text-3xl font-bold">Nasıl görüneceğini sen seç</h1>
+    <p class="mt-3 text-[var(--color-muted)]">
+      Adın ve görselin GitHub'dan gelsin ya da kendin yaz. GitHub kullanıcı adın her
+      koşulda yanında görünür — görünen ad özgür, kimlik değil.
+    </p>
+  </div>
+
+  <ProfileEditor client:load />
+</Base>

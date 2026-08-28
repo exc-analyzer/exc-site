@@ -148,7 +148,7 @@ export default function CommandConsole() {
             e.preventDefault();
             void run();
           }}
-          className="space-y-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5"
+          className="space-y-4 rounded-xl border border-[var(--color-line)] bg-[var(--color-surface)] p-5"
         >
           <div className="grid gap-4 sm:grid-cols-2">
             {command.fields.map((field) => (
@@ -165,7 +165,7 @@ export default function CommandConsole() {
             <button
               type="submit"
               disabled={state.kind === 'running'}
-              className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-5 py-2 text-sm font-medium transition hover:border-[var(--color-border-hover)] disabled:opacity-50"
+              className="rounded-lg border border-[var(--color-line)] bg-[var(--color-bg)] px-5 py-2 text-sm font-medium transition hover:border-[var(--color-line-active)] disabled:opacity-50"
             >
               {state.kind === 'running' ? 'Çalışıyor…' : 'Çalıştır'}
             </button>
@@ -196,7 +196,7 @@ export default function CommandConsole() {
         )}
 
         {state.kind === 'running' && (
-          <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-8 text-center text-sm text-[var(--color-muted)]">
+          <div className="rounded-xl border border-[var(--color-line)] bg-[var(--color-surface)] px-6 py-8 text-center text-sm text-[var(--color-muted)]">
             Tarama senin tarayıcında çalışıyor…
           </div>
         )}
@@ -216,7 +216,7 @@ function Permalink({ href }: { href: string }) {
   const full = `${SITE_URL}${href}`;
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-3">
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--color-line)] bg-[var(--color-surface)] px-5 py-3">
       <div className="min-w-0">
         <p className="text-xs text-[var(--color-muted)]">Bu raporun kalıcı adresi</p>
         <a href={href} className="block truncate font-mono text-xs text-sky-400 hover:underline">
@@ -231,7 +231,7 @@ function Permalink({ href }: { href: string }) {
             setTimeout(() => setCopied(false), 1600);
           });
         }}
-        className="shrink-0 rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-xs transition hover:border-[var(--color-border-hover)]"
+        className="shrink-0 rounded-lg border border-[var(--color-line)] px-3 py-1.5 text-xs transition hover:border-[var(--color-line-active)]"
       >
         {copied ? 'Kopyalandı' : 'Kopyala'}
       </button>
@@ -291,7 +291,7 @@ function Field({
   onChange: (value: string | number | boolean) => void;
 }) {
   const inputClass =
-    'w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-sm outline-none placeholder:text-[var(--color-muted)] focus:border-[var(--color-border-hover)]';
+    'w-full rounded-lg border border-[var(--color-line)] bg-[var(--color-bg)] px-3 py-2 text-sm outline-none placeholder:text-[var(--color-muted)] focus:border-[var(--color-line-active)]';
 
   if (field.kind === 'checkbox') {
     return (

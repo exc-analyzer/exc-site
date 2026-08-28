@@ -1,20 +1,200 @@
 @import "tailwindcss";
 
+/**
+ * Tasarım dili tanıtım sayfasından geliyor.
+ *
+ * Değerler public/index.html içindeki :root bloğuyla birebir aynı. Uygulama
+ * ile tanıtım sayfası arasında geçiş yapan biri hiçbir kopma hissetmemeli;
+ * bunun için iki ayrı palet değil, tek bir palet var.
+ */
 @theme {
-  --color-bg: #0b0b0f;
+  --color-bg: #0a0a0c;
   --color-surface: #13131f;
-  --color-border: #26263a;
-  --color-border-hover: #3a3a55;
-  --color-text: #e8e8f0;
-  --color-muted: #8b8ba3;
+  --color-raised: #1a1a2b;
+
   --color-primary: #6366f1;
+  --color-primary-deep: #4f46e5;
+  --color-secondary: #8b5cf6;
+  --color-accent: #ec4899;
+
+  --color-text: #f8fafc;
+  --color-muted: #94a3b8;
+  --color-faint: #64748b;
+
+  --color-line: rgba(255, 255, 255, 0.1);
+  --color-line-strong: rgba(255, 255, 255, 0.18);
+  --color-line-active: rgba(99, 102, 241, 0.5);
+
+  --color-good: #34d399;
+  --color-warn: #fbbf24;
+  --color-bad: #f87171;
+  --color-info: #38bdf8;
+
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'Fira Code', 'Consolas', ui-monospace, monospace;
+
+  --radius-card: 16px;
+  --radius-control: 10px;
 }
 
 html {
   color-scheme: dark;
+  scroll-behavior: smooth;
 }
 
 body {
   background-color: var(--color-bg);
   color: var(--color-text);
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Tanıtım sayfasındaki gibi: sayfanın üstünde yumuşak bir ışık. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: 480px;
+  background:
+    radial-gradient(60% 100% at 20% 0%, rgba(99, 102, 241, 0.14), transparent 70%),
+    radial-gradient(50% 100% at 80% 0%, rgba(139, 92, 246, 0.10), transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+h1,
+h2,
+h3 {
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+code,
+pre,
+.font-mono {
+  font-family: var(--font-mono);
+}
+
+/* Odak halkası her yerde aynı: klavyeyle gezen biri nerede olduğunu görmeli. */
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+::selection {
+  background: rgba(99, 102, 241, 0.35);
+}
+
+/* --------------------------------------------------------------------------
+   Bileşen sınıfları.
+   Aynı görünüm onlarca yerde Tailwind sınıfı tekrarlayarak değil, tek yerden
+   tanımlanarak sağlanıyor; tasarımı değiştirmek tek dosyaya dokunmak oluyor.
+   -------------------------------------------------------------------------- */
+@layer components {
+  .surface {
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-card);
+  }
+
+  .surface-hover {
+    transition: border-color 0.2s ease, background-color 0.2s ease;
+  }
+  .surface-hover:hover {
+    border-color: var(--color-line-active);
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border-radius: var(--radius-control);
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.25s ease, border-color 0.2s ease,
+      background-color 0.2s ease, opacity 0.2s ease;
+    border: 1px solid transparent;
+    white-space: nowrap;
+  }
+  .btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-deep) 100%);
+    color: #fff;
+    box-shadow: 0 4px 14px 0 rgba(99, 102, 241, 0.35);
+  }
+  .btn-primary:not(:disabled):hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px 0 rgba(99, 102, 241, 0.45);
+  }
+
+  .btn-ghost {
+    background: transparent;
+    border-color: var(--color-line);
+    color: var(--color-text);
+  }
+  .btn-ghost:not(:disabled):hover {
+    border-color: var(--color-line-active);
+    background: rgba(255, 255, 255, 0.03);
+  }
+
+  .btn-quiet {
+    background: transparent;
+    color: var(--color-muted);
+    padding: 8px 12px;
+  }
+  .btn-quiet:not(:disabled):hover {
+    color: var(--color-text);
+  }
+
+  .field {
+    width: 100%;
+    background-color: rgba(10, 10, 12, 0.6);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-control);
+    padding: 10px 14px;
+    font-size: 0.875rem;
+    color: var(--color-text);
+    transition: border-color 0.2s ease, background-color 0.2s ease;
+  }
+  .field::placeholder {
+    color: var(--color-faint);
+  }
+  .field:focus {
+    outline: none;
+    border-color: var(--color-line-active);
+    background-color: rgba(10, 10, 12, 0.9);
+  }
+
+  .label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--color-muted);
+    margin-bottom: 6px;
+  }
+
+  .eyebrow {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-faint);
+  }
+
+  .link {
+    color: var(--color-secondary);
+    text-underline-offset: 3px;
+  }
+  .link:hover {
+    text-decoration: underline;
+  }
 }

@@ -63,7 +63,7 @@ export default function Comments({ reportId }: { reportId: string }) {
             placeholder="Bu rapor hakkında ne düşünüyorsun?"
           />
         ) : (
-          <p className="rounded-lg border border-[var(--color-border)] px-4 py-3 text-xs text-[var(--color-muted)]">
+          <p className="rounded-lg border border-[var(--color-line)] px-4 py-3 text-xs text-[var(--color-muted)]">
             Yorum yazmak için{' '}
             <a href="/app/" className="text-sky-400 hover:underline">
               GitHub ile giriş yap
@@ -89,7 +89,7 @@ export default function Comments({ reportId }: { reportId: string }) {
                 />
 
                 {repliesOf(c.id).length > 0 && (
-                  <ul className="mt-4 space-y-4 border-l border-[var(--color-border)] pl-5">
+                  <ul className="mt-4 space-y-4 border-l border-[var(--color-line)] pl-5">
                     {repliesOf(c.id).map((r) => (
                       <li key={r.id}>
                         <CommentRow
@@ -104,7 +104,7 @@ export default function Comments({ reportId }: { reportId: string }) {
                 )}
 
                 {replyTo === c.id && me && (
-                  <div className="mt-4 border-l border-[var(--color-border)] pl-5">
+                  <div className="mt-4 border-l border-[var(--color-line)] pl-5">
                     <Composer
                       reportId={reportId}
                       parentId={c.id}
@@ -264,14 +264,14 @@ function Composer({
         placeholder={placeholder}
         rows={3}
         maxLength={4000}
-        className="w-full resize-y rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-sm outline-none placeholder:text-[var(--color-muted)] focus:border-[var(--color-border-hover)]"
+        className="w-full resize-y rounded-lg border border-[var(--color-line)] bg-[var(--color-bg)] px-3 py-2 text-sm outline-none placeholder:text-[var(--color-muted)] focus:border-[var(--color-line-active)]"
       />
       <div className="flex items-center justify-between gap-3">
         <button
           type="button"
           onClick={() => void submit()}
           disabled={!body.trim() || busy}
-          className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-1.5 text-sm transition hover:border-[var(--color-border-hover)] disabled:opacity-40"
+          className="rounded-lg border border-[var(--color-line)] bg-[var(--color-surface)] px-4 py-1.5 text-sm transition hover:border-[var(--color-line-active)] disabled:opacity-40"
         >
           {busy ? 'Gönderiliyor…' : 'Gönder'}
         </button>

@@ -140,7 +140,7 @@ export default function Diagnostics() {
   const anyBlocked = Object.values(results).some((r) => r.kind === 'blocked');
 
   return (
-    <section className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
+    <section className="rounded-xl border border-[var(--color-line)] bg-[var(--color-surface)] p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h3 className="text-sm font-semibold">Bağlantı testi</h3>
@@ -153,14 +153,14 @@ export default function Diagnostics() {
           type="button"
           onClick={() => void runAll()}
           disabled={running}
-          className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-2 text-sm transition hover:border-[var(--color-border-hover)] disabled:opacity-50"
+          className="rounded-lg border border-[var(--color-line)] bg-[var(--color-bg)] px-4 py-2 text-sm transition hover:border-[var(--color-line-active)] disabled:opacity-50"
         >
           {running ? 'Deneniyor…' : 'Testi çalıştır'}
         </button>
       </div>
 
       {Object.keys(results).length > 0 && (
-        <ul className="mt-5 divide-y divide-[var(--color-border)]">
+        <ul className="mt-5 divide-y divide-[var(--color-line)]">
           {PROBES.map((probe) => {
             const r = results[probe.name];
             if (!r) return null;

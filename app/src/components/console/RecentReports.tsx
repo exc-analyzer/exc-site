@@ -38,7 +38,7 @@ export default function RecentReports() {
         {reports.length === 0 ? (
           <Empty>Henüz kimse tarama yapmamış. İlk sen ol.</Empty>
         ) : (
-          <ul className="divide-y divide-[var(--color-border)]">
+          <ul className="divide-y divide-[var(--color-line)]">
             {reports.map((r) => {
               const href = reportPath(r.owner, r.repo, r.kind);
               const label = r.repo ? `${r.owner}/${r.repo}` : r.owner;

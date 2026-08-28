@@ -188,7 +188,7 @@ export default function ReportPage() {
                         ? `/app/r/${s.owner}/${s.repo}/${s.kind}/`
                         : `/app/u/${s.owner}/${s.kind}/`
                     }
-                    className="inline-flex rounded-full border border-[var(--color-border)] px-3 py-1 text-xs transition hover:border-[var(--color-border-hover)]"
+                    className="inline-flex rounded-full border border-[var(--color-line)] px-3 py-1 text-xs transition hover:border-[var(--color-line-active)]"
                   >
                     {getCommand(s.kind).name}
                     {s.score !== null && <span className="ml-2 tabular-nums">{s.score}</span>}
@@ -234,7 +234,7 @@ function BadgeSnippet({ owner, repo }: { owner: string; repo: string }) {
         </div>
 
         <div className="flex items-center gap-2">
-          <code className="min-w-0 flex-1 truncate rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-xs">
+          <code className="min-w-0 flex-1 truncate rounded-lg border border-[var(--color-line)] bg-[var(--color-bg)] px-3 py-2 text-xs">
             {markdown}
           </code>
           <button
@@ -245,7 +245,7 @@ function BadgeSnippet({ owner, repo }: { owner: string; repo: string }) {
                 setTimeout(() => setCopied(false), 1600);
               });
             }}
-            className="shrink-0 rounded-lg border border-[var(--color-border)] px-3 py-2 text-xs transition hover:border-[var(--color-border-hover)]"
+            className="shrink-0 rounded-lg border border-[var(--color-line)] px-3 py-2 text-xs transition hover:border-[var(--color-line-active)]"
           >
             {copied ? 'Kopyalandı' : 'Kopyala'}
           </button>

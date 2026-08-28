@@ -2,13 +2,22 @@ import { useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase, isConfigured } from '../lib/supabase';
 import { rememberGithubToken, getGithubToken, forgetGithubToken } from '../lib/githubToken';
+import { accentColor, loadMyProfile, shownAvatar, shownName, type Profile } from '../lib/profile';
+import { Avatar } from './profile/ProfileEditor';
 
 /**
- * Token'in VAR olmasi gecerli oldugu anlamina gelmez. OAuth uygulamasi
- * "expire user access tokens" acik oldugu icin token 8 saatte suresi doluyor;
- * ayrica kullanici izni GitHub ayarlarindan istedigi an geri alabiliyor.
- * Sunucumuz olmadigi icin yenileme yapamiyoruz, o yuzden gecerliligi
- * kullanmadan once dogruluyoruz.
+ * Web tarafında istenen tek izinler. CLI'nin kullandığı `repo` ve `workflow`
+ * kapsamları bilerek istenmiyor: kimse bir web sitesine tüm özel depolarına
+ * tam erişim vermek istemez. Özel depo analizi CLI'da kalır.
+ */
+const SCOPES = 'read:user public_repo';
+
+/**
+ * Token'ın VAR olması geçerli olduğu anlamına gelmez. OAuth uygulaması
+ * "expire user access tokens" açık olduğu için token 8 saatte süresi doluyor;
+ * ayrıca kullanıcı izni GitHub ayarlarından istediği an geri alabiliyor.
+ * Sunucumuz olmadığı için yenileme yapamıyoruz, o yüzden geçerliliği
+ * kullanmadan önce doğruluyoruz.
  */
 async function isTokenUsable(token: string): Promise<boolean> {
   try {
@@ -17,7 +26,7 @@ async function isTokenUsable(token: string): Promise<boolean> {
     });
     return res.status !== 401;
   } catch {
-    // Ag hatasi token'in gecersiz oldugu anlamina gelmez.
+    // Ağ hatası token'ın geçersiz olduğu anlamına gelmez.
     return true;
   }
 }
@@ -33,15 +42,9 @@ async function refreshTokenState(apply: (usable: boolean) => void): Promise<void
   apply(usable);
 }
 
-/**
- * Web tarafinda istenen tek izinler. CLI'nin kullandigi `repo` ve `workflow`
- * kapsamlari bilerek istenmiyor: kimse bir web sitesine tum ozel depolarina
- * tam erisim vermek istemez. Ozel depo analizi CLI'da kalir.
- */
-const SCOPES = 'read:user public_repo';
-
 export default function AuthPanel() {
   const [session, setSession] = useState<Session | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [ready, setReady] = useState(false);
   const [hasToken, setHasToken] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -57,20 +60,33 @@ export default function AuthPanel() {
       setSession(data.session);
       setReady(true);
       void refreshTokenState(setHasToken);
+      if (data.session) void loadMyProfile().then(setProfile);
     });
 
     const { data: sub } = supabase.auth.onAuthStateChange((event, next) => {
       setSession(next);
 
-      // Supabase provider_token'i saklamaz; giris anindaki tek sansimiz bu.
+      // Supabase provider_token'ı saklamaz; giriş anındaki tek şansımız bu.
       if (next?.provider_token) rememberGithubToken(next.provider_token);
       if (event === 'SIGNED_OUT') {
         forgetGithubToken();
         setHasToken(false);
+        setProfile(null);
         return;
       }
 
       void refreshTokenState(setHasToken);
+
+      if (next) {
+        void loadMyProfile().then((p) => {
+          setProfile(p);
+          // Ilk giriste once profil kurulumu. Kullanici nasil gorunecegine
+          // karar vermeden akisa dusmesin.
+          if (p && !p.onboarded_at && !window.location.pathname.startsWith('/app/profil')) {
+            window.location.href = '/app/profil/';
+          }
+        });
+      }
     });
 
     return () => sub.subscription.unsubscribe();
@@ -100,92 +116,94 @@ export default function AuthPanel() {
 
   if (!isConfigured) {
     return (
-      <Card>
+      <div className="surface p-6">
         <h2 className="text-base font-semibold">Kurulum tamamlanmadı</h2>
         <p className="mt-2 text-sm text-[var(--color-muted)]">
-          Supabase bağlantısı için <code className="text-[var(--color-text)]">PUBLIC_SUPABASE_URL</code> ve{' '}
-          <code className="text-[var(--color-text)]">PUBLIC_SUPABASE_ANON_KEY</code> değerleri gerekiyor.
-          <code className="text-[var(--color-text)]"> app/.env.example</code> dosyasını{' '}
-          <code className="text-[var(--color-text)]">app/.env</code> olarak kopyalayıp doldur.
+          Supabase bağlantısı için <code>PUBLIC_SUPABASE_URL</code> ve{' '}
+          <code>PUBLIC_SUPABASE_ANON_KEY</code> gerekiyor.
         </p>
-      </Card>
+      </div>
     );
   }
 
   if (!ready) {
     return (
-      <Card>
+      <div className="surface p-6">
         <p className="text-sm text-[var(--color-muted)]">Yükleniyor…</p>
-      </Card>
+      </div>
     );
   }
 
   if (!session) {
     return (
-      <Card>
-        <h2 className="text-base font-semibold">GitHub ile giriş yap</h2>
-        <p className="mt-2 text-sm text-[var(--color-muted)]">
-          Yalnızca herkese açık depo bilgisi ve profilin istenir. Özel depolarına erişim istenmez.
-        </p>
-        <button
-          onClick={signIn}
-          disabled={busy}
-          className="mt-5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2 text-sm font-medium transition hover:border-[var(--color-border-hover)] disabled:opacity-50"
-        >
-          {busy ? 'Yönlendiriliyor…' : 'GitHub ile devam et'}
-        </button>
-        {error && <p className="mt-3 text-sm text-red-400">{error}</p>}
-      </Card>
+      <div className="surface overflow-hidden">
+        <div className="p-6 sm:p-8">
+          <h2 className="text-xl font-bold">GitHub ile giriş yap</h2>
+          <p className="mt-2 max-w-md text-sm text-[var(--color-muted)]">
+            Yalnızca herkese açık depo bilgisi ve profilin istenir. Özel depolarına erişim
+            istenmez — analizler senin tarayıcında, senin kotanla çalışır.
+          </p>
+
+          <button onClick={signIn} disabled={busy} className="btn btn-primary mt-6">
+            {busy ? 'Yönlendiriliyor…' : 'GitHub ile devam et'}
+          </button>
+
+          {error && <p className="mt-3 text-sm text-[var(--color-bad)]">{error}</p>}
+        </div>
+      </div>
     );
   }
 
-  const meta = session.user.user_metadata ?? {};
-  const login = meta.user_name ?? meta.preferred_username ?? session.user.email ?? 'kullanıcı';
+  const name = profile ? shownName(profile) : (session.user.user_metadata?.user_name ?? 'kullanıcı');
+  const avatar = profile ? shownAvatar(profile) : (session.user.user_metadata?.avatar_url ?? null);
+  const accent = profile ? accentColor(profile.accent) : undefined;
 
   return (
-    <Card>
-      <div className="flex items-center gap-4">
-        {meta.avatar_url && (
-          <img src={meta.avatar_url} alt="" width={48} height={48} className="rounded-full" />
-        )}
-        <div className="min-w-0">
-          <p className="truncate text-base font-semibold">{login}</p>
-          <p className="text-sm text-[var(--color-muted)]">Giriş yapıldı</p>
+    <div className="surface p-6">
+      <div className="flex flex-wrap items-center gap-4">
+        <Avatar src={avatar} name={name} accent={accent} size={52} />
+
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-base font-semibold">{name}</p>
+          {profile && (
+            <p className="truncate font-mono text-xs text-[var(--color-muted)]">
+              @{profile.gh_login}
+            </p>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2">
+          <a href="/app/profil/" className="btn btn-ghost">
+            Profil
+          </a>
+          <button onClick={signOut} disabled={busy} className="btn btn-quiet">
+            Çıkış
+          </button>
         </div>
       </div>
 
-      <p className="mt-5 text-sm text-[var(--color-muted)]">
-        {hasToken
-          ? 'GitHub bağlantısı hazır — taramalar senin kendi API kotanla çalışacak.'
-          : 'GitHub bağlantısı yok ya da süresi dolmuş. Tarama yapmak için yeniden bağlan.'}
-      </p>
-
-      <div className="mt-5 flex gap-3">
+      <div
+        className={`mt-5 flex flex-wrap items-center gap-3 rounded-[var(--radius-control)] border px-4 py-3 text-xs ${
+          hasToken
+            ? 'border-[var(--color-line)] text-[var(--color-muted)]'
+            : 'border-amber-900/60 bg-amber-950/20 text-amber-200/90'
+        }`}
+      >
+        <span
+          className="size-1.5 shrink-0 rounded-full"
+          style={{ backgroundColor: hasToken ? 'var(--color-good)' : 'var(--color-warn)' }}
+        />
+        <span className="min-w-0 flex-1">
+          {hasToken
+            ? 'GitHub bağlantısı hazır — taramalar senin kendi API kotanla çalışacak.'
+            : 'GitHub bağlantısı yok ya da süresi dolmuş. Tarama yapmak için yeniden bağlan.'}
+        </span>
         {!hasToken && (
-          <button
-            onClick={signIn}
-            disabled={busy}
-            className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2 text-sm font-medium transition hover:border-[var(--color-border-hover)] disabled:opacity-50"
-          >
-            GitHub'ı yeniden bağla
+          <button onClick={signIn} disabled={busy} className="btn btn-ghost">
+            Yeniden bağlan
           </button>
         )}
-        <button
-          onClick={signOut}
-          disabled={busy}
-          className="rounded-lg border border-transparent px-4 py-2 text-sm text-[var(--color-muted)] transition hover:text-[var(--color-text)] disabled:opacity-50"
-        >
-          Çıkış yap
-        </button>
       </div>
-    </Card>
-  );
-}
-
-function Card({ children }: { children: React.ReactNode }) {
-  return (
-    <section className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
-      {children}
-    </section>
+    </div>
   );
 }
