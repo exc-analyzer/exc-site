@@ -1,26 +1,23 @@
 ---
 import Base from '../layouts/Base.astro';
 import AuthPanel from '../components/AuthPanel.tsx';
-import RepoScanner from '../components/RepoScanner.tsx';
+import CommandConsole from '../components/console/CommandConsole.tsx';
 ---
 
 <Base title="EXC Analyzer — Uygulama">
-  <h1 class="text-2xl font-semibold tracking-tight">Uygulama</h1>
-  <p class="mt-2 max-w-2xl text-sm text-[var(--color-muted)]">
-    GitHub hesabınla giriş yap, herkese açık depoları analiz et, bulgularını toplulukla paylaş.
-    Analiz senin tarayıcında çalışır; kendi API kotanı kullanır ve sonuçlar bize gönderilmez.
-  </p>
+  <div class="max-w-2xl">
+    <h1 class="text-2xl font-semibold tracking-tight">Uygulama</h1>
+    <p class="mt-2 text-sm text-[var(--color-muted)]">
+      CLI'deki bütün komutlar burada da çalışıyor. Analiz senin tarayıcında, senin GitHub
+      hesabınla yapılır: kod bize gönderilmez, kendi API kotanı kullanırsın.
+    </p>
+  </div>
 
   <div class="mt-8 max-w-2xl">
     <AuthPanel client:load />
   </div>
 
-  <div class="mt-10 max-w-2xl">
-    <h2 class="text-lg font-semibold tracking-tight">Depo tara</h2>
-    <p class="mt-1 mb-5 text-sm text-[var(--color-muted)]">
-      Bir deponun güvenlik duruşunu ölç. Okunamayan kriterler puanlamaya katılmaz —
-      &quot;bilinmiyor&quot; ile &quot;kapalı&quot; aynı şey değildir.
-    </p>
-    <RepoScanner client:load />
+  <div class="mt-12">
+    <CommandConsole client:load />
   </div>
 </Base>

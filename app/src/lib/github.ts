@@ -158,6 +158,54 @@ export class GitHubClient {
     return out;
   }
 
+  /**
+   * GraphQL sorgusu. REST'in tek istekte veremedigi bilesik verileri
+   * (depo ozeti + diller + commit gecmisi) tek turda getirir.
+   * GraphQL API kimliksiz istegi kabul etmez, token zorunludur.
+   */
+  async graphql<T>(query: string, variables: Record<string, unknown>): Promise<T> {
+    if (!this.token) throw new AuthError('Bu işlem için GitHub bağlantısı gerekiyor.');
+
+    const res = await fetch('https://api.github.com/graphql', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${this.token}`,
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ query, variables }),
+    });
+
+    this.readRateLimit(res.headers);
+
+    if (res.status === 401) throw new AuthError();
+
+    const body = (await res.json()) as { data?: T; errors?: { message: string }[] };
+    if (body.errors?.length) {
+      const first = body.errors[0].message;
+      if (/rate limit/i.test(first)) throw new RateLimitError(this.lastRate.resetAt);
+      if (/could not resolve|not resolve to a/i.test(first)) throw new NotFoundError(first);
+      throw new Error(first);
+    }
+    if (!body.data) throw new Error('GraphQL yanıtı boş döndü.');
+    return body.data;
+  }
+
+  /**
+   * Duz metin indirir (raw.githubusercontent.com gibi API disi adresler icin).
+   * Buyuk dosyalarda tarayiciyi kilitlememek adina okunan miktar sinirli.
+   */
+  async fetchText(url: string, maxBytes = 512_000): Promise<string | null> {
+    try {
+      const res = await fetch(url);
+      if (!res.ok) return null;
+      const text = await res.text();
+      return text.length > maxBytes ? text.slice(0, maxBytes) : text;
+    } catch {
+      return null;
+    }
+  }
+
   private readRateLimit(h: Headers): void {
     const remaining = h.get('x-ratelimit-remaining');
     const limit = h.get('x-ratelimit-limit');

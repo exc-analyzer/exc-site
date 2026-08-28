@@ -7,6 +7,8 @@ import tailwindcss from '@tailwindcss/vite';
 export default defineConfig({
   base: '/app',
   outDir: '../public/app',
+  // Gelistirici arac cubugu (sag alttaki yuzen menu) kapali.
+  devToolbar: { enabled: false },
   integrations: [react()],
   vite: {
     plugins: [tailwindcss()],
