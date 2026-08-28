@@ -13,11 +13,19 @@ import {
 import { AuthError, GitHubClient, NetworkError, NotFoundError, RateLimitError } from '../../lib/github';
 import { forgetGithubToken, getGithubToken } from '../../lib/githubToken';
 import { ResultView } from './ResultView';
+import { reportPath, reportTarget, saveReport } from '../../lib/reports';
 
 type RunState =
   | { kind: 'idle' }
   | { kind: 'running' }
-  | { kind: 'done'; result: CommandResult; remaining: number | null; ms: number }
+  | {
+      kind: 'done';
+      result: CommandResult;
+      remaining: number | null;
+      ms: number;
+      /** Hassas olmayan komutlarda raporun kalici adresi. */
+      permalink: string | null;
+    }
   | { kind: 'error'; message: string; needsReconnect?: boolean };
 
 function defaultsFor(fields: FieldSpec[]): FieldValues {
@@ -65,11 +73,26 @@ export default function CommandConsole() {
 
     try {
       const result = await runCommand(gh, activeId, values);
+
       setState({
         kind: 'done',
         result,
         remaining: gh.rateLimit.remaining,
         ms: Math.round(performance.now() - started),
+        permalink: null,
+      });
+
+      // Kayit sonucu gostermeyi geciktirmemeli: tarama zaten bitti, kalici
+      // adres gelince arayuze eklenir. Hassas komutlarda saveReport zaten
+      // hicbir sey yapmadan null doner.
+      void saveReport(result).then((saved) => {
+        if (!saved) return;
+        const target = reportTarget(result);
+        if (!target) return;
+        const link = reportPath(target.owner, target.repo, result.id);
+        setState((prev) =>
+          prev.kind === 'done' && prev.result === result ? { ...prev, permalink: link } : prev,
+        );
       });
     } catch (err) {
       if (err instanceof AuthError) {
@@ -177,8 +200,38 @@ export default function CommandConsole() {
           </div>
         )}
 
+        {state.kind === 'done' && state.permalink && <Permalink href={state.permalink} />}
+
         {state.kind === 'done' && <ResultView result={state.result} />}
       </div>
+    </div>
+  );
+}
+
+function Permalink({ href }: { href: string }) {
+  const [copied, setCopied] = useState(false);
+  const full = typeof window === 'undefined' ? href : `${window.location.origin}${href}`;
+
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-3">
+      <div className="min-w-0">
+        <p className="text-xs text-[var(--color-muted)]">Bu raporun kalıcı adresi</p>
+        <a href={href} className="block truncate font-mono text-xs text-sky-400 hover:underline">
+          {full}
+        </a>
+      </div>
+      <button
+        type="button"
+        onClick={() => {
+          void navigator.clipboard.writeText(full).then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1600);
+          });
+        }}
+        className="shrink-0 rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-xs transition hover:border-[var(--color-border-hover)]"
+      >
+        {copied ? 'Kopyalandı' : 'Kopyala'}
+      </button>
     </div>
   );
 }
