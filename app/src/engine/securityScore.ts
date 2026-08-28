@@ -11,10 +11,12 @@
  *   haksız yere cezalandırıyor — torvalds/linux üzerinde ölçüldü: CLI 60/100
  *   verip "Dal Koruması: Devre Dışı" diyor, oysa koruma var, CLI okuyamıyor.
  *
- *   Burada "bilinmiyor" ile "kapalı" ayrılıyor: GitHub 404 + "Branch not
- *   protected" derse depo gerçekten korumasızdır ve puan düşer. Yetki
- *   yetersizliği nedeniyle okunamıyorsa kriter puanlamadan tamamen çıkarılır
- *   ve raporda "bilinmiyor" olarak gösterilir.
+ *   Ayrım, deponun `permissions.admin` alanına bakılarak yapılıyor. Ölçtük:
+ *   GitHub bu uçta "Branch not protected" gibi açıklayıcı bir mesaj DÖNMÜYOR,
+ *   her iki durumda da düz 404 "Not Found" veriyor. Dolayısıyla mesaja
+ *   bakarak ayrım yapılamaz. Yönetici isek 404 gerçekten "koruma yok"
+ *   demektir ve puan düşer; değilsek bilgi bize kapalıdır, kriter puanlamadan
+ *   çıkarılır ve "bilinmiyor" olarak gösterilir.
  *
  * Aynı düzeltme CLI'ye de uygulanmalıdır.
  */
@@ -50,6 +52,12 @@ interface RepoInfo {
   has_projects: boolean;
   open_issues_count: number;
   default_branch: string;
+  /**
+   * Yalnizca kimlikli isteklerde gelir. Yonetici olup olmadigimizi buradan
+   * ogreniyoruz; korumanin gercekten kapali mi yoksa okunamaz mi oldugunu
+   * ayirmanin tek guvenilir yolu bu.
+   */
+  permissions?: { admin?: boolean } | null;
 }
 
 /**
@@ -92,6 +100,7 @@ export async function securityScore(
   repo: string,
 ): Promise<SecurityScoreResult> {
   const info = await gh.get<RepoInfo>(`/repos/${owner}/${repo}`);
+  const isAdmin = info.permissions?.admin === true;
   const criteria: Criterion[] = [];
 
   criteria.push({
@@ -179,11 +188,12 @@ export async function securityScore(
   if (prot.status === 200) {
     protStatus = 'pass';
     protDetail = 'Etkin';
-  } else if (prot.status === 404 && /not protected/i.test(prot.message ?? '')) {
+  } else if (isAdmin && prot.status === 404) {
+    // Yoneticiyiz ve GitHub koruma bulamadi: gercekten kapali.
     protStatus = 'fail';
     protDetail = 'Kapalı';
   } else {
-    // 401/403 ya da başka bir 404: bu uç yalnızca admin'e açık, okuyamıyoruz.
+    // Yonetici degiliz; bu uc bize kapali, korumanin durumunu bilemeyiz.
     protStatus = 'unknown';
     protDetail = 'Bilinmiyor — bu bilgi yalnızca depo yöneticisine açık';
   }
@@ -222,9 +232,11 @@ export async function securityScore(
     const n = scan.data.length;
     scanStatus = n > 0 ? 'fail' : 'pass';
     scanDetail = n > 0 ? `${n} açık uyarı` : 'Açık uyarı yok';
-  } else if (scan.status === 404) {
+  } else if (isAdmin && scan.status === 404) {
+    // Kod taramasi ucretsiz ve istege bagli; kurulmamis olmasi bir kusur
+    // sayilmiyor, bu yuzden puanlanmiyor ama durum acikca yaziliyor.
     scanStatus = 'unknown';
-    scanDetail = 'Kod taraması etkin değil';
+    scanDetail = 'Kurulu değil (puanlamaya dahil değil)';
   } else {
     scanStatus = 'unknown';
     scanDetail = 'Bilinmiyor — uyarılar herkese açık değil';

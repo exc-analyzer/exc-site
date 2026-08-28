@@ -149,8 +149,9 @@ function ScoreReport({ result, remaining }: { result: SecurityScoreResult; remai
         {result.evaluatedCount} kriter değerlendirildi
         {result.unknownCount > 0 && (
           <>
-            , {result.unknownCount} tanesi okunamadı ve <strong className="text-[var(--color-text)]">puanlamaya katılmadı</strong>
-            {' '}— bu bilgiler yalnızca depo yöneticisine açık
+            , {result.unknownCount} tanesi{' '}
+            <strong className="text-[var(--color-text)]">puanlamaya katılmadı</strong>
+            {' '}— nedeni her satırın yanında yazıyor
           </>
         )}
         .{remaining !== null && ` Kalan GitHub istek hakkın: ${remaining}.`}
