@@ -59,11 +59,7 @@ export default function ProfileEditor() {
     }
 
     patch({ custom_avatar_url: result.url, avatar_source: 'custom' });
-    setUploadNote(
-      result.screened
-        ? 'Yüklendi. Kaydetmeyi unutma.'
-        : 'Yüklendi, ancak otomatik içerik taraması çalıştırılamadı. Kaydetmeyi unutma.',
-    );
+    setUploadNote('Yüklendi. Kaydetmeyi unutma.');
   }
 
   async function save() {
@@ -193,9 +189,9 @@ export default function ProfileEditor() {
               </label>
 
               <p className="text-xs text-[var(--color-faint)]">
-                Görsel 400×400 kareye kırpılıp yeniden kodlanıyor. Bu, dosyanın içine
-                gömülmüş konum bilgisi ve benzeri her şeyi siliyor. Uygunsuz içerik için
-                otomatik bir tarama da çalışıyor.
+                Görsel 400×400 kareye kırpılıp yeniden kodlanıyor; bu, dosyaya gömülü
+                konum bilgisi gibi verileri siliyor. Yüklediğin görsel GitHub hesabına
+                bağlı ve herkes tarafından bildirilebilir — uygunsuz içerik kaldırılır.
               </p>
 
               {uploadNote && (

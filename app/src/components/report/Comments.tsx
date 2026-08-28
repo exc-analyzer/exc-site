@@ -11,6 +11,7 @@ import {
 import { supabase } from '../../lib/supabase';
 import { Card, Empty, ExternalLink } from '../console/ui';
 import { relativeTime } from '../../engine/shared';
+import ReportButton from '../ReportButton';
 
 /**
  * Rapor sayfasındaki tartışma.
@@ -209,16 +210,18 @@ function CommentRow({
                 Yanıtla
               </button>
             )}
-            {me === comment.author_id && (
+            {me === comment.author_id ? (
               <button
                 type="button"
                 onClick={() => {
                   void softDeleteComment(comment.id).then(onChanged);
                 }}
-                className="hover:text-red-400"
+                className="hover:text-[var(--color-bad)]"
               >
                 Sil
               </button>
+            ) : (
+              me && <ReportButton targetType="comment" targetId={comment.id} />
             )}
           </div>
         )}
