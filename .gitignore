@@ -86,3 +86,4 @@ app/node_modules/
 app/.astro/
 app/dist/
 app/.env
+.verify-out.mjs

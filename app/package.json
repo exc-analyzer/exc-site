@@ -4,7 +4,12 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "astro dev",
+    "build": "astro build",
+    "check": "astro check",
+    "verify": "node --run _verify:bundle && node .verify-out.mjs",
+    "_verify:bundle": "esbuild scripts/verify-engine.ts --bundle --platform=node --format=esm --target=node22 --outfile=.verify-out.mjs --log-level=warning"
   },
   "keywords": [],
   "author": "",
@@ -18,5 +23,10 @@
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "tailwindcss": "^4.3.3"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.10",
+    "@types/node": "^26.4.0",
+    "typescript": "^6.0.3"
   }
 }

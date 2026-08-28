@@ -1,6 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
 import AuthPanel from '../components/AuthPanel.tsx';
+import RepoScanner from '../components/RepoScanner.tsx';
 ---
 
 <Base title="EXC Analyzer — Uygulama">
@@ -10,7 +11,16 @@ import AuthPanel from '../components/AuthPanel.tsx';
     Analiz senin tarayıcında çalışır; kendi API kotanı kullanır ve sonuçlar bize gönderilmez.
   </p>
 
-  <div class="mt-8 max-w-xl">
+  <div class="mt-8 max-w-2xl">
     <AuthPanel client:load />
+  </div>
+
+  <div class="mt-10 max-w-2xl">
+    <h2 class="text-lg font-semibold tracking-tight">Depo tara</h2>
+    <p class="mt-1 mb-5 text-sm text-[var(--color-muted)]">
+      Bir deponun güvenlik duruşunu ölç. Okunamayan kriterler puanlamaya katılmaz —
+      &quot;bilinmiyor&quot; ile &quot;kapalı&quot; aynı şey değildir.
+    </p>
+    <RepoScanner client:load />
   </div>
 </Base>
