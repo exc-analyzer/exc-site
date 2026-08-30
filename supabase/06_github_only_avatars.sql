@@ -1,57 +1,66 @@
 -- =============================================================================
 -- EXC Analyzer - profil görselleri yalnızca GitHub'dan
 --
--- Supabase panelinde SQL Editor'e yapistirip calistir.
--- 05_avatars.sql'den SONRA calistirilmali; onun actigi seyleri geri aliyor.
+-- 05_avatars.sql'den SONRA çalıştırılmalı; onun açtığı şeyleri geri alıyor.
+--
+-- ÖNCE PANELDEN YAPILACAK İKİ ŞEY VAR
+--
+--   Supabase, depolama tablolarından SQL ile silmeyi engelliyor:
+--     ERROR 42501: Direct deletion from storage tables is not allowed.
+--   Sebebi haklı: SQL yalnızca kaydı siler, dosyanın baytları arka uçta
+--   öksüz kalır. Silme işi Storage API'sinden geçmeli.
+--
+--   Bu yüzden bu dosyayı çalıştırmadan ÖNCE:
+--     1. Storage -> avatars kovasını aç, içindeki dosyaları sil
+--     2. Kovanın kendisini sil (üç nokta menüsü -> Delete bucket)
+--
+--   Sonra bu dosyayı çalıştır. Dosya yalnızca veritabanı tarafını temizler.
 --
 -- NEDEN
--- Kullanicidan gorsel yuklemek, uygunsuz icerik sorumlulugunu bize getiriyordu
--- ve sifir butceyle otomatik denetim mumkun degildi (nsfwjs denendi,
--- calismadi; ayrica tarayicida calisan her kontrol dogrudan API'ye istek atan
--- biri tarafindan atlanir).
+-- Kullanıcıdan görsel yüklemek, uygunsuz içerik sorumluluğunu bize
+-- getiriyordu ve sıfır bütçeyle otomatik denetim mümkün değildi (nsfwjs
+-- denendi, çalışmadı; ayrıca tarayıcıda çalışan her kontrol doğrudan API'ye
+-- istek atan biri tarafından atlanır).
 --
--- Gorseli GitHub'a birakmak bu sorunu cozmuyor, ORTADAN KALDIRIYOR:
---   - GitHub kendi icerik denetimini zaten yapiyor
---   - Hesaplar dogrulanmis, ihlalde hesabi onlar kapatiyor
---   - Bizim depolamamiz, denetlememiz, kaldirmamiz gereken bir sey kalmiyor
+-- Görseli GitHub'a bırakmak bu sorunu çözmüyor, ORTADAN KALDIRIYOR:
+--   - GitHub kendi içerik denetimini zaten yapıyor
+--   - Hesaplar doğrulanmış, ihlalde hesabı onlar kapatıyor
+--   - Bizim depolayacağımız, denetleyeceğimiz, kaldıracağımız bir şey kalmıyor
 --
--- Gorunen AD ozellestirilebilir kalmaya devam ediyor: metin, gorselden farkli
--- olarak bakildigi anda degerlendirilebiliyor ve zaten kimligin yaninda
--- gh_login duruyor.
+-- Görünen AD özelleştirilebilir kalmaya devam ediyor: metin, görselden farklı
+-- olarak bakıldığı anda değerlendirilebiliyor ve kimliğin yanında gh_login
+-- her zaman duruyor.
 -- =============================================================================
 
--- 1. Yuklenmis gorsellerin kaydini temizle.
+-- 1. Yüklenmiş görsellerin profil kaydını temizle.
+--    (Dosyaların kendisi panelden silinmiş olmalı.)
 update public.profiles
    set avatar_source = 'github',
        custom_avatar_url = null
- where avatar_source <> 'github' or custom_avatar_url is not null;
+ where avatar_source is distinct from 'github'
+    or custom_avatar_url is not null;
 
--- 2. Depolanan dosyalari sil.
-delete from storage.objects where bucket_id = 'avatars';
-
--- 3. Yukleme politikalarini kaldir.
+-- 2. Yükleme politikalarını kaldır. Bunlar politika tanımı, veri değil —
+--    SQL ile kaldırılabiliyor.
 drop policy if exists "kullanici kendi gorselini yukler" on storage.objects;
 drop policy if exists "kullanici kendi gorselini degistirir" on storage.objects;
 drop policy if exists "kullanici kendi gorselini siler" on storage.objects;
 drop policy if exists "gorseller herkese acik okunur" on storage.objects;
 
--- 4. Kovayi kaldir.
-delete from storage.buckets where id = 'avatars';
-
--- 5. Kolonlari kaldir. Artik tek bir gorsel kaynagi var, secim diye bir sey yok.
+-- 3. Kolonları kaldır. Artık tek bir görsel kaynağı var, seçim diye bir şey yok.
 alter table public.profiles
   drop column if exists custom_avatar_url,
   drop column if exists avatar_source;
 
--- 6. Koruma tetikleyicisini sadelestir.
+-- 4. Koruma tetikleyicisini sadeleştir.
 create or replace function public.profiles_guard()
 returns trigger
 language plpgsql
 as $$
 begin
-  -- Kimlik alanlari kilitli. gh_login serbest birakilsaydi biri kendine
-  -- "torvalds" yazip baskasi gibi gorunebilirdi; reputation serbest
-  -- birakilsaydi kendi itibarini yukseltebilirdi.
+  -- Kimlik alanları kilitli. gh_login serbest bırakılsaydı biri kendine
+  -- "torvalds" yazıp başkası gibi görünebilirdi; reputation serbest
+  -- bırakılsaydı kendi itibarını yükseltebilirdi.
   new.id            := old.id;
   new.gh_login      := old.gh_login;
   new.gh_name       := old.gh_name;
@@ -60,7 +69,7 @@ begin
   new.reputation    := old.reputation;
   new.created_at    := old.created_at;
 
-  -- Kendi adi secildiyse bir ad yazilmis olmali; yoksa GitHub'a doner.
+  -- Kendi adı seçildiyse bir ad yazılmış olmalı; yoksa GitHub'a döner.
   if new.name_source = 'custom' and coalesce(btrim(new.display_name), '') = '' then
     new.name_source := 'github';
   end if;
@@ -69,7 +78,7 @@ begin
 end;
 $$;
 
--- 7. Gorunum tanimindan gorsel secimini cikar.
+-- 5. Görünüm tanımından görsel seçimini çıkar.
 create or replace view public.profile_display as
   select
     id,
@@ -88,8 +97,8 @@ create or replace view public.profile_display as
 
 grant select on public.profile_display to anon, authenticated;
 
--- 8. Gorsel bildirimi diye bir sey kalmadi.
---    abuse_reports duruyor: yorumlar ve profiller icin hala gerekli.
+-- 6. Görsel bildirimi diye bir şey kalmadı.
+--    abuse_reports duruyor: yorumlar ve profiller için hâlâ gerekli.
 delete from public.abuse_reports where target_type = 'avatar';
 
 alter table public.abuse_reports
@@ -98,3 +107,21 @@ alter table public.abuse_reports
 alter table public.abuse_reports
   add constraint abuse_reports_target_type_check
   check (target_type in ('comment', 'profile', 'report'));
+
+-- =============================================================================
+-- DOĞRULAMA — bu sorgu çalıştıktan sonra üç satır da "temiz" demeli.
+-- =============================================================================
+select 'kolonlar kaldirildi' as kontrol,
+       case when not exists (
+         select 1 from information_schema.columns
+          where table_schema = 'public' and table_name = 'profiles'
+            and column_name in ('custom_avatar_url', 'avatar_source')
+       ) then 'temiz' else 'HALA VAR' end as sonuc
+union all
+select 'avatars kovasi',
+       case when not exists (select 1 from storage.buckets where id = 'avatars')
+            then 'temiz' else 'HALA VAR - panelden sil' end
+union all
+select 'yuklenmis dosya',
+       case when not exists (select 1 from storage.objects where bucket_id = 'avatars')
+            then 'temiz' else 'HALA VAR - panelden sil' end;
