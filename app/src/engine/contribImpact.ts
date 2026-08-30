@@ -36,6 +36,10 @@ export async function contribImpact(
 ): Promise<ContribImpactResult> {
   // GitHub bu istatistikleri arka planda hesaplar ve hazir degilse 202 doner.
   // Birkac kez, artan araliklarla tekrar deniyoruz.
+  //
+  // Bunun calismasi github.ts'teki onbellegin 202'yi SAKLAMAMASINA bagli:
+  // saklasaydi her tekrar deneme ayni onbellek kaydini okur ve dongu bosa
+  // calisirdi.
   let data: StatsContributor[] | null = null;
   let pending = false;
 

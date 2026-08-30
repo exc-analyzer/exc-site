@@ -1,0 +1,58 @@
+name: Tests
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+# Yalnızca okur; deploy etmez.
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Tip kontrolü ve derleme
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    env:
+      # Bu iki değer gizli değil, tarayıcıda zaten görünüyor. Derlemeye
+      # verilmesinin sebebi çıktının üretimdekiyle aynı olması.
+      PUBLIC_SUPABASE_URL: ${{ vars.PUBLIC_SUPABASE_URL }}
+      PUBLIC_SUPABASE_ANON_KEY: ${{ vars.PUBLIC_SUPABASE_ANON_KEY }}
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      # `npm ci` package-lock.json'a birebir uyar. Beyan edilmemiş bir
+      # bağımlılık varsa burada ortaya çıkar — geliştirici makinesinde
+      # başka bir paket üzerinden geçişli gelmiş olabilir.
+      - name: Bağımlılıkları kur
+        working-directory: app
+        run: npm ci
+
+      - name: Tip kontrolü ve derleme
+        working-directory: app
+        run: npm test
+
+      # Derleme sonrası çıktı, depodaki public/app ile aynı olmalı.
+      # Farklıysa biri derlemeyi çalıştırmadan commit atmış demektir ve
+      # yayınlanan dosyalar kaynak kodun gerisinde kalır.
+      - name: Derleme çıktısı depodakiyle aynı mı
+        run: |
+          if [ -n "$(git status --porcelain public/app)" ]; then
+            echo "public/app derleme sonrası değişti — commit'lenmemiş derleme çıktısı var:"
+            git status --porcelain public/app
+            echo ""
+            echo "Düzeltmek için: cd app && npm run build, sonra public/app değişikliklerini commit'le."
+            exit 1
+          fi
+          echo "public/app güncel."

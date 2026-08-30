@@ -160,7 +160,15 @@ export class GitHubClient {
       headers: res.headers,
     };
 
-    if (res.ok) cache.set(key, { at: Date.now(), value: out });
+    // YALNIZCA 200 onbellege alinir.
+    //
+    // res.ok, 202'yi de kapsiyor ve bu gercek bir hataya yol aciyordu: GitHub
+    // istatistikleri arka planda hesaplarken 202 "hazir degil" doner.
+    // contribImpact bunu gorunce artan araliklarla tekrar deniyor — ama 202
+    // onbellege girdigi icin tekrar denemeler 30 saniye boyunca ayni
+    // onbellek kaydini okuyup ayni "hazir degil" yanitini aliyordu. Yani
+    // tekrar deneme donguisu hicbir ise yaramiyordu.
+    if (res.status === 200) cache.set(key, { at: Date.now(), value: out });
     return out;
   }
 

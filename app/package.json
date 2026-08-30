@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "npm run check && npm run build",
     "dev": "astro dev",
     "build": "astro build",
     "check": "astro check",
@@ -31,6 +31,7 @@
   "devDependencies": {
     "@astrojs/check": "^0.9.10",
     "@types/node": "^26.4.0",
+    "esbuild": "^0.28.2",
     "typescript": "^6.0.3"
   }
 }

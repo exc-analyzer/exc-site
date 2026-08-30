@@ -8,7 +8,6 @@ import {
   shownName,
   type AccentId,
   type Profile,
-  type SourceChoice,
 } from '../../lib/profile';
 
 /**
