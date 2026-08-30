@@ -47,12 +47,37 @@ drop policy if exists "kullanici kendi gorselini degistirir" on storage.objects;
 drop policy if exists "kullanici kendi gorselini siler" on storage.objects;
 drop policy if exists "gorseller herkese acik okunur" on storage.objects;
 
--- 3. Kolonları kaldır. Artık tek bir görsel kaynağı var, seçim diye bir şey yok.
+-- 3. Görünümü ÖNCE yeniden tanımla.
+--
+--    profile_display, shown_avatar alanını custom_avatar_url üzerinden
+--    hesaplıyordu. Kolon o görünüm dururken düşürülemez:
+--      ERROR 2BP01: cannot drop column ... because other objects depend on it
+--    Görünüm önce gh_avatar_url'e çevrilince bağımlılık ortadan kalkıyor ve
+--    kolon sorunsuz düşüyor. Sıra önemli.
+create or replace view public.profile_display as
+  select
+    id,
+    gh_login,
+    accent,
+    reputation,
+    bio,
+    created_at,
+    onboarded_at,
+    case when name_source = 'custom' and display_name is not null
+         then display_name
+         else coalesce(gh_name, gh_login)
+    end as shown_name,
+    gh_avatar_url as shown_avatar
+  from public.profiles;
+
+grant select on public.profile_display to anon, authenticated;
+
+-- 4. Artık bağımlılık yok, kolonları düşür. Artık tek bir görsel kaynağı var, seçim diye bir şey yok.
 alter table public.profiles
   drop column if exists custom_avatar_url,
   drop column if exists avatar_source;
 
--- 4. Koruma tetikleyicisini sadeleştir.
+-- 5. Koruma tetikleyicisini sadeleştir.
 create or replace function public.profiles_guard()
 returns trigger
 language plpgsql
@@ -77,25 +102,6 @@ begin
   return new;
 end;
 $$;
-
--- 5. Görünüm tanımından görsel seçimini çıkar.
-create or replace view public.profile_display as
-  select
-    id,
-    gh_login,
-    accent,
-    reputation,
-    bio,
-    created_at,
-    onboarded_at,
-    case when name_source = 'custom' and display_name is not null
-         then display_name
-         else coalesce(gh_name, gh_login)
-    end as shown_name,
-    gh_avatar_url as shown_avatar
-  from public.profiles;
-
-grant select on public.profile_display to anon, authenticated;
 
 -- 6. Görsel bildirimi diye bir şey kalmadı.
 --    abuse_reports duruyor: yorumlar ve profiller için hâlâ gerekli.
