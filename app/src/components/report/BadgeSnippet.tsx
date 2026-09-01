@@ -14,10 +14,12 @@ export default function BadgeSnippet({
   owner,
   repo,
   score,
+  cardVersion,
 }: {
   owner: string;
   repo: string;
   score: number | null;
+  cardVersion?: string;
 }) {
   const [copied, setCopied] = useState(false);
   const badgeUrl = `https://img.shields.io/endpoint?url=${encodeURIComponent(`${SITE_URL}/badge/${owner}/${repo}.json`)}`;
@@ -62,6 +64,24 @@ export default function BadgeSnippet({
             {copied ? 'Copied' : 'Copy'}
           </button>
         </div>
+
+        {cardVersion && (
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--color-line)] pt-3">
+            <div className="min-w-0">
+              <p className="text-sm">Share card</p>
+              <p className="mt-0.5 text-xs text-[var(--color-muted)]">
+                A 1200×630 image of this verdict, refreshed every night. Made for posting.
+              </p>
+            </div>
+            <a
+              href={`${SITE_URL}/og/r/${owner}/${repo}.png?v=${cardVersion}`}
+              download={`${owner}-${repo}.png`}
+              className="btn btn-ghost shrink-0"
+            >
+              Download
+            </a>
+          </div>
+        )}
       </div>
     </Card>
   );

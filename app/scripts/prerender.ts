@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { renderCards, type CardData, type CardFact } from './card';
 const SUPABASE_URL = process.env.PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.PUBLIC_SUPABASE_ANON_KEY;
 const SITE = process.env.PUBLIC_SITE_URL ?? 'https://exc-analyzer.web.app';
@@ -119,11 +120,15 @@ function buildPage(shell: string, report: Report): string {
     `<meta property="og:title" content="${escapeHtml(title)}">`,
     `<meta property="og:description" content="${escapeHtml(description)}">`,
     `<meta property="og:url" content="${canonical}">`,
-    `<meta name="twitter:card" content="summary">`,
+    `<meta property="og:image" content="${cardSrc(report.owner, report.repo, report.updated_at.slice(0, 10))}">`,
+    `<meta property="og:image:width" content="1200">`,
+    `<meta property="og:image:height" content="630">`,
+    `<meta name="twitter:card" content="summary_large_image">`,
   ].join('\n    ');
   let html = shell
     .replace(/<title>[\s\S]*?<\/title>/, '')
     .replace(/<meta\s+name="description"[^>]*>/, '')
+    .replace(/\s*<meta\s+(?:property="og:|name="twitter:)[^>]*>/g, '')
     .replace('</head>', `    ${head}\n  </head>`);
   const readable = `
     <div id="exc-prerendered">
@@ -154,6 +159,66 @@ function groupTargets(reports: Report[]): Target[] {
     target.reports.sort((a, b) => a.kind.localeCompare(b.kind));
   }
   return [...map.values()];
+}
+
+function cardPath(owner: string, repo: string): string {
+  return repo ? `/og/r/${owner}/${repo}.png` : `/og/u/${owner}.png`;
+}
+
+function cardVersion(reports: Report[]): string {
+  return reports
+    .map((r) => r.updated_at.slice(0, 10))
+    .sort()
+    .at(-1)!;
+}
+
+function cardSrc(owner: string, repo: string, version: string): string {
+  return `${SITE}${cardPath(owner, repo)}?v=${version}`;
+}
+
+function cardFor(target: Target): CardData {
+  const label = target.repo ? `${target.owner}/${target.repo}` : target.owner;
+  const security = target.reports.find((r) => r.kind === 'security-score');
+  const score = security?.score ?? null;
+
+  let headline: string;
+  if (score === null) {
+    headline = `${target.reports.length} report${target.reports.length === 1 ? '' : 's'} on record`;
+  } else if (score >= 90) {
+    headline = 'Well defended';
+  } else if (score >= 75) {
+    headline = 'The basics are there, a few gaps remain';
+  } else {
+    headline = 'Several important things are missing';
+  }
+
+  const facts: CardFact[] = [];
+  if (security) {
+    const s = security.summary as Record<string, unknown>;
+    const criteria = Array.isArray(s.criteria) ? (s.criteria as { label: string; status: string }[]) : [];
+    const failing = criteria.filter((c) => c.status === 'fail');
+    if (failing.length === 0 && criteria.length > 0) facts.push({ text: 'Every criterion met' });
+    for (const c of failing.slice(0, 2)) facts.push({ text: `No ${c.label.toLowerCase()}`, missing: true });
+    if (failing.length > 2) facts.push({ text: `+${failing.length - 2} more`, missing: true });
+  }
+  const content = target.reports.find((r) => r.kind === 'content-audit');
+  if (content) {
+    const s = content.summary as Record<string, unknown>;
+    const present = Number(s.presentCount ?? 0);
+    const total = Number(s.totalCount ?? 0);
+    facts.push({ text: `${present}/${total} standard files`, missing: present < total });
+  }
+  if (facts.length === 0) {
+    facts.push(...target.reports.slice(0, 3).map((r) => ({ text: KIND_NAMES[r.kind] ?? r.kind })));
+  }
+
+  return {
+    label,
+    score,
+    headline,
+    facts: facts.slice(0, 3),
+    url: `${SITE.replace(/^https?:\/\//, '')}${hubUrl(target)}`.replace(/\/$/, ''),
+  };
 }
 
 function hubUrl(target: Target): string {
@@ -194,7 +259,10 @@ function buildHub(shell: string, target: Target): string {
     `<meta property="og:title" content="${escapeHtml(title)}">`,
     `<meta property="og:description" content="${escapeHtml(description)}">`,
     `<meta property="og:url" content="${canonical}">`,
-    `<meta name="twitter:card" content="summary">`,
+    `<meta property="og:image" content="${cardSrc(target.owner, target.repo, cardVersion(target.reports))}">`,
+    `<meta property="og:image:width" content="1200">`,
+    `<meta property="og:image:height" content="630">`,
+    `<meta name="twitter:card" content="summary_large_image">`,
   ].join('\n    ');
   const readable = `
     <div id="exc-prerendered">
@@ -206,6 +274,7 @@ function buildHub(shell: string, target: Target): string {
   return shell
     .replace(/<title>[\s\S]*?<\/title>/, '')
     .replace(/<meta\s+name="description"[^>]*>/, '')
+    .replace(/\s*<meta\s+(?:property="og:|name="twitter:)[^>]*>/g, '')
     .replace('</head>', `    ${head}\n  </head>`)
     .replace(/(<body[^>]*>)/, `$1${readable}`);
 }
@@ -256,6 +325,23 @@ async function main(): Promise<void> {
       .at(-1)!;
     urls.unshift({ loc: `${SITE}${url}`, lastmod });
   }
+  const cards = targets.map((target) => ({
+    data: cardFor(target),
+    outPath: cardPath(target.owner, target.repo).replace(/^\//, ''),
+  }));
+  cards.push({
+    data: {
+      label: 'EXC Analyzer',
+      score: null,
+      headline: 'Rate a repository before you depend on it',
+      facts: [{ text: 'Security score' }, { text: 'Content audit' }, { text: 'Actions audit' }],
+      url: `${SITE.replace(/^https?:\/\//, '')}/app`,
+    },
+    outPath: 'og/default.png',
+  });
+  const written = await renderCards(cards, PUBLIC_DIR);
+  console.log(`Rendered ${written} share cards.`);
+
   const sitemap = [
     '<?xml version="1.0" encoding="UTF-8"?>',
     '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',

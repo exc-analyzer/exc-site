@@ -58,6 +58,7 @@ app/.env
 .prerender.mjs
 
 public/badge/
+public/og/
 public/sitemap.xml
 public/robots.txt
 public/app/

@@ -137,6 +137,11 @@ export default function RepoHub({ owner, repo }: { owner: string; repo: string }
     ? `/app/?repo=${encodeURIComponent(`${owner}/${repo}`)}`
     : `/app/?user=${encodeURIComponent(owner)}`;
 
+  const cardVersion = (reports ?? [])
+    .map((r) => r.updated_at.slice(0, 10))
+    .sort()
+    .at(-1);
+
   const byKind = new Map((reports ?? []).map((r) => [r.kind, r]));
   const ordered = [...relevant].sort(
     (a, b) => Number(byKind.has(b.id)) - Number(byKind.has(a.id)),
@@ -249,7 +254,12 @@ export default function RepoHub({ owner, repo }: { owner: string; repo: string }
           </div>
 
           {security && repo && (
-            <BadgeSnippet owner={owner} repo={repo} score={security.score} />
+            <BadgeSnippet
+              owner={owner}
+              repo={repo}
+              score={security.score}
+              cardVersion={cardVersion}
+            />
           )}
 
           <Card>
