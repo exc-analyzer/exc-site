@@ -32,6 +32,8 @@ end $$;
 
 delete from public.reports;
 
+drop view if exists public.profile_display;
+
 create or replace function public.reports_rate_limit()
 returns trigger
 language plpgsql
@@ -133,4 +135,13 @@ select 'policies renamed' as step,
            and policyname ~ '^(kullanici|giris|profiller|raporlar|yorumlar|bildiren)') as leftover
 union all
 select 'reports cleared',
-       (select count(*) from public.reports);
+       (select count(*) from public.reports)
+union all
+select 'unused view dropped',
+       (select count(*) from information_schema.views
+         where table_schema = 'public' and table_name = 'profile_display')
+union all
+select 'sensitive columns exposed',
+       (select count(*) from information_schema.columns
+         where table_schema = 'public'
+           and column_name ~* 'email|token|secret|password|api_key');
