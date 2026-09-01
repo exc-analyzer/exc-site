@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getCommand } from '../../engine';
-import { loadRecentReports, reportPath, type StoredReport } from '../../lib/reports';
+import { loadRecentReports, type StoredReport } from '../../lib/reports';
 import { relativeTime } from '../../engine/shared';
 import { Badge, Card, Empty, type Tone } from './ui';
 
@@ -29,14 +29,14 @@ export default function RecentReports() {
         ) : (
           <ul className="divide-y divide-[var(--color-line)]">
             {reports.map((r) => {
-              const href = reportPath(r.owner, r.repo, r.kind);
+              const href = r.repo ? `/app/r/${r.owner}/${r.repo}/` : `/app/u/${r.owner}/`;
               const label = r.repo ? `${r.owner}/${r.repo}` : r.owner;
               const tone: Tone =
                 r.score === null ? 'muted' : r.score >= 90 ? 'good' : r.score >= 75 ? 'warn' : 'bad';
               return (
                 <li key={r.id}>
                   <a
-                    href={href ?? '#'}
+                    href={href}
                     className="group flex items-center justify-between gap-3 py-2.5"
                   >
                     <span className="min-w-0">

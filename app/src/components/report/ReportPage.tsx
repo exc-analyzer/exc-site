@@ -21,6 +21,10 @@ interface Target {
 
 const VALID_KINDS = new Set(COMMANDS.map((c) => c.id));
 
+function hubHref(target: { owner: string; repo: string }): string {
+  return target.repo ? `/app/r/${target.owner}/${target.repo}/` : `/app/u/${target.owner}/`;
+}
+
 type Route =
   | { view: 'hub'; owner: string; repo: string }
   | { view: 'report'; owner: string; repo: string; kind: CommandId }
@@ -120,7 +124,7 @@ function ReportDetail({ target: parsed }: { target: Target | null }) {
   if (state.kind === 'missing') {
     return (
       <div className="space-y-4">
-        <Header label={label} kind={state.target.kind} />
+        <Header label={label} kind={state.target.kind} hub={hubHref(state.target)} />
         <Card>
           <div className="px-6 py-8">
             <Empty>
@@ -139,7 +143,7 @@ function ReportDetail({ target: parsed }: { target: Target | null }) {
   const scanner = report.profiles?.gh_login;
   return (
     <div className="space-y-6">
-      <Header label={label} kind={target.kind} />
+      <Header label={label} kind={target.kind} hub={hubHref(target)} />
       <ResultView result={toCommandResult(report)} />
       <Card>
         <div className="flex flex-wrap items-center justify-between gap-4 px-6 py-4 text-xs text-[var(--color-muted)]">
@@ -192,12 +196,16 @@ function ReportDetail({ target: parsed }: { target: Target | null }) {
     </div>
   );
 }
-function Header({ label, kind }: { label: string; kind: CommandId }) {
+function Header({ label, kind, hub }: { label: string; kind: CommandId; hub: string }) {
   const command = getCommand(kind);
   return (
     <header>
       <p className="text-xs uppercase tracking-wider text-[var(--color-muted)]">{command.name}</p>
-      <h1 className="mt-1 font-mono text-xl tracking-tight">{label}</h1>
+      <h1 className="mt-1 font-mono text-xl tracking-tight">
+        <a href={hub} className="hover:text-[var(--color-secondary)]">
+          {label}
+        </a>
+      </h1>
       <p className="mt-1 text-sm text-[var(--color-muted)]">{command.summary}</p>
     </header>
   );

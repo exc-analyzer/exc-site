@@ -249,8 +249,33 @@ export default function CommandConsole() {
 
         {state.kind === 'done' && !hasToken && !command.sensitive && <SignInNudge />}
 
+        {state.kind === 'done' && !command.sensitive && <HubLink result={state.result} />}
+
         {state.kind === 'done' && <ResultView result={state.result} />}
       </div>
+    </div>
+  );
+}
+
+function HubLink({ result }: { result: CommandResult }) {
+  const target = reportTarget(result);
+  if (!target) return null;
+  const label = target.repo ? `${target.owner}/${target.repo}` : target.owner;
+  const href = target.repo
+    ? `/app/r/${target.owner}/${target.repo}/`
+    : `/app/u/${target.owner}/`;
+
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--color-line)] bg-[var(--color-surface)] px-5 py-4">
+      <div className="min-w-0">
+        <p className="text-sm">Everything known about {label}</p>
+        <p className="mt-0.5 text-xs text-[var(--color-muted)]">
+          The other scans, the README badge, the discussion, and Follow to hear when it changes.
+        </p>
+      </div>
+      <a href={href} className="btn btn-ghost shrink-0">
+        Open
+      </a>
     </div>
   );
 }
