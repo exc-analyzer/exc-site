@@ -1,14 +1,3 @@
--- =============================================================================
--- EXC Analyzer topluluk platformu - Faz 3: yorumlar ve oylar
---
--- Supabase panelinde SQL Editor'e yapistirip calistir.
--- 02_reports.sql'den SONRA calistirilmali.
---
--- Topluluk bos bir forumda degil, raporlarin uzerinde kuruluyor. Her rapor
--- zaten bir konu basligi: "bu deponun guvenlik puani 60, neden?" Insanlarin
--- konusacak somut bir seyi oluyor.
--- =============================================================================
-
 create table if not exists public.comments (
   id          uuid        primary key default gen_random_uuid(),
   report_id   uuid        not null references public.reports (id) on delete cascade,
@@ -16,7 +5,7 @@ create table if not exists public.comments (
   parent_id   uuid        references public.comments (id) on delete cascade,
   body        text        not null check (char_length(btrim(body)) between 1 and 4000),
   vote_score  integer     not null default 0,
-  -- Silinen yorum satiri kalir: altindaki yanitlar oksuz kalmasin.
+
   deleted_at  timestamptz,
   created_at  timestamptz not null default now(),
   updated_at  timestamptz not null default now()
@@ -28,32 +17,22 @@ create index if not exists comments_parent_idx  on public.comments (parent_id);
 
 alter table public.comments enable row level security;
 
-drop policy if exists "yorumlar herkese acik okunur" on public.comments;
-create policy "yorumlar herkese acik okunur"
+drop policy if exists "comments are publicly readable" on public.comments;
+create policy "comments are publicly readable"
   on public.comments for select
   using (true);
 
-drop policy if exists "kullanici kendi adina yorum yazar" on public.comments;
-create policy "kullanici kendi adina yorum yazar"
+drop policy if exists "user comments as themselves" on public.comments;
+create policy "user comments as themselves"
   on public.comments for insert
   with check ((select auth.uid()) = author_id);
 
-drop policy if exists "kullanici kendi yorumunu duzenler" on public.comments;
-create policy "kullanici kendi yorumunu duzenler"
+drop policy if exists "user edits own comment" on public.comments;
+create policy "user edits own comment"
   on public.comments for update
   using ((select auth.uid()) = author_id)
   with check ((select auth.uid()) = author_id);
 
--- Gercek silme yok: deleted_at isaretlenir, boylece yanit zinciri bozulmaz.
-
--- -----------------------------------------------------------------------------
--- Yorum yazma kisitlari.
---
--- Iki kural var ve ikisi de spam icin:
---   1. Yeni hesap ilk 24 saat yorum yazamaz. Toplu acilan hesaplarin ilk
---      dakikada icerik doldurmasini engeller.
---   2. Saatte en fazla 20 yorum.
--- -----------------------------------------------------------------------------
 create or replace function public.comments_guard()
 returns trigger
 language plpgsql
@@ -70,7 +49,7 @@ begin
     where id = new.author_id;
 
     if account_created is null or account_created > now() - interval '24 hours' then
-      raise exception 'Hesabın açılmasının üzerinden 24 saat geçmeden yorum yazılamaz.';
+      raise exception 'Comments open 24 hours after the account is created.';
     end if;
 
     select count(*) into recent
@@ -79,13 +58,12 @@ begin
       and created_at > now() - interval '1 hour';
 
     if recent >= 20 then
-      raise exception 'Saatlik yorum sınırına ulaşıldı.';
+      raise exception 'Hourly comment limit reached.';
     end if;
   end if;
 
   if tg_op = 'UPDATE' then
-    -- Yazar, rapor ve olusturma zamani degistirilemez; oy sayisi istemciye
-    -- birakilmaz, asagidaki oy tetikleyicisi yonetir.
+
     new.author_id  := old.author_id;
     new.report_id  := old.report_id;
     new.parent_id  := old.parent_id;
@@ -108,10 +86,6 @@ create trigger comments_guard_upd
   before update on public.comments
   for each row execute function public.comments_guard();
 
--- =============================================================================
--- Oylar
--- =============================================================================
-
 create table if not exists public.votes (
   user_id     uuid        not null references public.profiles (id) on delete cascade,
   target_type text        not null check (target_type in ('report', 'comment')),
@@ -125,36 +99,27 @@ create index if not exists votes_target_idx on public.votes (target_type, target
 
 alter table public.votes enable row level security;
 
--- Kimin ne oyladigi herkese acik degil; yalnizca kendi oyunu gorursun.
--- Toplam puan zaten hedef satirinda tutuluyor.
-drop policy if exists "kullanici kendi oyunu gorur" on public.votes;
-create policy "kullanici kendi oyunu gorur"
+drop policy if exists "user sees own vote" on public.votes;
+create policy "user sees own vote"
   on public.votes for select
   using ((select auth.uid()) = user_id);
 
-drop policy if exists "kullanici kendi adina oy verir" on public.votes;
-create policy "kullanici kendi adina oy verir"
+drop policy if exists "user votes as themselves" on public.votes;
+create policy "user votes as themselves"
   on public.votes for insert
   with check ((select auth.uid()) = user_id);
 
-drop policy if exists "kullanici oyunu degistirir" on public.votes;
-create policy "kullanici oyunu degistirir"
+drop policy if exists "user changes own vote" on public.votes;
+create policy "user changes own vote"
   on public.votes for update
   using ((select auth.uid()) = user_id)
   with check ((select auth.uid()) = user_id);
 
-drop policy if exists "kullanici oyunu geri alir" on public.votes;
-create policy "kullanici oyunu geri alir"
+drop policy if exists "user withdraws own vote" on public.votes;
+create policy "user withdraws own vote"
   on public.votes for delete
   using ((select auth.uid()) = user_id);
 
--- -----------------------------------------------------------------------------
--- Toplam oy puani hedef satirinda tutuluyor.
---
--- Her okumada saymak yerine tetikleyiciyle guncelleniyor: rapor listeleri
--- puana gore siralanacak ve her satir icin ayri sayim ucretsiz katmanda
--- pahali olurdu.
--- -----------------------------------------------------------------------------
 create or replace function public.apply_vote()
 returns trigger
 language plpgsql
@@ -195,9 +160,6 @@ create trigger votes_apply
   after insert or update or delete on public.votes
   for each row execute function public.apply_vote();
 
--- =============================================================================
--- Izinler
--- =============================================================================
 grant select on public.comments to anon, authenticated;
 grant insert, update on public.comments to authenticated;
 

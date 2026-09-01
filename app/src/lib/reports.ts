@@ -1,18 +1,5 @@
-/**
- * Rapor kaydı ve okuması.
- *
- * Bir rapor, taramanın kalıcı ve paylaşılabilir hâlidir. İki işi birden yapar:
- * pahalı taramayı tekrar etmemek için önbellek, ve topluluğun üzerinde
- * konuşacağı içerik.
- *
- * Hassas komutların sonuçları buraya HİÇ yazılmaz. Bu kural üç yerde birden
- * uygulanır: komut tanımındaki `sensitive` bayrağı, aşağıdaki kontrol ve
- * veritabanındaki `reports_kind_allowed` kısıtı. Üçü de bağımsız; birinde
- * hata olsa diğerleri tutar.
- */
 import { supabase } from './supabase';
 import { getCommand, type CommandId, type CommandResult } from '../engine';
-
 export interface StoredReport {
   id: string;
   owner: string;
@@ -24,22 +11,13 @@ export interface StoredReport {
   created_at: string;
   updated_at: string;
   created_by: string | null;
-  /** Son tarayanın profili; okurken birleştirilir. */
   profiles?: { gh_login: string; avatar_url: string | null } | null;
 }
-
 export interface ReportTarget {
   owner: string;
   repo: string;
   score: number | null;
 }
-
-/**
- * Sonucun hangi hedefe ait olduğunu ve varsa puanını çıkarır.
- *
- * dork-scan için null döner: o komut belirli bir depoya değil, GitHub
- * genelinde bir aramaya karşılık gelir ve zaten hiçbir zaman kaydedilmez.
- */
 export function reportTarget(result: CommandResult): ReportTarget | null {
   switch (result.id) {
     case 'dork-scan':
@@ -54,28 +32,13 @@ export function reportTarget(result: CommandResult): ReportTarget | null {
       return { owner: result.data.owner, repo: result.data.repo, score: null };
   }
 }
-
-/**
- * Raporun kalıcı adresi. Hassas komutlarda adres yoktur.
- *
- * Sondaki eğik çizgi bilinçli. Gecelik iş raporu
- * `<yol>/index.html` olarak yazıyor; eğik çizgisiz istenirse Firebase önce
- * 301 ile çizgili hâline yönlendiriyor. Henüz üretilmemiş raporlar ise
- * yönlendirme kuralıyla doğrudan 200 dönüyordu — aynı ürün iki farklı
- * davranıyordu. Çizgiyle ikisi de tek adımda 200 dönüyor ve canonical adres
- * sunulan adresle birebir aynı oluyor.
- */
 export function reportPath(owner: string, repo: string, kind: CommandId): string | null {
   if (getCommand(kind).sensitive) return null;
   return repo ? `/app/r/${owner}/${repo}/${kind}/` : `/app/u/${owner}/${kind}/`;
 }
-
 export async function saveReport(result: CommandResult): Promise<StoredReport | null> {
   if (!supabase) return null;
-
-  // Hassas komutlar hicbir kosulda kaydedilmez.
   if (getCommand(result.id).sensitive) return null;
-
   const { data: sessionData } = await supabase.auth.getSession();
   const userId = sessionData.session?.user.id;
   if (!userId) return null;
@@ -83,7 +46,6 @@ export async function saveReport(result: CommandResult): Promise<StoredReport | 
   const target = reportTarget(result);
   if (!target) return null;
   const { owner, repo, score } = target;
-
   const { data, error } = await supabase
     .from('reports')
     .upsert(
@@ -99,13 +61,10 @@ export async function saveReport(result: CommandResult): Promise<StoredReport | 
     )
     .select()
     .single();
-
   if (error) {
-    // Kaydedememek taramayi bosa cikarmaz; kullanici sonucu zaten goruyor.
-    console.warn('Rapor kaydedilemedi:', error.message);
+    console.warn('Could not save report:', error.message);
     return null;
   }
-
   return data as StoredReport;
 }
 
@@ -115,7 +74,6 @@ export async function loadReport(
   kind: CommandId,
 ): Promise<StoredReport | null> {
   if (!supabase) return null;
-
   const { data, error } = await supabase
     .from('reports')
     .select('*, profiles:created_by (gh_login, avatar_url)')
@@ -123,50 +81,42 @@ export async function loadReport(
     .eq('repo', repo)
     .eq('kind', kind)
     .maybeSingle();
-
   if (error) {
-    console.warn('Rapor okunamadı:', error.message);
+    console.warn('Could not load report:', error.message);
     return null;
   }
   return (data as StoredReport | null) ?? null;
 }
 
-/** Bir hedef için kayıtlı bütün raporlar (hangi komutlar çalıştırılmış). */
 export async function loadTargetReports(owner: string, repo: string): Promise<StoredReport[]> {
   if (!supabase) return [];
-
   const { data, error } = await supabase
     .from('reports')
     .select('*, profiles:created_by (gh_login, avatar_url)')
     .eq('owner', owner)
     .eq('repo', repo)
     .order('updated_at', { ascending: false });
-
   if (error) {
-    console.warn('Raporlar okunamadı:', error.message);
+    console.warn('Could not load reports:', error.message);
     return [];
   }
   return (data as StoredReport[]) ?? [];
 }
 
-/** Akış için son taranan raporlar. */
 export async function loadRecentReports(limit = 20): Promise<StoredReport[]> {
   if (!supabase) return [];
-
   const { data, error } = await supabase
     .from('reports')
     .select('*, profiles:created_by (gh_login, avatar_url)')
     .order('updated_at', { ascending: false })
     .limit(limit);
-
   if (error) {
-    console.warn('Akış okunamadı:', error.message);
+    console.warn('Could not load feed:', error.message);
     return [];
   }
   return (data as StoredReport[]) ?? [];
 }
 
-/** Sonucu tekrar CommandResult biçimine getirir (görünüm bileşenleri onu bekler). */
 export function toCommandResult(report: StoredReport): CommandResult {
   return { id: report.kind, data: report.summary } as CommandResult;
 }

@@ -1,25 +1,14 @@
-/**
- * Profil okuma ve güncelleme.
- *
- * KİMLİK ile GÖRÜNÜM ayrı tutuluyor. `gh_login` her zaman GitHub'dan gelen
- * doğrulanmış kullanıcı adı ve değiştirilemiyor; kullanıcının seçtiği ad
- * yalnızca bir görünen isim. Böylece biri kendine "torvalds" görünen adını
- * verse bile gerçek kimliği (@brgkdm) yanında duruyor ve taklit mümkün olmuyor.
- */
 import { supabase } from './supabase';
 import { friendlyDbError } from './dbError';
-
 export const ACCENTS = [
-  { id: 'indigo', label: 'İndigo', color: '#6366f1' },
+  { id: 'indigo', label: 'Indigo', color: '#6366f1' },
   { id: 'violet', label: 'Mor', color: '#8b5cf6' },
   { id: 'pink', label: 'Pembe', color: '#ec4899' },
-  { id: 'emerald', label: 'Yeşil', color: '#34d399' },
+  { id: 'emerald', label: 'Green', color: '#34d399' },
   { id: 'amber', label: 'Amber', color: '#fbbf24' },
 ] as const;
-
 export type AccentId = (typeof ACCENTS)[number]['id'];
 export type SourceChoice = 'github' | 'custom';
-
 export interface Profile {
   id: string;
   gh_login: string;
@@ -33,47 +22,30 @@ export interface Profile {
   created_at: string;
   onboarded_at: string | null;
 }
-
-/** Ekranda hangi ad ve görselin kullanılacağını belirler. */
 export function shownName(p: Profile): string {
   if (p.name_source === 'custom' && p.display_name?.trim()) return p.display_name;
   return p.gh_name?.trim() || p.gh_login;
 }
 
-/**
- * Profil görseli her zaman GitHub'dan gelir.
- *
- * Kullanıcıdan görsel yüklemek, uygunsuz içerik sorumluluğunu bize
- * getiriyordu ve sıfır bütçeyle otomatik denetim mümkün değildi. Görseli
- * GitHub'a bırakmak bu sorunu çözmüyor, ortadan kaldırıyor: doğrulamayı,
- * denetlemeyi ve ihlalde hesabı kapatmayı GitHub zaten yapıyor.
- */
 export function shownAvatar(p: Profile): string | null {
   return p.gh_avatar_url;
 }
-
 export function accentColor(id: AccentId): string {
   return ACCENTS.find((a) => a.id === id)?.color ?? '#6366f1';
 }
-
 export async function loadMyProfile(): Promise<Profile | null> {
   if (!supabase) return null;
-
   const { data: sessionData } = await supabase.auth.getSession();
   const session = sessionData.session;
   if (!session) return null;
-
   const { data, error } = await supabase
     .from('profiles')
     .select('*')
     .eq('id', session.user.id)
     .maybeSingle();
-
   if (error || !data) return null;
   const profile = data as Profile;
 
-  // Bu alanlar 04 numarali gecisten once acilmis hesaplarda bos olabilir.
-  // Oturumdaki dogrulanmis GitHub bilgisinden bir kez dolduruluyor.
   const meta = session.user.user_metadata ?? {};
   const patch: Record<string, string> = {};
   if (!profile.gh_avatar_url && typeof meta.avatar_url === 'string') {
@@ -84,15 +56,11 @@ export async function loadMyProfile(): Promise<Profile | null> {
   }
 
   if (Object.keys(patch).length > 0) {
-    // gh_* alanlari koruma tetikleyicisiyle kilitli oldugu icin dogrudan
-    // guncellenemiyor; bu yuzden yalnizca yerel kopya tamamlaniyor.
-    // Kalici doldurma kayit aninda yapiliyor (handle_new_user).
+
     Object.assign(profile, patch);
   }
-
   return profile;
 }
-
 export interface ProfilePatch {
   display_name?: string | null;
   name_source?: SourceChoice;
@@ -100,14 +68,12 @@ export interface ProfilePatch {
   accent?: AccentId;
   onboarded_at?: string;
 }
-
 export async function saveMyProfile(patch: ProfilePatch): Promise<{ error: string | null }> {
-  if (!supabase) return { error: 'Bağlantı yok.' };
+  if (!supabase) return { error: 'No connection.' };
 
   const { data: sessionData } = await supabase.auth.getSession();
   const userId = sessionData.session?.user.id;
-  if (!userId) return { error: 'Giriş yapılmamış.' };
-
+  if (!userId) return { error: 'Not signed in.' };
   const { error } = await supabase.from('profiles').update(patch).eq('id', userId);
   return { error: friendlyDbError(error) };
 }

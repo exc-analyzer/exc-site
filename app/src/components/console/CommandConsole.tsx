@@ -23,9 +23,10 @@ type RunState =
       kind: 'done';
       result: CommandResult;
       remaining: number | null;
+      limit: number | null;
       ms: number;
-      /** Hassas olmayan komutlarda raporun kalici adresi. */
       permalink: string | null;
+      saving: boolean;
     }
   | { kind: 'error'; message: string; needsReconnect?: boolean };
 
@@ -47,8 +48,13 @@ export default function CommandConsole() {
   const [hasToken, setHasToken] = useState(false);
 
   useEffect(() => {
-    setHasToken(Boolean(getGithubToken()));
+    const sync = () => setHasToken(Boolean(getGithubToken()));
+    sync();
+    window.addEventListener('focus', sync);
+    return () => window.removeEventListener('focus', sync);
   }, []);
+
+  const locked = Boolean(command.requiresAuth) && !hasToken;
 
   function select(id: CommandId) {
     setActiveId(id);
@@ -58,41 +64,42 @@ export default function CommandConsole() {
 
   async function run() {
     const token = getGithubToken();
-    if (!token) {
+    if (command.requiresAuth && !token) {
       setState({
         kind: 'error',
-        message:
-          'GitHub bağlantısı yok. Taramalar senin kendi API kotanla çalıştığı için giriş gerekiyor.',
+        message: command.authReason ?? 'This command needs a signed-in GitHub session.',
         needsReconnect: true,
       });
       return;
     }
 
     setState({ kind: 'running' });
-    const gh = new GitHubClient(token);
+    const gh = new GitHubClient(token ?? undefined);
     const started = performance.now();
 
     try {
       const result = await runCommand(gh, activeId, values);
+      const canSave = Boolean(token) && !command.sensitive;
 
       setState({
         kind: 'done',
         result,
         remaining: gh.rateLimit.remaining,
+        limit: gh.rateLimit.limit,
         ms: Math.round(performance.now() - started),
         permalink: null,
+        saving: canSave,
       });
 
-      // Kayit sonucu gostermeyi geciktirmemeli: tarama zaten bitti, kalici
-      // adres gelince arayuze eklenir. Hassas komutlarda saveReport zaten
-      // hicbir sey yapmadan null doner.
+      if (!canSave) return;
+
       void saveReport(result).then((saved) => {
-        if (!saved) return;
         const target = reportTarget(result);
-        if (!target) return;
-        const link = reportPath(target.owner, target.repo, result.id);
+        const link = saved && target ? reportPath(target.owner, target.repo, result.id) : null;
         setState((prev) =>
-          prev.kind === 'done' && prev.result === result ? { ...prev, permalink: link } : prev,
+          prev.kind === 'done' && prev.result === result
+            ? { ...prev, permalink: link, saving: false }
+            : prev,
         );
       });
     } catch (err) {
@@ -101,23 +108,29 @@ export default function CommandConsole() {
         setHasToken(false);
         setState({
           kind: 'error',
-          message: 'GitHub oturumunun süresi dolmuş. Yeniden bağlanman gerekiyor.',
+          message: 'Your GitHub session expired. Connect again to keep the higher limit.',
           needsReconnect: true,
         });
       } else if (err instanceof RateLimitError) {
-        const at = err.resetAt ? err.resetAt.toLocaleTimeString('tr-TR') : 'birazdan';
-        setState({ kind: 'error', message: `GitHub API kotan doldu. ${at} sonrasında tekrar dene.` });
+        const at = err.resetAt ? err.resetAt.toLocaleTimeString('en-GB') : 'shortly';
+        setState({
+          kind: 'error',
+          message: token
+            ? `You have used up your GitHub API quota. It resets at ${at}.`
+            : `Guest scanning is capped at 60 requests an hour and yours are gone until ${at}. Signing in with GitHub raises that to 5,000.`,
+          needsReconnect: !token,
+        });
       } else if (err instanceof NetworkError) {
         setState({
           kind: 'error',
-          message: `${err.message} — istek tarayıcıdan çıkamadı. En sık nedeni bir reklam/izleyici engelleyici ya da tarayıcı kalkanı. Brave kullanıyorsan adres çubuğundaki kalkan simgesinden bu site için Shields'ı kapatıp tekrar dene.`,
+          message: `${err.message} — the request never left the browser. Usually that is an ad or tracker blocker, or a browser shield. On Brave, open the shield icon in the address bar and turn Shields off for this site, then try again.`,
         });
       } else if (err instanceof NotFoundError) {
-        setState({ kind: 'error', message: err.message || 'Aradığın şey bulunamadı.' });
+        setState({ kind: 'error', message: err.message || 'Could not find what you asked for.' });
       } else {
         setState({
           kind: 'error',
-          message: err instanceof Error ? err.message : 'Beklenmeyen bir hata oluştu.',
+          message: err instanceof Error ? err.message : 'Something unexpected went wrong.',
         });
       }
     }
@@ -125,7 +138,7 @@ export default function CommandConsole() {
 
   return (
     <div className="grid gap-8 lg:grid-cols-[15rem_minmax(0,1fr)]">
-      <Sidebar activeId={activeId} onSelect={select} />
+      <Sidebar activeId={activeId} onSelect={select} hasToken={hasToken} />
 
       <div className="min-w-0 space-y-6">
         <header>
@@ -138,9 +151,18 @@ export default function CommandConsole() {
 
         {command.sensitive && (
           <p className="rounded-lg border border-amber-900/60 bg-amber-950/20 px-4 py-3 text-xs text-amber-200/90">
-            Hassas komut. Sonucu kaydedilmez, paylaşılabilir adresi olmaz, topluluk akışına düşmez.
-            Bulunan değerler yalnızca maskeli gösterilir.
+            Sensitive command. The result is never saved, has no shareable address, and never
+            reaches the community feed. Anything found is shown masked.
           </p>
+        )}
+
+        {locked && (
+          <div className="rounded-lg border border-[var(--color-line)] bg-[var(--color-surface)] px-4 py-3 text-xs">
+            <p className="text-[var(--color-text)]">This one needs a GitHub session</p>
+            <p className="mt-1 text-[var(--color-muted)]">
+              {command.authReason} Every other command runs without an account.
+            </p>
+          </div>
         )}
 
         <form
@@ -164,21 +186,22 @@ export default function CommandConsole() {
           <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
             <button
               type="submit"
-              disabled={state.kind === 'running'}
+              disabled={state.kind === 'running' || locked}
               className="rounded-lg border border-[var(--color-line)] bg-[var(--color-bg)] px-5 py-2 text-sm font-medium transition hover:border-[var(--color-line-active)] disabled:opacity-50"
             >
-              {state.kind === 'running' ? 'Çalışıyor…' : 'Çalıştır'}
+              {state.kind === 'running' ? 'Running…' : 'Run'}
             </button>
 
             {state.kind === 'done' && (
               <p className="text-xs text-[var(--color-muted)]">
                 {state.ms} ms
-                {state.remaining !== null && ` · kalan istek hakkın: ${state.remaining}`}
+                {state.remaining !== null &&
+                  ` · ${state.remaining}${state.limit ? `/${state.limit}` : ''} requests left`}
               </p>
             )}
-            {!hasToken && state.kind === 'idle' && (
+            {state.kind !== 'done' && !hasToken && !locked && (
               <p className="text-xs text-[var(--color-muted)]">
-                Çalıştırmak için yukarıdan GitHub&apos;a bağlan.
+                Running as a guest: 60 requests an hour.
               </p>
             )}
           </div>
@@ -189,7 +212,7 @@ export default function CommandConsole() {
             <p className="text-red-300">{state.message}</p>
             {state.needsReconnect && (
               <p className="mt-2 text-[var(--color-muted)]">
-                Sayfanın üstündeki karttan GitHub&apos;a yeniden bağlan.
+                Connect from the card at the top of the page.
               </p>
             )}
           </div>
@@ -197,11 +220,17 @@ export default function CommandConsole() {
 
         {state.kind === 'running' && (
           <div className="rounded-xl border border-[var(--color-line)] bg-[var(--color-surface)] px-6 py-8 text-center text-sm text-[var(--color-muted)]">
-            Tarama senin tarayıcında çalışıyor…
+            Scanning in your browser…
           </div>
         )}
 
+        {state.kind === 'done' && state.saving && (
+          <p className="text-xs text-[var(--color-muted)]">Saving this report…</p>
+        )}
+
         {state.kind === 'done' && state.permalink && <Permalink href={state.permalink} />}
+
+        {state.kind === 'done' && !hasToken && !command.sensitive && <SignInNudge />}
 
         {state.kind === 'done' && <ResultView result={state.result} />}
       </div>
@@ -209,16 +238,31 @@ export default function CommandConsole() {
   );
 }
 
+function SignInNudge() {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--color-line)] bg-[var(--color-surface)] px-5 py-4">
+      <div className="min-w-0">
+        <p className="text-sm">This result lives only in this tab</p>
+        <p className="mt-0.5 text-xs text-[var(--color-muted)]">
+          Sign in to keep it at a permanent address, get a README badge, and let others comment on
+          it.
+        </p>
+      </div>
+      <a href="/app/" className="btn btn-ghost shrink-0">
+        Sign in
+      </a>
+    </div>
+  );
+}
+
 function Permalink({ href }: { href: string }) {
   const [copied, setCopied] = useState(false);
-  // Paylasilacak adres her zaman yayindaki site; yerelde calisirken
-  // kopyalanan bir localhost adresi baskasinda acilmaz.
   const full = `${SITE_URL}${href}`;
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--color-line)] bg-[var(--color-surface)] px-5 py-3">
       <div className="min-w-0">
-        <p className="text-xs text-[var(--color-muted)]">Bu raporun kalıcı adresi</p>
+        <p className="text-xs text-[var(--color-muted)]">Permanent address for this report</p>
         <a href={href} className="block truncate font-mono text-xs text-sky-400 hover:underline">
           {full}
         </a>
@@ -233,7 +277,7 @@ function Permalink({ href }: { href: string }) {
         }}
         className="shrink-0 rounded-lg border border-[var(--color-line)] px-3 py-1.5 text-xs transition hover:border-[var(--color-line-active)]"
       >
-        {copied ? 'Kopyalandı' : 'Kopyala'}
+        {copied ? 'Copied' : 'Copy'}
       </button>
     </div>
   );
@@ -242,9 +286,11 @@ function Permalink({ href }: { href: string }) {
 function Sidebar({
   activeId,
   onSelect,
+  hasToken,
 }: {
   activeId: CommandId;
   onSelect: (id: CommandId) => void;
+  hasToken: boolean;
 }) {
   return (
     <nav className="lg:sticky lg:top-6 lg:self-start">
@@ -257,18 +303,27 @@ function Sidebar({
             <ul className="space-y-0.5">
               {COMMANDS.filter((c) => c.category === (category.id as CommandCategory)).map((c) => {
                 const active = c.id === activeId;
+                const needsAuth = Boolean(c.requiresAuth) && !hasToken;
                 return (
                   <li key={c.id}>
                     <button
                       type="button"
                       onClick={() => onSelect(c.id)}
-                      className={`w-full rounded-lg px-3 py-1.5 text-left text-sm transition ${
+                      className={`flex w-full items-center justify-between gap-2 rounded-lg px-3 py-1.5 text-left text-sm transition ${
                         active
                           ? 'bg-[var(--color-surface)] text-[var(--color-text)]'
                           : 'text-[var(--color-muted)] hover:text-[var(--color-text)]'
                       }`}
                     >
-                      {c.name}
+                      <span className="min-w-0 truncate">{c.name}</span>
+                      {needsAuth && (
+                        <span
+                          title="Needs a GitHub session"
+                          className="shrink-0 text-[10px] uppercase tracking-wider text-[var(--color-faint)]"
+                        >
+                          sign in
+                        </span>
+                      )}
                     </button>
                   </li>
                 );

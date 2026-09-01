@@ -1,39 +1,13 @@
-/**
- * Depo güvenlik puanlaması.
- *
- * Kaynak: exc_analyzer/commands/security_score.py
- *
- * CLI'ye göre tek davranış farkı bilinçli bir DÜZELTMEdir:
- *
- *   CLI, branch protection ucundan 200 dışında bir yanıt alırsa 10 puan
- *   düşürüyor. Ama o uç yalnızca depoya admin erişimi olanlara açıktır;
- *   başkasının deposunda 403/404 döner. Yani CLI, sahibi olmadığın her depoyu
- *   haksız yere cezalandırıyor — torvalds/linux üzerinde ölçüldü: CLI 60/100
- *   verip "Dal Koruması: Devre Dışı" diyor, oysa koruma var, CLI okuyamıyor.
- *
- *   Ayrım, deponun `permissions.admin` alanına bakılarak yapılıyor. Ölçtük:
- *   GitHub bu uçta "Branch not protected" gibi açıklayıcı bir mesaj DÖNMÜYOR,
- *   her iki durumda da düz 404 "Not Found" veriyor. Dolayısıyla mesaja
- *   bakarak ayrım yapılamaz. Yönetici isek 404 gerçekten "koruma yok"
- *   demektir ve puan düşer; değilsek bilgi bize kapalıdır, kriter puanlamadan
- *   çıkarılır ve "bilinmiyor" olarak gösterilir.
- *
- * Aynı düzeltme CLI'ye de uygulanmalıdır.
- */
 import { GitHubClient } from '../lib/github';
-
 export type CriterionStatus = 'pass' | 'fail' | 'unknown';
-
 export interface Criterion {
   id: string;
   label: string;
   weight: number;
   status: CriterionStatus;
   detail: string;
-  /** Nasıl düzeltilir. Rapor dili "utandırma" değil "şu adımı at". */
   fix?: string;
 }
-
 export interface SecurityScoreResult {
   owner: string;
   repo: string;
@@ -52,18 +26,9 @@ interface RepoInfo {
   has_projects: boolean;
   open_issues_count: number;
   default_branch: string;
-  /**
-   * Yalnizca kimlikli isteklerde gelir. Yonetici olup olmadigimizi buradan
-   * ogreniyoruz; korumanin gercekten kapali mi yoksa okunamaz mi oldugunu
-   * ayirmanin tek guvenilir yolu bu.
-   */
   permissions?: { admin?: boolean } | null;
 }
 
-/**
- * Dosya verilen yollardan birinde var mı?
- * true = var, false = hiçbirinde yok, null = emin değiliz (yetki sorunu).
- */
 async function fileExists(
   gh: GitHubClient,
   owner: string,
@@ -78,22 +43,13 @@ async function fileExists(
   }
   return sawUnexpected ? null : false;
 }
-
-/**
- * Lisans adını okunur hale getirir.
- *
- * GitHub, sınıflandıramadığı lisanslar için spdx_id alanına "NOASSERTION"
- * yazar. Bunu ekrana basmak kimseye bir şey anlatmaz; kullanıcı lisansın
- * bozuk olduğunu sanır. Oysa dosya vardır, GitHub sadece tanıyamamıştır.
- */
 function licenseLabel(license: RepoInfo['license']): string {
-  if (!license) return 'Yok';
+  if (!license) return 'None';
   const spdx = license.spdx_id;
   if (spdx && spdx !== 'NOASSERTION') return spdx;
   if (license.name && license.name !== 'Other') return license.name;
-  return 'Var, ancak GitHub türünü tanımlayamadı';
+  return 'Present, but GitHub could not identify it';
 }
-
 export async function securityScore(
   gh: GitHubClient,
   owner: string,
@@ -102,66 +58,59 @@ export async function securityScore(
   const info = await gh.get<RepoInfo>(`/repos/${owner}/${repo}`);
   const isAdmin = info.permissions?.admin === true;
   const criteria: Criterion[] = [];
-
   criteria.push({
     id: 'license',
-    label: 'Lisans',
+    label: 'License',
     weight: 10,
     status: info.license ? 'pass' : 'fail',
     detail: licenseLabel(info.license),
     fix: info.license
       ? undefined
-      : 'Depoya bir LICENSE dosyası ekle; lisansı olmayan kod hukuken kullanılamaz.',
+      : 'Add a LICENSE file. Without one the code cannot legally be reused, so nobody can depend on it.',
   });
-
   criteria.push({
     id: 'issues',
-    label: 'Issue takibi',
+    label: 'Issue tracker',
     weight: 10,
     status: info.has_issues ? 'pass' : 'fail',
-    detail: info.has_issues ? 'Açık' : 'Kapalı',
+    detail: info.has_issues ? 'Open' : 'Disabled',
     fix: info.has_issues
       ? undefined
-      : 'Issue sekmesini aç; güvenlik sorunlarının bildirilebileceği bir kanal olsun.',
+      : 'Enable issues so there is somewhere to report problems, including security ones.',
   });
-
   criteria.push({
     id: 'wiki',
     label: 'Wiki',
     weight: 5,
     status: info.has_wiki ? 'pass' : 'fail',
-    detail: info.has_wiki ? 'Açık' : 'Kapalı',
+    detail: info.has_wiki ? 'Open' : 'Disabled',
     fix: info.has_wiki
       ? undefined
-      : 'Wiki’yi aç ya da dokümantasyonu README içinde topla.',
+      : 'Enable the wiki, or keep the documentation in the README instead.',
   });
-
   criteria.push({
     id: 'projects',
     label: 'Projects',
     weight: 5,
     status: info.has_projects ? 'pass' : 'fail',
-    detail: info.has_projects ? 'Açık' : 'Kapalı',
+    detail: info.has_projects ? 'Open' : 'Disabled',
     fix: info.has_projects
       ? undefined
-      : 'Projects sekmesi açıkken yol haritası dışarıdan izlenebilir olur.',
+      : 'With Projects enabled, outsiders can follow where the work is heading.',
   });
-
   const open = info.open_issues_count ?? 0;
   criteria.push({
     id: 'open_issues',
-    label: 'Açık issue sayısı',
+    label: 'Open issues',
     weight: open > 50 ? 10 : 5,
     status: open > 10 ? 'fail' : 'pass',
     detail: String(open),
     fix:
       open > 10
-        ? 'Biriken issue’ları triyaj et; içlerinde bekleyen bir güvenlik raporu olabilir.'
+        ? 'Triage the backlog — a security report may be sitting unread among them.'
         : undefined,
   });
 
-  // GitHub SECURITY.md dosyasını kökte, .github/ ve docs/ altında arar.
-  // CLI yalnızca köke bakıyor; dosya .github/ altındaysa yanlış alarm veriyor.
   const hasSecurity = await fileExists(gh, owner, repo, [
     'SECURITY.md',
     '.github/SECURITY.md',
@@ -169,17 +118,15 @@ export async function securityScore(
   ]);
   criteria.push({
     id: 'security_md',
-    label: 'Güvenlik politikası',
+    label: 'Security policy',
     weight: 10,
     status: hasSecurity === null ? 'unknown' : hasSecurity ? 'pass' : 'fail',
-    detail: hasSecurity === null ? 'Okunamadı' : hasSecurity ? 'Var' : 'Yok',
+    detail: hasSecurity === null ? 'Could not read' : hasSecurity ? 'Present' : 'Missing',
     fix:
       hasSecurity === false
-        ? 'SECURITY.md ekle: açığı bulan biri sana nasıl ulaşacak, orada yazsın.'
+        ? 'Add SECURITY.md so someone who finds a vulnerability knows how to reach you privately.'
         : undefined,
   });
-
-  // --- Düzeltmenin uygulandığı yer ---
   const prot = await gh.raw(
     `/repos/${owner}/${repo}/branches/${info.default_branch}/protection`,
   );
@@ -187,74 +134,66 @@ export async function securityScore(
   let protDetail: string;
   if (prot.status === 200) {
     protStatus = 'pass';
-    protDetail = 'Etkin';
+    protDetail = 'Enabled';
   } else if (isAdmin && prot.status === 404) {
-    // Yoneticiyiz ve GitHub koruma bulamadi: gercekten kapali.
     protStatus = 'fail';
-    protDetail = 'Kapalı';
+    protDetail = 'Disabled';
   } else {
-    // Yonetici degiliz; bu uc bize kapali, korumanin durumunu bilemeyiz.
     protStatus = 'unknown';
-    protDetail = 'Bilinmiyor — bu bilgi yalnızca depo yöneticisine açık';
+    protDetail = 'Unknown — only repository admins can see this';
   }
   criteria.push({
     id: 'branch_protection',
-    label: `Dal koruması (${info.default_branch})`,
+    label: `Branch protection (${info.default_branch})`,
     weight: 10,
     status: protStatus,
     detail: protDetail,
     fix:
       protStatus === 'fail'
-        ? 'Ana dala koruma ekle: zorla push ve gözden geçirmesiz birleştirme kapansın.'
+        ? 'Protect the default branch: block force pushes and merges without review.'
         : undefined,
   });
-
   const hasDependabot = await fileExists(gh, owner, repo, [
     '.github/dependabot.yml',
     '.github/dependabot.yaml',
   ]);
   criteria.push({
     id: 'dependabot',
-    label: 'Dependabot yapılandırması',
+    label: 'Dependabot config',
     weight: 5,
     status: hasDependabot === null ? 'unknown' : hasDependabot ? 'pass' : 'fail',
-    detail: hasDependabot === null ? 'Okunamadı' : hasDependabot ? 'Var' : 'Yok',
+    detail: hasDependabot === null ? 'Could not read' : hasDependabot ? 'Present' : 'Missing',
     fix:
       hasDependabot === false
-        ? '.github/dependabot.yml ekle; bağımlılık güncellemeleri otomatik PR olarak gelsin.'
+        ? 'Add .github/dependabot.yml so dependency updates arrive as pull requests instead of piling up.'
         : undefined,
   });
-
   const scan = await gh.raw<unknown[]>(`/repos/${owner}/${repo}/code-scanning/alerts`);
   let scanStatus: CriterionStatus;
   let scanDetail: string;
   if (scan.status === 200 && Array.isArray(scan.data)) {
     const n = scan.data.length;
     scanStatus = n > 0 ? 'fail' : 'pass';
-    scanDetail = n > 0 ? `${n} açık uyarı` : 'Açık uyarı yok';
+    scanDetail = n > 0 ? `${n} open alert${n === 1 ? '' : 's'}` : 'No open alerts';
   } else if (isAdmin && scan.status === 404) {
-    // Kod taramasi ucretsiz ve istege bagli; kurulmamis olmasi bir kusur
-    // sayilmiyor, bu yuzden puanlanmiyor ama durum acikca yaziliyor.
     scanStatus = 'unknown';
-    scanDetail = 'Kurulu değil (puanlamaya dahil değil)';
+    scanDetail = 'Not set up (not scored)';
   } else {
     scanStatus = 'unknown';
-    scanDetail = 'Bilinmiyor — uyarılar herkese açık değil';
+    scanDetail = 'Unknown — alerts are not public';
   }
   criteria.push({
     id: 'code_scanning',
-    label: 'Kod taraması uyarıları',
+    label: 'Code scanning alerts',
     weight: 10,
     status: scanStatus,
     detail: scanDetail,
-    fix: scanStatus === 'fail' ? 'Açık uyarıları gözden geçirip kapat.' : undefined,
+    fix: scanStatus === 'fail' ? 'Review and close the open alerts.' : undefined,
   });
-
   const lost = criteria
     .filter((c) => c.status === 'fail')
     .reduce((sum, c) => sum + c.weight, 0);
   const score = Math.max(0, 100 - lost);
-
   return {
     owner,
     repo,

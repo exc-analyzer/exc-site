@@ -4,25 +4,12 @@ import { loadRecentReports, reportPath, type StoredReport } from '../../lib/repo
 import { relativeTime } from '../../engine/shared';
 import { Badge, Card, Empty, type Tone } from './ui';
 
-/**
- * Son taranan raporlar.
- *
- * Bu liste olmadan hiç kimse başkasının raporunu göremez ve topluluk görünmez
- * kalır. Akış, tarama ile tartışma arasındaki köprü.
- *
- * Yükseklik sabit ve içeride kayıyor: düzenin veri miktarına göre uzayıp
- * kısalması, yanındaki karta göre hizasının bozulması ve sayfanın her
- * yenilemede farklı görünmesi demekti.
- */
 const VISIBLE_LIMIT = 12;
-
 export default function RecentReports() {
   const [reports, setReports] = useState<StoredReport[] | null>(null);
-
   useEffect(() => {
     void loadRecentReports(VISIBLE_LIMIT).then(setReports);
   }, []);
-
   return (
     <Card className="flex h-full max-h-[22rem] flex-col">
       <div className="flex items-baseline justify-between gap-4 border-b border-[var(--color-line)] px-5 py-3.5">
@@ -34,10 +21,10 @@ export default function RecentReports() {
 
       <div className="min-h-0 flex-1 overflow-y-auto px-5">
         {reports === null ? (
-          <p className="py-4 text-sm text-[var(--color-muted)]">Yükleniyor…</p>
+          <p className="py-4 text-sm text-[var(--color-muted)]">Loading…</p>
         ) : reports.length === 0 ? (
           <div className="py-4">
-            <Empty>Henüz kimse tarama yapmamış. İlk sen ol.</Empty>
+            <Empty>Nobody has scanned anything yet. Be the first.</Empty>
           </div>
         ) : (
           <ul className="divide-y divide-[var(--color-line)]">
@@ -46,7 +33,6 @@ export default function RecentReports() {
               const label = r.repo ? `${r.owner}/${r.repo}` : r.owner;
               const tone: Tone =
                 r.score === null ? 'muted' : r.score >= 90 ? 'good' : r.score >= 75 ? 'warn' : 'bad';
-
               return (
                 <li key={r.id}>
                   <a

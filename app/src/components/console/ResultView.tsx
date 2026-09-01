@@ -20,6 +20,8 @@ import {
 } from './ui';
 import { formatDate, relativeTime } from '../../engine/shared';
 
+const NUM = 'en-US';
+
 export function ResultView({ result }: { result: CommandResult }) {
   switch (result.id) {
     case 'analysis':
@@ -49,7 +51,6 @@ export function ResultView({ result }: { result: CommandResult }) {
   }
 }
 
-/** Hassas komutlarda sonucun kaydedilmediğini açıkça söyleyen şerit. */
 function SensitiveNotice({ children }: { children: React.ReactNode }) {
   return (
     <div className="rounded-lg border border-amber-900/60 bg-amber-950/20 px-4 py-3 text-xs text-amber-200/90">
@@ -60,24 +61,13 @@ function SensitiveNotice({ children }: { children: React.ReactNode }) {
 
 type A = Extract<CommandResult, { id: 'analysis' }>['data'];
 
-/**
- * Depo analizi.
- *
- * Ham sayılar tek başına bir şey anlatmıyor: 1200 yıldız iyi mi, 3 katkıda
- * bulunan az mı? Burada iki soruya cevap veriliyor — bu depo hâlâ yaşıyor mu,
- * ve tek bir kişiye mi bağlı. İkisi de bir bağımlılığa güvenip güvenmeyeceğine
- * karar verirken bakılan şeyler.
- */
 function AnalysisView({ data }: { data: A }) {
   const daysSinceUpdate = data.updatedAt
     ? Math.floor((Date.now() - new Date(data.updatedAt).getTime()) / 86_400_000)
     : null;
-
-  // "Otobüs faktörü": katkının ne kadarı tek kişide toplanmış.
   const topTotal = data.topContributors.reduce((sum, c) => sum + c.contributions, 0);
   const topShare = topTotal > 0 ? data.topContributors[0].contributions / topTotal : 0;
   const concentrated = data.topContributors.length > 0 && topShare > 0.8;
-
   const stale = daysSinceUpdate !== null && daysSinceUpdate > 365;
   const slowing = daysSinceUpdate !== null && daysSinceUpdate > 180 && !stale;
 
@@ -85,59 +75,56 @@ function AnalysisView({ data }: { data: A }) {
   let headline: string;
   if (stale) {
     tone = 'bad';
-    headline = 'Bir yıldan uzun süredir güncellenmemiş';
+    headline = 'Untouched for over a year';
   } else if (slowing) {
     tone = 'warn';
-    headline = 'Uzun süredir güncellenmemiş';
+    headline = 'Quiet for a long time';
   } else if (concentrated) {
     tone = 'warn';
-    headline = 'Aktif, ama tek kişiye bağlı';
+    headline = 'Active, but resting on one person';
   } else {
-    headline = 'Aktif ve birden fazla kişi taşıyor';
+    headline = 'Active, and more than one person carries it';
   }
 
-  const parts: string[] = [];
-  parts.push(`Son güncelleme ${relativeTime(data.updatedAt)}.`);
+  const parts: string[] = [`Last updated ${relativeTime(data.updatedAt)}.`];
   if (data.totalContributors > 0) {
     parts.push(
       concentrated
-        ? `Katkının %${Math.round(topShare * 100)}’i tek kişiden (${data.topContributors[0].login}) geliyor — o kişi çekilirse proje sahipsiz kalır.`
-        : `${data.totalContributors} kişi katkıda bulunmuş, yük dağılmış görünüyor.`,
+        ? `${Math.round(topShare * 100)}% of the contributions come from a single person (${data.topContributors[0].login}). If they walk away, nobody is left holding it.`
+        : `${data.totalContributors} people have contributed, and the load looks spread out.`,
     );
   }
   if (data.openIssues > 50) {
-    parts.push(`${data.openIssues} açık issue birikmiş.`);
+    parts.push(`${data.openIssues} open issues have piled up.`);
   }
 
   return (
     <div className="space-y-5">
       <Verdict tone={tone} headline={headline} summary={parts.join(' ')} />
-
       <Card>
         <CardHead
           title={`${data.owner}/${data.repo}`}
-          subtitle={data.description ?? 'Açıklama yok'}
+          subtitle={data.description ?? 'No description'}
         />
         <div className="space-y-8 p-6">
           <Stats
             items={[
-              { label: 'Yıldız', value: data.stars.toLocaleString('tr-TR') },
-              { label: 'Fork', value: data.forks.toLocaleString('tr-TR') },
-              { label: 'Açık issue', value: data.openIssues.toLocaleString('tr-TR') },
-              { label: 'Toplam PR', value: data.totalPullRequests.toLocaleString('tr-TR') },
+              { label: 'Stars', value: data.stars.toLocaleString(NUM) },
+              { label: 'Forks', value: data.forks.toLocaleString(NUM) },
+              { label: 'Open issues', value: data.openIssues.toLocaleString(NUM) },
+              { label: 'Pull requests', value: data.totalPullRequests.toLocaleString(NUM) },
             ]}
           />
-
           {data.languages.length > 0 && (
             <div>
-              <SectionTitle>Diller</SectionTitle>
+              <SectionTitle>Languages</SectionTitle>
               <ul className="space-y-2.5">
                 {data.languages.slice(0, 5).map((l) => (
                   <li key={l.name}>
                     <div className="mb-1 flex justify-between text-sm">
                       <span>{l.name}</span>
                       <span className="tabular-nums text-[var(--color-muted)]">
-                        %{l.percent.toFixed(1)}
+                        {l.percent.toFixed(1)}%
                       </span>
                     </div>
                     <Bar percent={l.percent} />
@@ -146,11 +133,10 @@ function AnalysisView({ data }: { data: A }) {
               </ul>
             </div>
           )}
-
           <div>
-            <SectionTitle>Kim taşıyor</SectionTitle>
+            <SectionTitle>Who carries it</SectionTitle>
             {data.topContributors.length === 0 ? (
-              <Empty>Katkı kaydı bulunamadı.</Empty>
+              <Empty>No contribution records found.</Empty>
             ) : (
               <ul className="space-y-2.5">
                 {data.topContributors.map((c) => {
@@ -160,7 +146,7 @@ function AnalysisView({ data }: { data: A }) {
                       <div className="mb-1 flex justify-between text-sm">
                         <span className="truncate">{c.login}</span>
                         <span className="tabular-nums text-[var(--color-muted)]">
-                          {c.contributions.toLocaleString('tr-TR')}
+                          {c.contributions.toLocaleString(NUM)}
                         </span>
                       </div>
                       <Bar percent={share} tone={concentrated && share > 80 ? 'warn' : 'info'} />
@@ -170,19 +156,18 @@ function AnalysisView({ data }: { data: A }) {
               </ul>
             )}
           </div>
-
-          <Details summary="Diğer ayrıntılar">
+          <Details summary="Other details">
             <KeyValues
               items={[
                 {
-                  label: 'Oluşturulma',
+                  label: 'Created',
                   value: `${formatDate(data.createdAt)} · ${relativeTime(data.createdAt)}`,
                 },
-                { label: 'Varsayılan dal', value: <code>{data.defaultBranch}</code> },
-                { label: 'Lisans', value: data.license ?? 'Yok' },
-                { label: 'İncelenen commit', value: String(data.commitsAnalyzed) },
+                { label: 'Default branch', value: <code>{data.defaultBranch}</code> },
+                { label: 'License', value: data.license ?? 'None' },
+                { label: 'Commits examined', value: String(data.commitsAnalyzed) },
                 {
-                  label: 'Son commit’leri atanlar',
+                  label: 'Recent committers',
                   value: data.topCommitters.map((c) => c.name).join(', ') || '—',
                 },
               ]}
@@ -196,13 +181,6 @@ function AnalysisView({ data }: { data: A }) {
 
 type S = Extract<CommandResult, { id: 'security-score' }>['data'];
 
-/**
- * Güvenlik puanı raporu.
- *
- * Önce hüküm: bu puan ne anlama geliyor. Sonra ne yapılacağı, etkiye göre
- * sıralı. Kriter listesi en altta ve katlanmış: kanıt görünür olmalı ama
- * başrolde olmamalı.
- */
 function SecurityScoreView({ data }: { data: S }) {
   const failing = data.criteria.filter((c) => c.status === 'fail');
   const passing = data.criteria.filter((c) => c.status === 'pass');
@@ -210,26 +188,24 @@ function SecurityScoreView({ data }: { data: S }) {
   const lost = failing.reduce((sum, c) => sum + c.weight, 0);
 
   const tone: Tone = data.verdict === 'excellent' ? 'good' : data.verdict === 'good' ? 'warn' : 'bad';
-
   const headline =
     data.verdict === 'excellent'
-      ? 'Güvenlik hijyeni iyi durumda'
+      ? 'Security hygiene is in good shape'
       : data.verdict === 'good'
-        ? 'Temel şeyler yerinde, birkaç eksik var'
-        : 'Birkaç önemli eksik var';
+        ? 'The basics are there, a few gaps remain'
+        : 'Several important things are missing';
 
-  const parts: string[] = [];
-  parts.push(
+  const parts: string[] = [
     failing.length === 0
-      ? `Değerlendirilen ${data.evaluatedCount} kriterin hepsi karşılanıyor.`
-      : `Değerlendirilen ${data.evaluatedCount} kriterden ${failing.length} tanesi karşılanmıyor ve ${lost} puan kaybettiriyor.`,
-  );
+      ? `All ${data.evaluatedCount} criteria that could be checked are met.`
+      : `${failing.length} of the ${data.evaluatedCount} criteria checked are not met, costing ${lost} points.`,
+  ];
   if (failing.length > 0) {
-    parts.push(`Hepsi düzeltilebilir — en önemlisi: ${failing[0].label.toLowerCase()}.`);
+    parts.push(`Every one of them is fixable. Start with ${failing[0].label.toLowerCase()}.`);
   }
   if (unknown.length > 0) {
     parts.push(
-      `${unknown.length} kriter okunamadığı için puanlamaya katılmadı; bu bilgiler depo yöneticisine açık.`,
+      `${unknown.length} more could not be read, so they were left out of the score. Repository admins can see them.`,
     );
   }
 
@@ -246,27 +222,24 @@ function SecurityScoreView({ data }: { data: S }) {
         summary={parts.join(' ')}
         score={{ value: data.score, caption: `${data.owner}/${data.repo}` }}
       />
-
       {actions.length > 0 && (
         <Card>
           <div className="p-6">
-            <ActionList title="Puanı yükseltmek için" items={actions} />
+            <ActionList title="To raise the score" items={actions} />
           </div>
         </Card>
       )}
-
       {passing.length > 0 && (
         <Card>
           <div className="p-6">
-            <SectionTitle>Zaten yerinde</SectionTitle>
+            <SectionTitle>Already in place</SectionTitle>
             <GoodList items={passing.map((c) => c.label)} />
           </div>
         </Card>
       )}
-
       <Card>
         <div className="p-6">
-          <Details summary={`Bütün kriterler (${data.criteria.length})`}>
+          <Details summary={`Every criterion (${data.criteria.length})`}>
             <ul className="divide-y divide-[var(--color-line)]">
               {data.criteria.map((c) => {
                 const mark = c.status === 'pass' ? '✓' : c.status === 'fail' ? '✕' : '–';
@@ -296,21 +269,14 @@ function SecurityScoreView({ data }: { data: S }) {
 
 type C = Extract<CommandResult, { id: 'content-audit' }>['data'];
 
-/**
- * Eksik bir dosyanın neden önemli olduğu.
- *
- * "CONTRIBUTING.md yok" bir bilgi; "katkı yapmak isteyen nereden başlayacağını
- * bilemiyor" bir sebep. Kullanıcı ikincisini okuyunca ne yapacağına karar
- * verebiliyor.
- */
 const WHY_MISSING: Record<string, string> = {
-  LICENSE: 'Lisans olmadan kod hukuken kullanılamaz; kimse bağımlılık olarak ekleyemez.',
+  LICENSE: 'Without a license the code cannot legally be reused, so nobody can depend on it.',
   'SECURITY.md':
-    'Açık bulan biri sana nasıl ulaşacağını bilmiyor; büyük ihtimalle herkese açık bir issue açar.',
-  'CODE_OF_CONDUCT.md': 'Tartışma kızıştığında başvurulacak yazılı bir kural yok.',
+    'Someone who finds a vulnerability has no private way to reach you, so they will most likely open a public issue instead.',
+  'CODE_OF_CONDUCT.md': 'When a discussion turns hostile there is no written rule to fall back on.',
   'CONTRIBUTING.md':
-    'Katkı yapmak isteyen nereden başlayacağını bilemiyor; gelen değişiklikler biçimsiz olur.',
-  'README.md': 'Depoya gelen ilk kişi projenin ne işe yaradığını anlamıyor.',
+    'Anyone willing to help has no idea where to start, and the changes that arrive come in whatever shape.',
+  'README.md': 'The first person to land on the repository cannot tell what it is for.',
 };
 
 function ContentAuditView({ data }: { data: C }) {
@@ -321,18 +287,18 @@ function ContentAuditView({ data }: { data: C }) {
   const tone: Tone = missing.length === 0 ? (weak.length === 0 ? 'good' : 'warn') : 'bad';
   const headline =
     missing.length === 0 && weak.length === 0
-      ? 'Topluluk standartlarının hepsi yerinde'
+      ? 'Every community standard is in place'
       : missing.length === 0
-        ? 'Dosyalar var ama bazıları çok kısa'
-        : `${missing.length} standart dosya eksik`;
+        ? 'The files exist, but some are barely written'
+        : `${missing.length} standard file${missing.length === 1 ? '' : 's'} missing`;
 
   const summary =
     missing.length === 0 && weak.length === 0
-      ? 'Depoya gelen biri ne işe yaradığını, nasıl katkı yapacağını ve sorunu nereye bildireceğini biliyor.'
+      ? 'Anyone arriving can tell what this project does, how to contribute, and where to report a problem.'
       : [
-          `${data.presentCount}/${data.totalCount} dosya mevcut.`,
-          missing.length > 0 ? `Eksik: ${missing.map((m) => m.file).join(', ')}.` : '',
-          weak.length > 0 ? `İçeriği yetersiz: ${weak.map((m) => m.file).join(', ')}.` : '',
+          `${data.presentCount} of ${data.totalCount} files are present.`,
+          missing.length > 0 ? `Missing: ${missing.map((m) => m.file).join(', ')}.` : '',
+          weak.length > 0 ? `Too thin: ${weak.map((m) => m.file).join(', ')}.` : '',
         ]
           .filter(Boolean)
           .join(' ');
@@ -341,34 +307,31 @@ function ContentAuditView({ data }: { data: C }) {
     key: i.file,
     text:
       i.quality === 'missing'
-        ? `${i.file} ekle — ${WHY_MISSING[i.file] ?? i.description}`
-        : `${i.file} dosyasını genişlet — şu an ${i.qualityLabel.toLocaleLowerCase('tr')}.`,
+        ? `Add ${i.file} — ${WHY_MISSING[i.file] ?? i.description}`
+        : `Flesh out ${i.file} — right now it is ${i.qualityLabel.toLowerCase()}.`,
   }));
 
   return (
     <div className="space-y-5">
       <Verdict tone={tone} headline={headline} summary={summary} />
-
       {actions.length > 0 && (
         <Card>
           <div className="p-6">
-            <ActionList title="Yapılacaklar" items={actions} />
+            <ActionList title="What to do" items={actions} />
           </div>
         </Card>
       )}
-
       {good.length > 0 && (
         <Card>
           <div className="p-6">
-            <SectionTitle>Zaten yerinde</SectionTitle>
+            <SectionTitle>Already in place</SectionTitle>
             <GoodList items={good.map((i) => i.file)} />
           </div>
         </Card>
       )}
-
       <Card>
         <div className="p-6">
-          <Details summary="Dosya dosya durum">
+          <Details summary="File by file">
             <ul className="divide-y divide-[var(--color-line)]">
               {data.items.map((item) => {
                 const t: Tone =
@@ -407,13 +370,6 @@ function ContentAuditView({ data }: { data: C }) {
 
 type CI = Extract<CommandResult, { id: 'contrib-impact' }>['data'];
 
-/**
- * Katkı etkisi.
- *
- * Buradaki asıl bilgi sıralama değil, DAĞILIM: yük tek kişide mi toplanmış?
- * Bir bağımlılık seçerken bakılması gereken şey budur — o kişi çekilirse
- * projeyi sürdürecek kimse kalır mı.
- */
 function ContribImpactView({ data }: { data: CI }) {
   const total = data.contributors.reduce((sum, c) => sum + Math.max(0, c.score), 0);
   const topShare =
@@ -423,34 +379,30 @@ function ContribImpactView({ data }: { data: CI }) {
   const tone: Tone = data.contributors.length === 0 ? 'muted' : concentrated ? 'warn' : 'good';
   const headline =
     data.contributors.length === 0
-      ? 'Katkı verisi yok'
+      ? 'No contribution data'
       : concentrated
-        ? 'Yük tek kişide toplanmış'
-        : 'Yük birden fazla kişiye dağılmış';
-
+        ? 'The work sits on one person'
+        : 'The work is spread across several people';
   const summary =
     data.contributors.length === 0
-      ? 'GitHub bu depo için katkı istatistiği döndürmedi.'
+      ? 'GitHub returned no contributor statistics for this repository.'
       : concentrated
-        ? `Değişikliklerin yüzde ${Math.round(topShare * 100)} kadarı ${data.contributors[0].login} tarafından yapılmış. Bu kişi çekilirse projeyi sürdürecek kimse kalmayabilir.`
-        : `${data.contributors.length} kişi arasında dağılmış bir yük. En çok katkı yapan ${data.contributors[0].login}, payı yüzde ${Math.round(topShare * 100)}.`;
+        ? `About ${Math.round(topShare * 100)}% of the changes were written by ${data.contributors[0].login}. If they step away, there may be nobody left who can keep it going.`
+        : `The load is shared between ${data.contributors.length} people. The largest contributor is ${data.contributors[0].login} at ${Math.round(topShare * 100)}%.`;
 
   return (
     <div className="space-y-5">
       <Verdict tone={tone} headline={headline} summary={summary} />
-
       <Card>
         <CardHead
           title={`${data.owner}/${data.repo}`}
-          subtitle="Puan = eklenen satır × 0,7 − silinen satır × 0,3. Silmek de katkıdır ama eklemek kadar ağırlık taşımaz."
+          subtitle="Score = lines added × 0.7 − lines removed × 0.3. Deleting is contributing too, it just does not weigh as much as writing."
         />
         <div className="p-6">
           {data.statsPending ? (
-            <Empty>
-              GitHub bu deponun istatistiklerini hâlâ hesaplıyor. Birkaç saniye sonra tekrar dene.
-            </Empty>
+            <Empty>GitHub is still computing this repository&apos;s statistics. Try again in a few seconds.</Empty>
           ) : data.contributors.length === 0 ? (
-            <Empty>Katkı verisi bulunamadı.</Empty>
+            <Empty>No contribution data found.</Empty>
           ) : (
             <ul className="space-y-4">
               {data.contributors.map((c) => {
@@ -470,7 +422,7 @@ function ContribImpactView({ data }: { data: CI }) {
                       <div className="flex justify-between gap-4 text-sm">
                         <span className="truncate">{c.login}</span>
                         <span className="tabular-nums text-[var(--color-muted)]">
-                          %{share.toFixed(0)}
+                          {share.toFixed(0)}%
                         </span>
                       </div>
                       <div className="mt-1">
@@ -478,10 +430,10 @@ function ContribImpactView({ data }: { data: CI }) {
                       </div>
                       <p className="mt-1 text-xs text-[var(--color-faint)]">
                         <span className="text-[var(--color-good)]">
-                          +{c.additions.toLocaleString('tr-TR')}
+                          +{c.additions.toLocaleString(NUM)}
                         </span>{' '}
                         <span className="text-[var(--color-bad)]">
-                          −{c.deletions.toLocaleString('tr-TR')}
+                          −{c.deletions.toLocaleString(NUM)}
                         </span>
                       </p>
                     </div>
@@ -497,35 +449,76 @@ function ContribImpactView({ data }: { data: CI }) {
 }
 
 type FH = Extract<CommandResult, { id: 'file-history' }>['data'];
+
 function FileHistoryView({ data }: { data: FH }) {
+  const commits = data.commits;
+  const authors = [...new Set(commits.map((c) => c.author))];
+  const last = commits[0];
+  const first = commits[commits.length - 1];
+  const daysSince = last ? Math.floor((Date.now() - new Date(last.date).getTime()) / 86_400_000) : null;
+  const single = authors.length === 1;
+
+  let tone: Tone = 'good';
+  let headline: string;
+  if (commits.length === 0) {
+    tone = 'muted';
+    headline = 'No history for this file';
+  } else if (daysSince !== null && daysSince > 365) {
+    tone = 'warn';
+    headline = 'Nobody has touched this file in over a year';
+  } else if (single) {
+    tone = 'info';
+    headline = `Only ${authors[0]} has ever edited this file`;
+  } else {
+    headline = `${authors.length} people have edited this file`;
+  }
+
+  const summary =
+    commits.length === 0
+      ? 'Either the path is wrong, or the file was never committed under this name.'
+      : [
+          `${commits.length} commit${commits.length === 1 ? '' : 's'} in view.`,
+          `Last change ${relativeTime(last.date)} by ${last.author}.`,
+          first && first !== last ? `The oldest in this window is from ${formatDate(first.date)}.` : '',
+          single
+            ? 'One author means one point of failure: nobody else has context on this file.'
+            : '',
+        ]
+          .filter(Boolean)
+          .join(' ');
+
   return (
-    <Card>
-      <CardHead title={data.path} subtitle={`${data.owner}/${data.repo}`} />
-      <div className="px-6 py-5">
-        {data.commits.length === 0 ? (
-          <Empty>Bu dosya için commit bulunamadı.</Empty>
-        ) : (
-          <Table head={['SHA', 'Tarih', 'Yazar', 'Mesaj']}>
-            {data.commits.map((c) => (
-              <tr key={c.sha}>
-                <td className="py-2 pr-4 font-mono text-xs">
-                  <ExternalLink href={c.url}>{c.sha}</ExternalLink>
-                </td>
-                <td className="py-2 pr-4 whitespace-nowrap text-xs text-[var(--color-muted)]">
-                  {c.date.slice(0, 10)}
-                </td>
-                <td className="py-2 pr-4 text-xs">{c.author}</td>
-                <td className="py-2 text-xs text-[var(--color-muted)]">{c.message}</td>
-              </tr>
-            ))}
-          </Table>
-        )}
-      </div>
-    </Card>
+    <div className="space-y-5">
+      <Verdict tone={tone} headline={headline} summary={summary} />
+      <Card>
+        <CardHead title={data.path} subtitle={`${data.owner}/${data.repo}`} />
+        <div className="px-6 py-5">
+          {commits.length === 0 ? (
+            <Empty>No commits found for this file.</Empty>
+          ) : (
+            <Table head={['SHA', 'Date', 'Author', 'Message']}>
+              {commits.map((c) => (
+                <tr key={c.sha}>
+                  <td className="py-2 pr-4 font-mono text-xs">
+                    <ExternalLink href={c.url}>{c.sha}</ExternalLink>
+                  </td>
+                  <td className="py-2 pr-4 whitespace-nowrap text-xs text-[var(--color-muted)]">
+                    {c.date.slice(0, 10)}
+                  </td>
+                  <td className="py-2 pr-4 text-xs">{c.author}</td>
+                  <td className="py-2 text-xs text-[var(--color-muted)]">{c.message}</td>
+                </tr>
+              ))}
+            </Table>
+          )}
+        </div>
+      </Card>
+    </div>
   );
 }
 
 type AA = Extract<CommandResult, { id: 'actions-audit' }>['data'];
+
 const WF_TONE: Record<string, Tone> = {
   critical: 'bad',
   risky: 'bad',
@@ -534,13 +527,23 @@ const WF_TONE: Record<string, Tone> = {
   ok: 'good',
   error: 'muted',
 };
+
 const WF_LABEL: Record<string, string> = {
-  critical: 'Kritik',
-  risky: 'Riskli',
-  warning: 'Uyarı',
-  info: 'Bilgi',
-  ok: 'Temiz',
-  error: 'Okunamadı',
+  critical: 'Critical',
+  risky: 'Risky',
+  warning: 'Warning',
+  info: 'Note',
+  ok: 'Clean',
+  error: 'Unreadable',
+};
+
+const WF_RANK: Record<string, number> = {
+  critical: 0,
+  risky: 1,
+  warning: 2,
+  info: 3,
+  error: 4,
+  ok: 5,
 };
 
 function ActionsAuditView({ data }: { data: AA }) {
@@ -549,66 +552,143 @@ function ActionsAuditView({ data }: { data: AA }) {
       <Card>
         <CardHead title={`${data.owner}/${data.repo}`} />
         <div className="px-6 py-5">
-          <Empty>Bu depoda GitHub Actions iş akışı yok.</Empty>
+          <Empty>This repository has no GitHub Actions workflows.</Empty>
         </div>
       </Card>
     );
   }
 
+  const findings = data.workflows.flatMap((wf) =>
+    wf.findings.map((f) => ({ ...f, workflow: wf.name, path: wf.path })),
+  );
+  const serious = findings.filter((f) => f.severity === 'critical' || f.severity === 'risky');
+  const warnings = findings.filter((f) => f.severity === 'warning');
+  const unreadable = data.workflows.filter((wf) => wf.severity === 'error');
+
+  const tone: Tone = serious.length > 0 ? 'bad' : warnings.length > 0 ? 'warn' : 'good';
+  const headline =
+    serious.length > 0
+      ? `${serious.length} workflow risk${serious.length === 1 ? '' : 's'} worth fixing today`
+      : warnings.length > 0
+        ? 'Nothing critical, but the permissions could be tighter'
+        : 'No obvious risk in these workflows';
+
+  const summary = [
+    `${data.workflows.length} workflow${data.workflows.length === 1 ? '' : 's'} examined.`,
+    serious.length > 0
+      ? 'A workflow runs with the repository secrets, so a weakness here reaches everything the token can touch.'
+      : warnings.length > 0
+        ? 'These will not be exploited on their own, but they widen the blast radius if something else goes wrong.'
+        : 'None of the patterns we look for matched. That is not proof the workflows are safe.',
+    unreadable.length > 0 ? `${unreadable.length} file could not be read.` : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+  const seen = new Set<string>();
+  const actions = [...serious, ...warnings]
+    .filter((f) => {
+      if (seen.has(f.title)) return false;
+      seen.add(f.title);
+      return true;
+    })
+    .map((f) => ({ key: f.title, text: `${f.title} — ${f.detail}` }));
+
+  const clean = data.workflows.filter((wf) => wf.severity === 'ok').map((wf) => wf.name);
+  const ordered = [...data.workflows].sort(
+    (a, b) => (WF_RANK[a.severity] ?? 9) - (WF_RANK[b.severity] ?? 9),
+  );
+
   return (
-    <div className="space-y-4">
-      {data.workflows.map((wf) => (
-        <Card key={wf.path}>
-          <CardHead
-            title={wf.name}
-            subtitle={<ExternalLink href={wf.url}>{wf.path}</ExternalLink>}
-            right={<Badge tone={WF_TONE[wf.severity]}>{WF_LABEL[wf.severity]}</Badge>}
-          />
-          <ul className="divide-y divide-[var(--color-line)]">
-            {wf.findings.map((f, i) => (
-              <li key={i} className="px-6 py-3">
-                <div className="flex items-start gap-3">
-                  <span className={`mt-0.5 shrink-0 text-xs ${toneText(WF_TONE[f.severity])}`}>
-                    {f.severity === 'ok' ? '✓' : '!'}
-                  </span>
-                  <div>
-                    <p className="text-sm">{f.title}</p>
-                    <p className="mt-1 text-xs text-[var(--color-muted)]">{f.detail}</p>
-                  </div>
-                </div>
-              </li>
-            ))}
-          </ul>
+    <div className="space-y-5">
+      <Verdict tone={tone} headline={headline} summary={summary} />
+
+      {actions.length > 0 && (
+        <Card>
+          <div className="p-6">
+            <ActionList title="What to fix" items={actions} />
+          </div>
         </Card>
-      ))}
+      )}
+
+      {clean.length > 0 && (
+        <Card>
+          <div className="p-6">
+            <SectionTitle>Clean workflows</SectionTitle>
+            <GoodList items={clean} />
+          </div>
+        </Card>
+      )}
+
+      <Card>
+        <div className="p-6">
+          <Details summary={`Workflow by workflow (${data.workflows.length})`}>
+            <div className="space-y-5">
+              {ordered.map((wf) => (
+                <div key={wf.path}>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <ExternalLink href={wf.url}>
+                      <span className="text-sm">{wf.name}</span>
+                    </ExternalLink>
+                    <Badge tone={WF_TONE[wf.severity]}>{WF_LABEL[wf.severity]}</Badge>
+                  </div>
+                  <p className="mt-0.5 font-mono text-xs text-[var(--color-faint)]">{wf.path}</p>
+                  <ul className="mt-2 space-y-2">
+                    {wf.findings.map((f, i) => (
+                      <li key={i} className="flex items-start gap-3">
+                        <span className={`mt-0.5 shrink-0 text-xs ${toneText(WF_TONE[f.severity])}`}>
+                          {f.severity === 'ok' ? '✓' : '!'}
+                        </span>
+                        <div>
+                          <p className="text-sm">{f.title}</p>
+                          <p className="mt-0.5 text-xs text-[var(--color-muted)]">{f.detail}</p>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </Details>
+        </div>
+      </Card>
     </div>
   );
 }
 
 type CA = Extract<CommandResult, { id: 'commit-anomaly' }>['data'];
+
 function CommitAnomalyView({ data }: { data: CA }) {
+  const flagged = data.risky;
+  const tone: Tone = flagged.length === 0 ? 'good' : 'warn';
+  const headline =
+    flagged.length === 0
+      ? 'Nothing stood out in these commit messages'
+      : `${flagged.length} commit message${flagged.length === 1 ? '' : 's'} worth a look`;
+  const summary =
+    flagged.length === 0
+      ? `${data.scannedCount} commits scanned and none of them carried the words we watch for.`
+      : `${flagged.length} of ${data.scannedCount} scanned commits mention things like temporary fixes, debugging or credentials. These are signals, not findings: a commit saying "temp" is usually harmless, but it is worth opening.`;
+
   return (
-    <Card>
-      <CardHead
-        title={`${data.owner}/${data.repo}`}
-        subtitle={`${data.scannedCount} commit tarandı`}
-        right={
-          <Badge tone={data.risky.length === 0 ? 'good' : 'warn'}>
-            {data.risky.length === 0 ? 'Bulgu yok' : `${data.risky.length} işaretli`}
-          </Badge>
-        }
-      />
-      <div className="px-6 py-5">
-        {data.risky.length === 0 ? (
-          <Empty>Şüpheli kelime içeren commit mesajı bulunmadı.</Empty>
-        ) : (
-          <>
-            <p className="mb-4 text-xs text-[var(--color-muted)]">
-              Bunlar bulgu değil işarettir. &quot;temp&quot; yazan her commit sorunlu değildir, ama
-              bakmaya değer.
-            </p>
+    <div className="space-y-5">
+      <Verdict tone={tone} headline={headline} summary={summary} />
+      <Card>
+        <CardHead
+          title={`${data.owner}/${data.repo}`}
+          subtitle={`${data.scannedCount} commits scanned`}
+          right={
+            <Badge tone={flagged.length === 0 ? 'good' : 'warn'}>
+              {flagged.length === 0 ? 'Nothing flagged' : `${flagged.length} flagged`}
+            </Badge>
+          }
+        />
+        <div className="px-6 py-5">
+          {flagged.length === 0 ? (
+            <Empty>No commit message contained a suspicious word.</Empty>
+          ) : (
             <ul className="space-y-4">
-              {data.risky.map((c) => (
+              {flagged.map((c) => (
                 <li key={c.sha} className="border-l-2 border-amber-700/60 pl-4">
                   <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
                     <ExternalLink href={c.url}>
@@ -617,207 +697,307 @@ function CommitAnomalyView({ data }: { data: CA }) {
                     <span className="text-sm">{c.message}</span>
                   </div>
                   <p className="mt-1 text-xs text-[var(--color-muted)]">
-                    {c.author} · {relativeTime(c.date)} · eşleşen:{' '}
+                    {c.author} · {relativeTime(c.date)} · matched:{' '}
                     <span className="text-amber-400">{c.matched.join(', ')}</span>
                   </p>
                 </li>
               ))}
             </ul>
-          </>
-        )}
-      </div>
-    </Card>
+          )}
+        </div>
+      </Card>
+    </div>
   );
 }
 
 type UA = Extract<CommandResult, { id: 'user-analysis' }>['data'];
+
 function UserAnalysisView({ data }: { data: UA }) {
+  const ageDays = Math.floor((Date.now() - new Date(data.createdAt).getTime()) / 86_400_000);
+  const years = (ageDays / 365).toFixed(1);
+  const starTotal = data.topRepos.reduce((sum, r) => sum + r.stars, 0);
+  const empty = data.publicRepos === 0;
+
+  const tone: Tone = empty ? 'muted' : starTotal > 100 || data.followers > 100 ? 'good' : 'info';
+  const headline = empty
+    ? 'No public work on this account'
+    : starTotal > 100 || data.followers > 100
+      ? 'An account with a visible track record'
+      : 'An ordinary working account';
+
+  const summary = [
+    `On GitHub for ${ageDays > 365 ? `${years} years` : `${ageDays} days`}.`,
+    empty
+      ? 'Nothing public to judge it by.'
+      : `${data.publicRepos} public repositories, ${data.followers} followers, and ${starTotal.toLocaleString(NUM)} stars across the top ${data.topRepos.length}.`,
+    data.languages.length > 0 ? `Mostly works in ${data.languages[0].name}.` : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
   return (
-    <Card>
-      <CardHead
-        title={
-          <span className="flex items-center gap-3">
-            {data.avatarUrl && (
-              <img src={data.avatarUrl} alt="" width={32} height={32} className="rounded-full" />
-            )}
-            <ExternalLink href={data.htmlUrl}>{data.login}</ExternalLink>
-          </span>
-        }
-        subtitle={data.name ?? undefined}
-      />
-      <div className="space-y-8 px-6 py-5">
-        <Stats
-          items={[
-            { label: 'Takipçi', value: data.followers.toLocaleString('tr-TR') },
-            { label: 'Takip', value: data.following.toLocaleString('tr-TR') },
-            { label: 'Depo', value: data.publicRepos.toLocaleString('tr-TR') },
-            { label: 'Gist', value: data.publicGists.toLocaleString('tr-TR') },
-          ]}
+    <div className="space-y-5">
+      <Verdict tone={tone} headline={headline} summary={summary} />
+      <Card>
+        <CardHead
+          title={
+            <span className="flex items-center gap-3">
+              {data.avatarUrl && (
+                <img src={data.avatarUrl} alt="" width={32} height={32} className="rounded-full" />
+              )}
+              <ExternalLink href={data.htmlUrl}>{data.login}</ExternalLink>
+            </span>
+          }
+          subtitle={data.name ?? undefined}
         />
+        <div className="space-y-8 px-6 py-5">
+          <Stats
+            items={[
+              { label: 'Followers', value: data.followers.toLocaleString(NUM) },
+              { label: 'Following', value: data.following.toLocaleString(NUM) },
+              { label: 'Repositories', value: data.publicRepos.toLocaleString(NUM) },
+              { label: 'Gists', value: data.publicGists.toLocaleString(NUM) },
+            ]}
+          />
 
-        <KeyValues
-          items={[
-            { label: 'Katılım', value: `${formatDate(data.createdAt)} · ${relativeTime(data.createdAt)}` },
-            { label: 'Konum', value: data.location ?? '—' },
-            { label: 'Kurum', value: data.company ?? '—' },
-            { label: 'Bio', value: data.bio ?? '—' },
-          ]}
-        />
-
-        {data.topRepos.length > 0 && (
-          <div>
-            <SectionTitle>Öne çıkan depolar</SectionTitle>
-            <ul className="space-y-3">
-              {data.topRepos.map((r) => (
-                <li key={r.name} className="flex items-start justify-between gap-4">
-                  <div className="min-w-0">
-                    <ExternalLink href={r.url}>
-                      <span className="font-mono text-sm">{r.name}</span>
-                    </ExternalLink>
-                    {r.description && (
-                      <p className="mt-0.5 truncate text-xs text-[var(--color-muted)]">
-                        {r.description}
-                      </p>
-                    )}
-                  </div>
-                  <span className="shrink-0 text-xs tabular-nums text-[var(--color-muted)]">
-                    ★ {r.stars.toLocaleString('tr-TR')}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {data.languages.length > 0 && (
-          <div>
-            <SectionTitle>Diller</SectionTitle>
-            <div className="flex flex-wrap gap-2">
-              {data.languages.map((l) => (
-                <Badge key={l.name} tone="muted">
-                  {l.name} · {l.count}
-                </Badge>
-              ))}
+          {data.topRepos.length > 0 && (
+            <div>
+              <SectionTitle>Notable repositories</SectionTitle>
+              <ul className="space-y-3">
+                {data.topRepos.map((r) => (
+                  <li key={r.name} className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <ExternalLink href={r.url}>
+                        <span className="font-mono text-sm">{r.name}</span>
+                      </ExternalLink>
+                      {r.description && (
+                        <p className="mt-0.5 truncate text-xs text-[var(--color-muted)]">
+                          {r.description}
+                        </p>
+                      )}
+                    </div>
+                    <span className="shrink-0 text-xs tabular-nums text-[var(--color-muted)]">
+                      ★ {r.stars.toLocaleString(NUM)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
             </div>
-          </div>
-        )}
-      </div>
-    </Card>
+          )}
+
+          {data.languages.length > 0 && (
+            <div>
+              <SectionTitle>Languages</SectionTitle>
+              <div className="flex flex-wrap gap-2">
+                {data.languages.map((l) => (
+                  <Badge key={l.name} tone="muted">
+                    {l.name} · {l.count}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <Details summary="Profile details">
+            <KeyValues
+              items={[
+                {
+                  label: 'Joined',
+                  value: `${formatDate(data.createdAt)} · ${relativeTime(data.createdAt)}`,
+                },
+                { label: 'Location', value: data.location ?? '—' },
+                { label: 'Company', value: data.company ?? '—' },
+                { label: 'Bio', value: data.bio ?? '—' },
+              ]}
+            />
+          </Details>
+        </div>
+      </Card>
+    </div>
   );
 }
 
 type UAN = Extract<CommandResult, { id: 'user-anomaly' }>['data'];
+
 function UserAnomalyView({ data }: { data: UAN }) {
   const tone: Tone = data.riskLevel === 'low' ? 'good' : data.riskLevel === 'medium' ? 'warn' : 'bad';
-  const caption = data.riskLevel === 'low' ? 'Olağan' : data.riskLevel === 'medium' ? 'Dikkat' : 'Olağandışı';
+  const caption = data.riskLevel === 'low' ? 'Ordinary' : data.riskLevel === 'medium' ? 'Worth a look' : 'Unusual';
   const maxBlock = Math.max(1, ...data.activityBlocks.map((b) => b.count));
+  const warnings = data.anomalies.filter((a) => a.level === 'warning');
+
+  const headline =
+    data.riskLevel === 'low'
+      ? 'This account behaves like an ordinary one'
+      : data.riskLevel === 'medium'
+        ? 'A few patterns here are worth checking'
+        : 'This account behaves unusually';
+
+  const summary = [
+    data.anomalies.length === 0
+      ? 'None of the patterns we measure came back unusual.'
+      : `${data.anomalies.length} pattern${data.anomalies.length === 1 ? '' : 's'} stood out${warnings.length > 0 ? `, ${warnings.length} of them strongly` : ''}.`,
+    'A high score does not mean the account is malicious. It means the behaviour is unusual and worth a look before you trust it.',
+  ].join(' ');
 
   return (
-    <Card>
-      <CardHead
-        title={
-          <span className="flex items-center gap-3">
-            {data.avatarUrl && (
-              <img src={data.avatarUrl} alt="" width={32} height={32} className="rounded-full" />
-            )}
-            {data.login}
-          </span>
-        }
-        right={<Score value={data.riskScore} tone={tone} caption={caption} />}
+    <div className="space-y-5">
+      <Verdict
+        tone={tone}
+        headline={headline}
+        summary={summary}
+        score={{ value: data.riskScore, caption: data.login }}
       />
-      <div className="space-y-8 px-6 py-5">
-        <p className="rounded-lg border border-[var(--color-line)] px-4 py-3 text-xs text-[var(--color-muted)]">
-          Yüksek puan &quot;bu hesap kötü niyetli&quot; demek değildir. &quot;Davranışı olağandışı,
-          bakmaya değer&quot; demektir.
-        </p>
 
-        <Stats
-          items={[
-            {
-              label: 'Hesap yaşı',
-              value:
-                data.accountAgeDays === null
-                  ? '—'
-                  : data.accountAgeDays > 365
-                    ? `${(data.accountAgeDays / 365).toFixed(1)} yıl`
-                    : `${data.accountAgeDays} gün`,
-            },
-            { label: 'Depo', value: `${data.publicRepos}` },
-            { label: 'Takipçi/Takip', value: `${data.followers}/${data.following}` },
-            { label: 'Fork oranı', value: `${data.forkCount}/${data.repoCount}` },
-          ]}
-        />
-
-        <div>
-          <SectionTitle>Bulgular</SectionTitle>
-          {data.anomalies.length === 0 ? (
-            <Empty>Olağandışı bir örüntü görülmedi.</Empty>
-          ) : (
+      {data.anomalies.length > 0 && (
+        <Card>
+          <div className="p-6">
+            <SectionTitle>What stood out</SectionTitle>
             <ul className="space-y-2">
               {data.anomalies.map((a, i) => (
                 <li key={i} className="flex items-start gap-3 text-sm">
-                  <span className={`mt-0.5 shrink-0 ${toneText(a.level === 'warning' ? 'warn' : 'info')}`}>
+                  <span
+                    className={`mt-0.5 shrink-0 ${toneText(a.level === 'warning' ? 'warn' : 'info')}`}
+                  >
                     {a.level === 'warning' ? '!' : 'i'}
                   </span>
                   <span>{a.message}</span>
                 </li>
               ))}
             </ul>
+          </div>
+        </Card>
+      )}
+
+      <Card>
+        <CardHead
+          title={
+            <span className="flex items-center gap-3">
+              {data.avatarUrl && (
+                <img src={data.avatarUrl} alt="" width={32} height={32} className="rounded-full" />
+              )}
+              {data.login}
+            </span>
+          }
+          right={<Score value={data.riskScore} tone={tone} caption={caption} />}
+        />
+        <div className="space-y-8 px-6 py-5">
+          <Stats
+            items={[
+              {
+                label: 'Account age',
+                value:
+                  data.accountAgeDays === null
+                    ? '—'
+                    : data.accountAgeDays > 365
+                      ? `${(data.accountAgeDays / 365).toFixed(1)} yr`
+                      : `${data.accountAgeDays} days`,
+              },
+              { label: 'Repositories', value: `${data.publicRepos}` },
+              { label: 'Followers/following', value: `${data.followers}/${data.following}` },
+              { label: 'Forks', value: `${data.forkCount}/${data.repoCount}` },
+            ]}
+          />
+
+          {data.anomalies.length === 0 && <Empty>No unusual pattern was found.</Empty>}
+
+          {data.eventsAnalyzed > 0 && (
+            <Details summary={`Activity distribution (${data.eventsAnalyzed} events)`}>
+              <ul className="space-y-2.5">
+                {data.activityBlocks.map((b) => (
+                  <li key={b.label}>
+                    <div className="mb-1 flex justify-between text-xs">
+                      <span className="font-mono text-[var(--color-muted)]">{b.label}</span>
+                      <span className="tabular-nums text-[var(--color-muted)]">{b.count}</span>
+                    </div>
+                    <Bar percent={(b.count / maxBlock) * 100} />
+                  </li>
+                ))}
+              </ul>
+            </Details>
           )}
         </div>
-
-        {data.eventsAnalyzed > 0 && (
-          <div>
-            <SectionTitle>Etkinlik dağılımı ({data.eventsAnalyzed} olay)</SectionTitle>
-            <ul className="space-y-2.5">
-              {data.activityBlocks.map((b) => (
-                <li key={b.label}>
-                  <div className="mb-1 flex justify-between text-xs">
-                    <span className="font-mono text-[var(--color-muted)]">{b.label}</span>
-                    <span className="tabular-nums text-[var(--color-muted)]">{b.count}</span>
-                  </div>
-                  <Bar percent={(b.count / maxBlock) * 100} />
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </div>
-    </Card>
+      </Card>
+    </div>
   );
 }
 
 const CONFIDENCE_TONE: Record<string, Tone> = { high: 'bad', medium: 'warn', low: 'muted' };
 const CONFIDENCE_LABEL: Record<string, string> = {
-  high: 'yüksek',
-  medium: 'orta',
-  low: 'düşük',
+  high: 'high',
+  medium: 'medium',
+  low: 'low',
 };
 
+const SECRET_ACTIONS = [
+  {
+    key: 'rotate',
+    text: 'Rotate the key first. Until it is revoked at the provider, it stays valid no matter what you do to the repository.',
+  },
+  {
+    key: 'history',
+    text: 'Deleting the file is not enough. The value stays in the commit history, so rewrite it or treat the key as permanently burned.',
+  },
+  {
+    key: 'prevent',
+    text: 'Move the value into a secret store or an untracked .env, and add a pre-commit scan so the next one never lands.',
+  },
+];
+
+function secretVerdict(count: number, highConfidence: number) {
+  if (count === 0) {
+    return {
+      tone: 'good' as Tone,
+      headline: 'Nothing found in what was scanned',
+      summary:
+        'None of the known key patterns matched. This covers only the files that were scanned, so it is not a guarantee the repository is clean.',
+    };
+  }
+  return {
+    tone: 'bad' as Tone,
+    headline: `${count} possible secret${count === 1 ? '' : 's'} found`,
+    summary: `${highConfidence > 0 ? `${highConfidence} of them match a known key format closely.` : 'None matched a known format exactly, so some may be false positives.'} Treat anything real as compromised the moment it was pushed: assume it has already been read.`,
+  };
+}
+
 type SS = Extract<CommandResult, { id: 'scan-secrets' }>['data'];
+
 function ScanSecretsView({ data }: { data: SS }) {
+  const high = data.findings.filter((f) => f.confidence !== 'low').length;
+  const v = secretVerdict(data.findings.length, high);
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <SensitiveNotice>
-        Bu sonuç kaydedilmedi ve paylaşılabilir bir adresi yok. Değerler maskeli gösteriliyor; ham
-        anahtar hiçbir yerde tutulmuyor. Bir şey bulduysan sahibine bildir, yayınlama.
+        This result is not saved and has no shareable address. Values are shown masked and the raw
+        key is never stored anywhere. If you find something in someone else&apos;s repository, tell
+        the owner rather than publishing it.
       </SensitiveNotice>
+
+      <Verdict tone={v.tone} headline={v.headline} summary={v.summary} />
+
+      {data.findings.length > 0 && (
+        <Card>
+          <div className="p-6">
+            <ActionList title="Do this in order" items={SECRET_ACTIONS} />
+          </div>
+        </Card>
+      )}
 
       <Card>
         <CardHead
           title={`${data.owner}/${data.repo}`}
-          subtitle={`${data.commitsScanned} commit, ${data.filesScanned} dosya tarandı`}
+          subtitle={`${data.commitsScanned} commits and ${data.filesScanned} files scanned`}
           right={
             <Badge tone={data.findings.length === 0 ? 'good' : 'bad'}>
-              {data.findings.length === 0 ? 'Bulgu yok' : `${data.findings.length} bulgu`}
+              {data.findings.length === 0 ? 'Nothing found' : `${data.findings.length} found`}
             </Badge>
           }
         />
         <div className="px-6 py-5">
           {data.findings.length === 0 ? (
-            <Empty>Taranan commit&apos;lerde sır bulunmadı.</Empty>
+            <Empty>No secrets in the scanned commits.</Empty>
           ) : (
-            <Table head={['Tür', 'Değer', 'Dosya', 'Commit', 'Güven']}>
+            <Table head={['Type', 'Value', 'File', 'Commit', 'Confidence']}>
               {data.findings.map((f, i) => (
                 <tr key={i}>
                   <td className="py-2 pr-4 text-xs">{f.type}</td>
@@ -845,29 +1025,44 @@ function ScanSecretsView({ data }: { data: SS }) {
 }
 
 type AS = Extract<CommandResult, { id: 'advanced-secrets' }>['data'];
+
 function AdvancedSecretsView({ data }: { data: AS }) {
+  const high = data.findings.filter((f) => f.confidence !== 'low').length;
+  const v = secretVerdict(data.findings.length, high);
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <SensitiveNotice>
-        Bu sonuç kaydedilmedi ve paylaşılabilir bir adresi yok. Değerler maskeli gösteriliyor; ham
-        anahtar hiçbir yerde tutulmuyor. Bir şey bulduysan sahibine bildir, yayınlama.
+        This result is not saved and has no shareable address. Values are shown masked and the raw
+        key is never stored anywhere. If you find something in someone else&apos;s repository, tell
+        the owner rather than publishing it.
       </SensitiveNotice>
+
+      <Verdict tone={v.tone} headline={v.headline} summary={v.summary} />
+
+      {data.findings.length > 0 && (
+        <Card>
+          <div className="p-6">
+            <ActionList title="Do this in order" items={SECRET_ACTIONS} />
+          </div>
+        </Card>
+      )}
 
       <Card>
         <CardHead
           title={`${data.owner}/${data.repo}`}
-          subtitle={`${data.filesScanned} dosya, ${data.commitsScanned} commit tarandı${data.truncatedTree ? ' · dosya ağacı çok büyük, kısmen tarandı' : ''}`}
+          subtitle={`${data.filesScanned} files and ${data.commitsScanned} commits scanned${data.truncatedTree ? ' · the file tree was too large, so it was scanned in part' : ''}`}
           right={
             <Badge tone={data.findings.length === 0 ? 'good' : 'bad'}>
-              {data.findings.length === 0 ? 'Bulgu yok' : `${data.findings.length} bulgu`}
+              {data.findings.length === 0 ? 'Nothing found' : `${data.findings.length} found`}
             </Badge>
           }
         />
         <div className="px-6 py-5">
           {data.findings.length === 0 ? (
-            <Empty>Taranan dosya ve commit&apos;lerde sır bulunmadı.</Empty>
+            <Empty>No secrets in the scanned files and commits.</Empty>
           ) : (
-            <Table head={['Tür', 'Değer', 'Konum', 'Kaynak', 'Güven']}>
+            <Table head={['Type', 'Value', 'Location', 'Source', 'Confidence']}>
               {data.findings.map((f, i) => (
                 <tr key={i}>
                   <td className="py-2 pr-4 text-xs">{f.type}</td>
@@ -901,31 +1096,27 @@ const DORK_TONE: Record<string, Tone> = {
 };
 
 type DS = Extract<CommandResult, { id: 'dork-scan' }>['data'];
+
 function DorkScanView({ data }: { data: DS }) {
   return (
     <div className="space-y-4">
       <SensitiveNotice>
-        Bu sonuç kaydedilmedi ve paylaşılabilir bir adresi yok. Burada gördüğün dosyalar
-        başkalarının depolarına ait. Bir şey bulduysan <strong>sahibine bildir</strong>, yayınlama
-        veya kullanma — aksi hâlde sorumluluk sana ait.
+        This result is not saved and has no shareable address. The files below belong to other
+        people. If you find something, <strong>tell the owner</strong> — do not publish it and do
+        not use it, or the responsibility is yours.
       </SensitiveNotice>
-
       <Card>
         <CardHead
           title={<span className="font-mono text-xs">{data.query}</span>}
           subtitle={
             data.verified
-              ? `${data.totalFound.toLocaleString('tr-TR')} sonuç bulundu · ${data.filteredOut} tanesi temiz çıkıp elendi`
-              : `${data.totalFound.toLocaleString('tr-TR')} sonuç bulundu · içerik doğrulanmadı`
+              ? `${data.totalFound.toLocaleString(NUM)} results · ${data.filteredOut} came back clean and were dropped`
+              : `${data.totalFound.toLocaleString(NUM)} results · contents not verified`
           }
         />
         <div className="px-6 py-5">
           {data.hits.length === 0 ? (
-            <Empty>
-              {data.verified
-                ? 'Sonuçların hiçbirinde sır bulunmadı.'
-                : 'Sonuç bulunamadı.'}
-            </Empty>
+            <Empty>{data.verified ? 'None of the results contained a secret.' : 'No results.'}</Empty>
           ) : (
             <ul className="space-y-5">
               {data.hits.map((hit, i) => (
@@ -942,7 +1133,7 @@ function DorkScanView({ data }: { data: DS }) {
                     <ul className="mt-2 space-y-1">
                       {hit.matches.map((m, j) => (
                         <li key={j} className="text-xs text-[var(--color-muted)]">
-                          {m.type} · <span className="font-mono">{m.masked}</span> · satır {m.line}
+                          {m.type} · <span className="font-mono">{m.masked}</span> · line {m.line}
                         </li>
                       ))}
                     </ul>

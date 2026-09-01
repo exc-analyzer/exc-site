@@ -1,12 +1,4 @@
-/**
- * Depo genel analizi.
- * Kaynak: exc_analyzer/commands/analysis.py + graphql_client.py
- *
- * CLI gibi GraphQL kullanıyor: depo özeti, diller ve commit geçmişi tek turda
- * geliyor. Aynı veriyi REST ile toplamak üç ayrı istek demek olurdu.
- */
 import { GitHubClient } from '../lib/github';
-
 export interface AnalysisResult {
   owner: string;
   repo: string;
@@ -25,7 +17,6 @@ export interface AnalysisResult {
   totalContributors: number;
   topContributors: { login: string; contributions: number }[];
 }
-
 const REPO_QUERY = `
   query RepoAnalysis($owner: String!, $name: String!) {
     repository(owner: $owner, name: $name) {
@@ -44,7 +35,6 @@ const REPO_QUERY = `
     }
   }
 `;
-
 const COMMITS_QUERY = `
   query CommitHistory($owner: String!, $name: String!, $ref: String!, $first: Int!) {
     repository(owner: $owner, name: $name) {
@@ -67,7 +57,6 @@ const COMMITS_QUERY = `
     }
   }
 `;
-
 interface RepoQueryData {
   repository: {
     description: string | null;
@@ -82,7 +71,6 @@ interface RepoQueryData {
     languages: { edges: { size: number; node: { name: string } }[] };
   } | null;
 }
-
 interface CommitsQueryData {
   repository: {
     ref: {
@@ -101,19 +89,15 @@ interface CommitsQueryData {
     } | null;
   } | null;
 }
-
-const ANONYMOUS = 'anonim';
-
+const ANONYMOUS = 'unknown';
 export async function analysis(
   gh: GitHubClient,
   owner: string,
   repo: string,
 ): Promise<AnalysisResult> {
   const { repository } = await gh.graphql<RepoQueryData>(REPO_QUERY, { owner, name: repo });
-  if (!repository) throw new Error(`${owner}/${repo} bulunamadı.`);
-
+  if (!repository) throw new Error(`${owner}/${repo} not found.`);
   const defaultBranch = repository.defaultBranchRef?.name ?? 'main';
-
   const totalBytes = repository.languages.edges.reduce((sum, e) => sum + e.size, 0);
   const languages = repository.languages.edges
     .map((e) => ({
@@ -121,14 +105,12 @@ export async function analysis(
       percent: totalBytes > 0 ? (e.size / totalBytes) * 100 : 0,
     }))
     .sort((a, b) => b.percent - a.percent);
-
   const commitsData = await gh.graphql<CommitsQueryData>(COMMITS_QUERY, {
     owner,
     name: repo,
     ref: defaultBranch,
     first: 100,
   });
-
   const edges = commitsData.repository?.ref?.target?.history.edges ?? [];
   const committerCounts = new Map<string, number>();
   for (const { node } of edges) {
@@ -139,8 +121,6 @@ export async function analysis(
     .map(([name, count]) => ({ name, count }))
     .sort((a, b) => b.count - a.count)
     .slice(0, 5);
-
-  // Katkida bulunanlar GraphQL'de yok, REST'ten geliyor.
   const contributors = await gh.getAll<{ login: string; contributions: number }>(
     `/repos/${owner}/${repo}/contributors`,
     undefined,
@@ -150,7 +130,6 @@ export async function analysis(
     .sort((a, b) => (b.contributions ?? 0) - (a.contributions ?? 0))
     .slice(0, 5)
     .map((c) => ({ login: c.login ?? ANONYMOUS, contributions: c.contributions ?? 0 }));
-
   return {
     owner,
     repo,

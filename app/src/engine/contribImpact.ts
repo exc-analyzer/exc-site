@@ -1,13 +1,4 @@
-/**
- * Katkıda bulunan etkisi.
- * Kaynak: exc_analyzer/commands/contrib_impact.py
- *
- * Puan = eklenen satır × 0.7 − silinen satır × 0.3
- * Silme tamamen cezalandırılmıyor; temizlik de katkıdır, ama eklemek kadar
- * ağırlık taşımaz.
- */
 import { GitHubClient } from '../lib/github';
-
 export interface ContributorImpact {
   login: string;
   avatarUrl: string | null;
@@ -15,34 +6,24 @@ export interface ContributorImpact {
   additions: number;
   deletions: number;
 }
-
 export interface ContribImpactResult {
   owner: string;
   repo: string;
   contributors: ContributorImpact[];
-  /** GitHub istatistikleri hesaplarken 202 döner; o durumda liste boş gelir. */
   statsPending: boolean;
 }
-
 interface StatsContributor {
   author: { login: string; avatar_url?: string } | null;
   weeks: { a: number; d: number }[];
 }
-
 export async function contribImpact(
   gh: GitHubClient,
   owner: string,
   repo: string,
 ): Promise<ContribImpactResult> {
-  // GitHub bu istatistikleri arka planda hesaplar ve hazir degilse 202 doner.
-  // Birkac kez, artan araliklarla tekrar deniyoruz.
-  //
-  // Bunun calismasi github.ts'teki onbellegin 202'yi SAKLAMAMASINA bagli:
-  // saklasaydi her tekrar deneme ayni onbellek kaydini okur ve dongu bosa
-  // calisirdi.
+
   let data: StatsContributor[] | null = null;
   let pending = false;
-
   for (let attempt = 0; attempt < 3; attempt += 1) {
     const res = await gh.raw<StatsContributor[]>(`/repos/${owner}/${repo}/stats/contributors`);
     if (res.status === 200 && Array.isArray(res.data)) {
@@ -56,11 +37,9 @@ export async function contribImpact(
     }
     break;
   }
-
   if (!data) {
     return { owner, repo, contributors: [], statsPending: pending };
   }
-
   const contributors = data
     .filter((c) => c.author)
     .map((c) => {
@@ -76,6 +55,5 @@ export async function contribImpact(
     })
     .sort((a, b) => b.score - a.score)
     .slice(0, 10);
-
   return { owner, repo, contributors, statsPending: false };
 }

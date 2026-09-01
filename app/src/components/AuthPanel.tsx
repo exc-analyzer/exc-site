@@ -5,20 +5,7 @@ import { rememberGithubToken, getGithubToken, forgetGithubToken } from '../lib/g
 import { accentColor, loadMyProfile, shownAvatar, shownName, type Profile } from '../lib/profile';
 import { Avatar } from './profile/ProfileEditor';
 
-/**
- * Web tarafında istenen tek izinler. CLI'nin kullandığı `repo` ve `workflow`
- * kapsamları bilerek istenmiyor: kimse bir web sitesine tüm özel depolarına
- * tam erişim vermek istemez. Özel depo analizi CLI'da kalır.
- */
 const SCOPES = 'read:user public_repo';
-
-/**
- * Token'ın VAR olması geçerli olduğu anlamına gelmez. OAuth uygulaması
- * "expire user access tokens" açık olduğu için token 8 saatte süresi doluyor;
- * ayrıca kullanıcı izni GitHub ayarlarından istediği an geri alabiliyor.
- * Sunucumuz olmadığı için yenileme yapamıyoruz, o yüzden geçerliliği
- * kullanmadan önce doğruluyoruz.
- */
 async function isTokenUsable(token: string): Promise<boolean> {
   try {
     const res = await fetch('https://api.github.com/user', {
@@ -26,11 +13,9 @@ async function isTokenUsable(token: string): Promise<boolean> {
     });
     return res.status !== 401;
   } catch {
-    // Ağ hatası token'ın geçersiz olduğu anlamına gelmez.
     return true;
   }
 }
-
 async function refreshTokenState(apply: (usable: boolean) => void): Promise<void> {
   const token = getGithubToken();
   if (!token) {
@@ -41,7 +26,6 @@ async function refreshTokenState(apply: (usable: boolean) => void): Promise<void
   if (!usable) forgetGithubToken();
   apply(usable);
 }
-
 export default function AuthPanel() {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -49,24 +33,20 @@ export default function AuthPanel() {
   const [hasToken, setHasToken] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
   useEffect(() => {
     if (!supabase) {
       setReady(true);
       return;
     }
-
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
       setReady(true);
       void refreshTokenState(setHasToken);
       if (data.session) void loadMyProfile().then(setProfile);
     });
-
     const { data: sub } = supabase.auth.onAuthStateChange((event, next) => {
       setSession(next);
 
-      // Supabase provider_token'ı saklamaz; giriş anındaki tek şansımız bu.
       if (next?.provider_token) rememberGithubToken(next.provider_token);
       if (event === 'SIGNED_OUT') {
         forgetGithubToken();
@@ -74,24 +54,18 @@ export default function AuthPanel() {
         setProfile(null);
         return;
       }
-
       void refreshTokenState(setHasToken);
-
       if (next) {
         void loadMyProfile().then((p) => {
           setProfile(p);
-          // Ilk giriste once profil kurulumu. Kullanici nasil gorunecegine
-          // karar vermeden akisa dusmesin.
           if (p && !p.onboarded_at && !window.location.pathname.startsWith('/app/profil')) {
             window.location.href = '/app/profil/';
           }
         });
       }
     });
-
     return () => sub.subscription.unsubscribe();
   }, []);
-
   async function signIn() {
     if (!supabase) return;
     setBusy(true);
@@ -105,7 +79,6 @@ export default function AuthPanel() {
       setBusy(false);
     }
   }
-
   async function signOut() {
     if (!supabase) return;
     setBusy(true);
@@ -113,48 +86,49 @@ export default function AuthPanel() {
     await supabase.auth.signOut();
     setBusy(false);
   }
-
   if (!isConfigured) {
     return (
       <div className="surface p-6">
-        <h2 className="text-base font-semibold">Kurulum tamamlanmadı</h2>
+        <h2 className="text-base font-semibold">Setup is not finished</h2>
         <p className="mt-2 text-sm text-[var(--color-muted)]">
-          Supabase bağlantısı için <code>PUBLIC_SUPABASE_URL</code> ve{' '}
-          <code>PUBLIC_SUPABASE_ANON_KEY</code> gerekiyor.
+          <code>PUBLIC_SUPABASE_URL</code> and <code>PUBLIC_SUPABASE_ANON_KEY</code> are
+          both required.
         </p>
       </div>
     );
   }
-
   if (!ready) {
     return (
       <div className="surface p-6">
-        <p className="text-sm text-[var(--color-muted)]">Yükleniyor…</p>
+        <p className="text-sm text-[var(--color-muted)]">Loading…</p>
       </div>
     );
   }
-
   if (!session) {
     return (
       <div className="surface overflow-hidden">
         <div className="p-6 sm:p-8">
-          <h2 className="text-xl font-bold">GitHub ile giriş yap</h2>
+          <h2 className="text-xl font-bold">Scanning works without an account</h2>
           <p className="mt-2 max-w-md text-sm text-[var(--color-muted)]">
-            Yalnızca herkese açık depo bilgisi ve profilin istenir. Özel depolarına erişim
-            istenmez — analizler senin tarayıcında, senin kotanla çalışır.
+            Signing in raises your limit from 60 requests an hour to 5,000, and lets you save,
+            share and comment on what you find.
           </p>
+          <ul className="mt-4 space-y-1.5 text-sm text-[var(--color-muted)]">
+            <li>Only public repository data and your profile are requested.</li>
+            <li>Access to your private repositories is never asked for.</li>
+            <li>Scans run in your browser, against your own quota.</li>
+          </ul>
 
           <button onClick={signIn} disabled={busy} className="btn btn-primary mt-6">
-            {busy ? 'Yönlendiriliyor…' : 'GitHub ile devam et'}
+            {busy ? 'Redirecting…' : 'Continue with GitHub'}
           </button>
-
           {error && <p className="mt-3 text-sm text-[var(--color-bad)]">{error}</p>}
         </div>
       </div>
     );
   }
 
-  const name = profile ? shownName(profile) : (session.user.user_metadata?.user_name ?? 'kullanıcı');
+  const name = profile ? shownName(profile) : (session.user.user_metadata?.user_name ?? 'you');
   const avatar = profile ? shownAvatar(profile) : (session.user.user_metadata?.avatar_url ?? null);
   const accent = profile ? accentColor(profile.accent) : undefined;
 
@@ -162,7 +136,6 @@ export default function AuthPanel() {
     <div className="surface p-6">
       <div className="flex flex-wrap items-center gap-4">
         <Avatar src={avatar} name={name} accent={accent} size={52} />
-
         <div className="min-w-0 flex-1">
           <p className="truncate text-base font-semibold">{name}</p>
           {profile && (
@@ -171,13 +144,12 @@ export default function AuthPanel() {
             </p>
           )}
         </div>
-
         <div className="flex items-center gap-2">
           <a href="/app/profil/" className="btn btn-ghost">
-            Profil
+            Profile
           </a>
           <button onClick={signOut} disabled={busy} className="btn btn-quiet">
-            Çıkış
+            Sign out
           </button>
         </div>
       </div>
@@ -195,12 +167,12 @@ export default function AuthPanel() {
         />
         <span className="min-w-0 flex-1">
           {hasToken
-            ? 'GitHub bağlantısı hazır — taramalar senin kendi API kotanla çalışacak.'
-            : 'GitHub bağlantısı yok ya da süresi dolmuş. Tarama yapmak için yeniden bağlan.'}
+            ? 'GitHub is connected. Scans run against your own 5,000/hour quota.'
+            : 'GitHub is disconnected, so scans fall back to 60 requests an hour.'}
         </span>
         {!hasToken && (
           <button onClick={signIn} disabled={busy} className="btn btn-ghost">
-            Yeniden bağlan
+            Reconnect
           </button>
         )}
       </div>

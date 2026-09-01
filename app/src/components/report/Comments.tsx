@@ -13,25 +13,17 @@ import { Card, Empty, ExternalLink } from '../console/ui';
 import { relativeTime } from '../../engine/shared';
 import ReportButton from '../ReportButton';
 
-/**
- * Rapor sayfasındaki tartışma.
- *
- * Tek seviye yanıt destekleniyor: derin iç içe zincirler küçük bir toplulukta
- * okunmayı zorlaştırmaktan başka işe yaramıyor.
- */
 export default function Comments({ reportId }: { reportId: string }) {
   const [comments, setComments] = useState<Comment[]>([]);
   const [myVotes, setMyVotes] = useState<Map<string, VoteValue>>(new Map());
   const [me, setMe] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [replyTo, setReplyTo] = useState<string | null>(null);
-
   async function refresh() {
     const list = await loadComments(reportId);
     setComments(list);
     setMyVotes(await loadMyVotes(list.map((c) => c.id)));
   }
-
   useEffect(() => {
     void (async () => {
       if (supabase) {
@@ -42,41 +34,38 @@ export default function Comments({ reportId }: { reportId: string }) {
       setLoading(false);
     })();
   }, [reportId]);
-
   const roots = comments.filter((c) => !c.parent_id);
   const repliesOf = (id: string) => comments.filter((c) => c.parent_id === id);
-
   return (
     <Card>
       <div className="space-y-6 px-6 py-5">
         <div className="flex items-baseline justify-between gap-4">
-          <h2 className="text-sm font-semibold">Tartışma</h2>
+          <h2 className="text-sm font-semibold">Discussion</h2>
           <span className="text-xs text-[var(--color-muted)]">
-            {comments.length === 0 ? 'henüz yorum yok' : `${comments.length} yorum`}
+            {comments.length === 0
+              ? 'no comments yet'
+              : `${comments.length} comment${comments.length === 1 ? '' : 's'}`}
           </span>
         </div>
-
         {me ? (
           <Composer
             reportId={reportId}
             parentId={null}
             onPosted={() => void refresh()}
-            placeholder="Bu rapor hakkında ne düşünüyorsun?"
+            placeholder="What do you make of this report?"
           />
         ) : (
           <p className="rounded-lg border border-[var(--color-line)] px-4 py-3 text-xs text-[var(--color-muted)]">
-            Yorum yazmak için{' '}
             <a href="/app/" className="text-sky-400 hover:underline">
-              GitHub ile giriş yap
-            </a>
-            .
+              Sign in with GitHub
+            </a>{' '}
+            to join the discussion.
           </p>
         )}
-
         {loading ? (
-          <p className="text-sm text-[var(--color-muted)]">Yükleniyor…</p>
+          <p className="text-sm text-[var(--color-muted)]">Loading…</p>
         ) : roots.length === 0 ? (
-          <Empty>İlk yorumu sen yaz.</Empty>
+          <Empty>Nothing said yet. Start it off.</Empty>
         ) : (
           <ul className="space-y-6">
             {roots.map((c) => (
@@ -88,7 +77,6 @@ export default function Comments({ reportId }: { reportId: string }) {
                   onChanged={() => void refresh()}
                   onReply={() => setReplyTo(replyTo === c.id ? null : c.id)}
                 />
-
                 {repliesOf(c.id).length > 0 && (
                   <ul className="mt-4 space-y-4 border-l border-[var(--color-line)] pl-5">
                     {repliesOf(c.id).map((r) => (
@@ -103,13 +91,12 @@ export default function Comments({ reportId }: { reportId: string }) {
                     ))}
                   </ul>
                 )}
-
                 {replyTo === c.id && me && (
                   <div className="mt-4 border-l border-[var(--color-line)] pl-5">
                     <Composer
                       reportId={reportId}
                       parentId={c.id}
-                      placeholder="Yanıtın…"
+                      placeholder="Your reply…"
                       onPosted={() => {
                         setReplyTo(null);
                         void refresh();
@@ -125,7 +112,6 @@ export default function Comments({ reportId }: { reportId: string }) {
     </Card>
   );
 }
-
 function CommentRow({
   comment,
   me,
@@ -142,7 +128,6 @@ function CommentRow({
   const [busy, setBusy] = useState(false);
   const removed = comment.deleted_at !== null;
   const login = comment.author?.gh_login ?? 'bilinmeyen';
-
   async function cast(next: VoteValue) {
     if (!me || busy) return;
     setBusy(true);
@@ -150,7 +135,6 @@ function CommentRow({
     setBusy(false);
     onChanged();
   }
-
   return (
     <article className="flex gap-3">
       <div className="flex shrink-0 flex-col items-center gap-0.5 pt-0.5">
@@ -158,7 +142,7 @@ function CommentRow({
           type="button"
           onClick={() => void cast(1)}
           disabled={!me || removed}
-          aria-label="Faydalı"
+          aria-label="Helpful"
           className={`text-xs leading-none transition ${
             myVote === 1 ? 'text-emerald-400' : 'text-[var(--color-muted)] hover:text-[var(--color-text)]'
           } disabled:opacity-40`}
@@ -170,7 +154,7 @@ function CommentRow({
           type="button"
           onClick={() => void cast(-1)}
           disabled={!me || removed}
-          aria-label="Faydasız"
+          aria-label="Not helpful"
           className={`text-xs leading-none transition ${
             myVote === -1 ? 'text-red-400' : 'text-[var(--color-muted)] hover:text-[var(--color-text)]'
           } disabled:opacity-40`}
@@ -178,7 +162,6 @@ function CommentRow({
           ▼
         </button>
       </div>
-
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-baseline gap-x-2 text-xs text-[var(--color-muted)]">
           {comment.author?.avatar_url && (
@@ -192,22 +175,20 @@ function CommentRow({
           )}
           <ExternalLink href={`https://github.com/${login}`}>{login}</ExternalLink>
           <span>{relativeTime(comment.created_at)}</span>
-          {comment.updated_at !== comment.created_at && !removed && <span>· düzenlendi</span>}
+          {comment.updated_at !== comment.created_at && !removed && <span>· edited</span>}
         </div>
-
         <p
           className={`mt-1.5 whitespace-pre-wrap text-sm ${
             removed ? 'italic text-[var(--color-muted)]' : ''
           }`}
         >
-          {removed ? 'Bu yorum silindi.' : comment.body}
+          {removed ? 'This comment was deleted.' : comment.body}
         </p>
-
         {!removed && (
           <div className="mt-2 flex gap-4 text-xs text-[var(--color-muted)]">
             {onReply && me && (
               <button type="button" onClick={onReply} className="hover:text-[var(--color-text)]">
-                Yanıtla
+                Reply
               </button>
             )}
             {me === comment.author_id ? (
@@ -218,7 +199,7 @@ function CommentRow({
                 }}
                 className="hover:text-[var(--color-bad)]"
               >
-                Sil
+                Delete
               </button>
             ) : (
               me && <ReportButton targetType="comment" targetId={comment.id} />
@@ -229,7 +210,6 @@ function CommentRow({
     </article>
   );
 }
-
 function Composer({
   reportId,
   parentId,
@@ -244,7 +224,6 @@ function Composer({
   const [body, setBody] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
   async function submit() {
     if (!body.trim() || busy) return;
     setBusy(true);
@@ -258,7 +237,6 @@ function Composer({
     setBody('');
     onPosted();
   }
-
   return (
     <div className="space-y-2">
       <textarea
@@ -276,7 +254,7 @@ function Composer({
           disabled={!body.trim() || busy}
           className="rounded-lg border border-[var(--color-line)] bg-[var(--color-surface)] px-4 py-1.5 text-sm transition hover:border-[var(--color-line-active)] disabled:opacity-40"
         >
-          {busy ? 'Gönderiliyor…' : 'Gönder'}
+          {busy ? 'Sending…' : 'Send'}
         </button>
         {error && <p className="text-xs text-red-400">{error}</p>}
       </div>

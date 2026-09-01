@@ -1,11 +1,4 @@
-/**
- * Komut kayıt defteri.
- *
- * Arayüz komutları buradan okur: form alanları, kategori ve sonucun
- * paylaşılabilir olup olmadığı tek yerde tanımlı.
- */
 import type { GitHubClient } from '../lib/github';
-
 import { analysis, type AnalysisResult } from './analysis';
 import { securityScore, type SecurityScoreResult } from './securityScore';
 import { contentAudit, type ContentAuditResult } from './contentAudit';
@@ -50,13 +43,13 @@ export type CommandResult =
 export type CommandCategory = 'intel' | 'security' | 'anomaly' | 'sensitive';
 
 export const CATEGORIES: { id: CommandCategory; label: string; note?: string }[] = [
-  { id: 'intel', label: 'İstihbarat' },
-  { id: 'security', label: 'Güvenlik' },
-  { id: 'anomaly', label: 'Anomali' },
+  { id: 'intel', label: 'Intelligence' },
+  { id: 'security', label: 'Security' },
+  { id: 'anomaly', label: 'Anomaly' },
   {
     id: 'sensitive',
-    label: 'Hassas',
-    note: 'Bu komutların sonuçları kaydedilmez, paylaşılamaz ve değerler hep maskelidir.',
+    label: 'Sensitive',
+    note: 'These results are never saved, never shared, and every value stays masked.',
   },
 ];
 
@@ -82,155 +75,146 @@ export interface CommandDef {
   summary: string;
   category: CommandCategory;
   fields: FieldSpec[];
-  /** true ise sonuç hiçbir yere kaydedilmez ve paylaşılabilir adresi olmaz. */
   sensitive: boolean;
+  requiresAuth?: boolean;
+  authReason?: string;
 }
 
 const REPO_FIELD: FieldSpec = {
   key: 'repo',
   kind: 'repo',
-  label: 'Depo',
-  placeholder: 'sahip/depo — örn. torvalds/linux',
+  label: 'Repository',
+  placeholder: 'owner/repo — e.g. torvalds/linux',
   required: true,
 };
 
 const USER_FIELD: FieldSpec = {
   key: 'username',
   kind: 'user',
-  label: 'Kullanıcı',
-  placeholder: 'GitHub kullanıcı adı — örn. torvalds',
+  label: 'User',
+  placeholder: 'GitHub username — e.g. torvalds',
   required: true,
 };
 
-// dork-scan gecici olarak listede degil.
-//
-// GitHub'in kod arama ucuna (api.github.com/search/...) kimlikli istek bazi
-// tarayicilarda dusuyor: ayni sunucunun /repos/... yolu ayni basliklarla
-// calisirken /search/... yolundaki CORS on kontrolu engelleniyor. Olculdu;
-// GitHub tarafinda sorun yok, engel istemcide ve URL yoluna gore karar
-// veriyor. Sebep bulunana kadar komut gorunmuyor.
-//
-// Kodu duruyor: asagidaki diziye tek bir girdi eklenince geri gelir.
 export const COMMANDS: CommandDef[] = [
   {
-    id: 'analysis',
-    name: 'Depo analizi',
-    cli: 'exc analysis <sahip/depo>',
-    summary: 'Deponun genel durumu: diller, commit dağılımı, katkıda bulunanlar.',
-    category: 'intel',
+    id: 'security-score',
+    name: 'Security score',
+    cli: 'exc security-score <owner/repo>',
+    summary: 'Rates how well a repository is defended, and names what to fix first.',
+    category: 'security',
     fields: [REPO_FIELD],
     sensitive: false,
   },
   {
     id: 'content-audit',
-    name: 'İçerik denetimi',
-    cli: 'exc content-audit <sahip/depo>',
-    summary: 'Topluluk standartları: LICENSE, SECURITY.md, CONTRIBUTING ve diğerleri.',
+    name: 'Content audit',
+    cli: 'exc content-audit <owner/repo>',
+    summary: 'Community standards: LICENSE, SECURITY.md, CONTRIBUTING and the rest.',
     category: 'intel',
     fields: [REPO_FIELD],
     sensitive: false,
   },
   {
+    id: 'analysis',
+    name: 'Repository analysis',
+    cli: 'exc analysis <owner/repo>',
+    summary: 'The whole picture: languages, commit rhythm, who is behind it.',
+    category: 'intel',
+    fields: [REPO_FIELD],
+    sensitive: false,
+    requiresAuth: true,
+    authReason: 'GitHub only answers GraphQL queries for signed-in users.',
+  },
+  {
     id: 'contrib-impact',
-    name: 'Katkı etkisi',
-    cli: 'exc contrib-impact <sahip/depo>',
-    summary: 'Kimin gerçekten taşıdığını satır değişimlerinden ölçer.',
+    name: 'Contribution impact',
+    cli: 'exc contrib-impact <owner/repo>',
+    summary: 'Measures who actually carries the project, from lines changed.',
     category: 'intel',
     fields: [REPO_FIELD],
     sensitive: false,
   },
   {
     id: 'file-history',
-    name: 'Dosya geçmişi',
-    cli: 'exc file-history <sahip/depo> <dosya>',
-    summary: 'Tek bir dosyanın değişim geçmişi.',
+    name: 'File history',
+    cli: 'exc file-history <owner/repo> <file>',
+    summary: 'How a single file changed, and who changed it.',
     category: 'intel',
     fields: [
       REPO_FIELD,
       {
         key: 'path',
         kind: 'text',
-        label: 'Dosya',
-        placeholder: 'README.md ya da src/app/main.py',
-        hint: 'Depo içindeki tam yol.',
+        label: 'File',
+        placeholder: 'README.md or src/app/main.py',
+        hint: 'Full path inside the repository.',
         required: true,
       },
-      { key: 'limit', kind: 'number', label: 'Kayıt sayısı', defaultValue: 20, min: 1, max: 50 },
+      { key: 'limit', kind: 'number', label: 'Entries', defaultValue: 20, min: 1, max: 50 },
     ],
     sensitive: false,
   },
   {
     id: 'user-analysis',
-    name: 'Kullanıcı analizi',
-    cli: 'exc user-a <kullanıcı>',
-    summary: 'Profil özeti, öne çıkan depolar ve dil dağılımı.',
+    name: 'User analysis',
+    cli: 'exc user-a <username>',
+    summary: 'Profile summary, notable repositories and language mix.',
     category: 'intel',
     fields: [USER_FIELD],
     sensitive: false,
   },
-
-  {
-    id: 'security-score',
-    name: 'Güvenlik puanı',
-    cli: 'exc security-score <sahip/depo>',
-    summary: 'Deponun güvenlik duruşunu ölçer ve neyin düzeltileceğini söyler.',
-    category: 'security',
-    fields: [REPO_FIELD],
-    sensitive: false,
-  },
   {
     id: 'actions-audit',
-    name: 'Actions denetimi',
-    cli: 'exc actions-audit <sahip/depo>',
-    summary: 'CI/CD iş akışlarında tedarik zinciri ve enjeksiyon riskleri.',
+    name: 'Actions audit',
+    cli: 'exc actions-audit <owner/repo>',
+    summary: 'Supply-chain and injection risks in CI/CD workflows.',
     category: 'security',
     fields: [REPO_FIELD],
     sensitive: false,
   },
-
   {
     id: 'commit-anomaly',
-    name: 'Commit anomalisi',
-    cli: 'exc commit-anomaly <sahip/depo>',
-    summary: 'Şüpheli commit mesajlarını işaretler.',
+    name: 'Commit anomaly',
+    cli: 'exc commit-anomaly <owner/repo>',
+    summary: 'Flags commit messages that do not look like ordinary work.',
     category: 'anomaly',
     fields: [
       REPO_FIELD,
-      { key: 'limit', kind: 'number', label: 'Commit sayısı', defaultValue: 30, min: 5, max: 100 },
+      { key: 'limit', kind: 'number', label: 'Commits', defaultValue: 30, min: 5, max: 100 },
     ],
     sensitive: false,
   },
   {
     id: 'user-anomaly',
-    name: 'Kullanıcı anomalisi',
-    cli: 'exc user-anomaly <kullanıcı>',
-    summary: 'Olağandışı hesap davranışlarını puanlar. Suçlama değil, işaret.',
+    name: 'User anomaly',
+    cli: 'exc user-anomaly <username>',
+    summary: 'Scores unusual account behaviour. A signal to check, not an accusation.',
     category: 'anomaly',
     fields: [USER_FIELD],
     sensitive: false,
   },
-
   {
     id: 'scan-secrets',
-    name: 'Sır taraması',
-    cli: 'exc scan-secrets <sahip/depo>',
-    summary: 'Son commit’lerde eklenen dosyalarda sızmış anahtar arar.',
+    name: 'Secret scan',
+    cli: 'exc scan-secrets <owner/repo>',
+    summary: 'Looks for keys leaked in files added by recent commits.',
     category: 'sensitive',
     fields: [
       REPO_FIELD,
-      { key: 'limit', kind: 'number', label: 'Commit sayısı', defaultValue: 10, min: 1, max: 50 },
+      { key: 'limit', kind: 'number', label: 'Commits', defaultValue: 10, min: 1, max: 50 },
     ],
     sensitive: true,
   },
   {
     id: 'advanced-secrets',
-    name: 'Derin sır taraması',
-    cli: 'exc advanced-secrets <sahip/depo>',
-    summary: 'Mevcut dosya ağacı ve commit geçmişi birlikte taranır.',
+    name: 'Deep secret scan',
+    cli: 'exc advanced-secrets <owner/repo>',
+    summary: 'Sweeps the current file tree and the commit history together.',
     category: 'sensitive',
     fields: [
       REPO_FIELD,
-      { key: 'limit', kind: 'number', label: 'Commit sayısı', defaultValue: 20, min: 1, max: 50 },
+      { key: 'limit', kind: 'number', label: 'Commits', defaultValue: 20, min: 1, max: 50 },
     ],
     sensitive: true,
   },
@@ -238,7 +222,7 @@ export const COMMANDS: CommandDef[] = [
 
 export function getCommand(id: CommandId): CommandDef {
   const found = COMMANDS.find((c) => c.id === id);
-  if (!found) throw new Error(`Bilinmeyen komut: ${id}`);
+  if (!found) throw new Error(`Unknown command: ${id}`);
   return found;
 }
 
@@ -253,7 +237,7 @@ function repoOf(values: FieldValues): { owner: string; repo: string } {
     .replace(/\/+$/, '')
     .split('/')
     .filter(Boolean);
-  if (parts.length !== 2) throw new Error('Depo biçimi "sahip/depo" olmalı.');
+  if (parts.length !== 2) throw new Error('Repository must be written as "owner/repo".');
   return { owner: parts[0], repo: parts[1] };
 }
 
@@ -287,7 +271,7 @@ export async function runCommand(
     case 'file-history': {
       const { owner, repo } = repoOf(values);
       const path = String(values.path ?? '').trim();
-      if (!path) throw new Error('Bir dosya adı ya da yolu gerekiyor.');
+      if (!path) throw new Error('A file name or path is required.');
       return { id, data: await fileHistory(gh, owner, repo, path, num(values, 'limit', 20)) };
     }
     case 'actions-audit': {
@@ -300,12 +284,12 @@ export async function runCommand(
     }
     case 'user-analysis': {
       const username = String(values.username ?? '').trim();
-      if (!username) throw new Error('Bir kullanıcı adı gerekiyor.');
+      if (!username) throw new Error('A username is required.');
       return { id, data: await userAnalysis(gh, username) };
     }
     case 'user-anomaly': {
       const username = String(values.username ?? '').trim();
-      if (!username) throw new Error('Bir kullanıcı adı gerekiyor.');
+      if (!username) throw new Error('A username is required.');
       return { id, data: await userAnomaly(gh, username) };
     }
     case 'scan-secrets': {

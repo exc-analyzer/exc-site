@@ -10,17 +10,6 @@ import {
   type Profile,
 } from '../../lib/profile';
 
-/**
- * Profil özelleştirme.
- *
- * Kullanıcı adını ve görselini GitHub'dan mı alacağını yoksa kendisi mi
- * yazacağını seçiyor. Seçim anında sağdaki önizlemeye yansıyor: ne olacağını
- * kaydetmeden önce görüyor.
- *
- * GitHub kullanıcı adı (@brgkdm) her koşulda görünmeye devam ediyor. Görünen
- * ad özgür olsun ama kimlik değil: aksi hâlde biri kendine "torvalds" yazıp
- * başkası gibi davranabilirdi.
- */
 export default function ProfileEditor() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -28,8 +17,6 @@ export default function ProfileEditor() {
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
-  // Karsilama modu profilden turetiliyor: daha once kurulum yapilmadiysa
-  // dugme metni ve akis degisiyor.
   const mode: 'page' | 'onboarding' = profile?.onboarded_at ? 'page' : 'onboarding';
 
   useEffect(() => {
@@ -67,18 +54,17 @@ export default function ProfileEditor() {
   }
 
   if (loading) {
-    return <p className="text-sm text-[var(--color-muted)]">Yükleniyor…</p>;
+    return <p className="text-sm text-[var(--color-muted)]">Loading…</p>;
   }
 
   if (!profile) {
     return (
       <div className="surface p-8 text-center">
         <p className="text-sm text-[var(--color-muted)]">
-          Profilini düzenlemek için{' '}
           <a href="/app/" className="link">
-            GitHub ile giriş yap
-          </a>
-          .
+            Sign in with GitHub
+          </a>{' '}
+          to edit your profile.
         </p>
       </div>
     );
@@ -87,49 +73,47 @@ export default function ProfileEditor() {
   return (
     <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_20rem]">
       <div className="space-y-6">
-        {/* --- Görünen ad --- */}
         <section className="surface p-6">
-          <h2 className="text-sm font-semibold">Görünen ad</h2>
+          <h2 className="text-sm font-semibold">Display name</h2>
           <p className="mt-1 text-xs text-[var(--color-muted)]">
-            Yorumlarda ve raporlarda bu ad görünür. GitHub kullanıcı adın
-            <span className="font-mono"> @{profile.gh_login}</span> her zaman yanında durur.
+            This is the name on your comments and reports. Your GitHub username
+            <span className="font-mono"> @{profile.gh_login}</span> always stays next to it.
           </p>
 
           <div className="mt-4 space-y-3">
             <ChoiceRow
               selected={profile.name_source === 'github'}
               onSelect={() => patch({ name_source: 'github' })}
-              title="GitHub'daki adım"
+              title="My name on GitHub"
               detail={profile.gh_name || profile.gh_login}
             />
             <ChoiceRow
               selected={profile.name_source === 'custom'}
               onSelect={() => patch({ name_source: 'custom' })}
-              title="Kendi yazdığım ad"
-              detail={profile.display_name?.trim() || 'Henüz yazılmadı'}
+              title="A name I choose"
+              detail={profile.display_name?.trim() || 'Nothing written yet'}
             />
           </div>
 
           {profile.name_source === 'custom' && (
             <div className="mt-4">
               <label className="label" htmlFor="display-name">
-                Adın
+                Your name
               </label>
               <input
                 id="display-name"
                 className="field"
                 value={profile.display_name ?? ''}
                 maxLength={40}
-                placeholder="Örn. Berat"
+                placeholder="e.g. Berat"
                 onChange={(e) => patch({ display_name: e.target.value })}
               />
             </div>
           )}
         </section>
 
-        {/* --- Profil görseli --- */}
         <section className="surface p-6">
-          <h2 className="text-sm font-semibold">Profil görseli</h2>
+          <h2 className="text-sm font-semibold">Profile picture</h2>
           <div className="mt-4 flex items-center gap-4">
             <Avatar
               src={profile.gh_avatar_url}
@@ -138,37 +122,36 @@ export default function ProfileEditor() {
               size={56}
             />
             <div className="min-w-0 text-xs text-[var(--color-muted)]">
-              <p className="text-sm text-[var(--color-text)]">GitHub görselin kullanılıyor</p>
+              <p className="text-sm text-[var(--color-text)]">Your GitHub picture is in use</p>
               <p className="mt-1">
-                Değiştirmek için{' '}
+                To change it, update your{' '}
                 <a
                   href="https://github.com/settings/profile"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="link"
                 >
-                  GitHub profilinden
-                </a>{' '}
-                güncelle, sonra buradan çıkıp tekrar giriş yap.
+                  GitHub profile
+                </a>
+                , then sign out here and back in.
               </p>
             </div>
           </div>
           <p className="mt-4 text-xs text-[var(--color-faint)]">
-            Görsel yükleme bilerek yok. Doğrulamayı GitHub yapıyor: hesaplar doğrulanmış,
-            içerik denetimi ve ihlalde hesap kapatma onların tarafında.
+            Uploading a picture is deliberately not possible. GitHub does the verifying: accounts
+            are verified there, and content moderation and account bans stay on their side.
           </p>
         </section>
 
-        {/* --- Hakkında --- */}
         <section className="surface p-6">
-          <h2 className="text-sm font-semibold">Hakkında</h2>
-          <p className="mt-1 text-xs text-[var(--color-muted)]">İsteğe bağlı, en fazla 280 karakter.</p>
+          <h2 className="text-sm font-semibold">About</h2>
+          <p className="mt-1 text-xs text-[var(--color-muted)]">Optional, up to 280 characters.</p>
           <textarea
             className="field mt-4 resize-y"
             rows={3}
             maxLength={280}
             value={profile.bio ?? ''}
-            placeholder="Ne yapıyorsun, neyle ilgileniyorsun?"
+            placeholder="What do you build, what are you into?"
             onChange={(e) => patch({ bio: e.target.value })}
           />
           <p className="mt-1.5 text-right text-xs text-[var(--color-faint)]">
@@ -176,10 +159,9 @@ export default function ProfileEditor() {
           </p>
         </section>
 
-        {/* --- Vurgu rengi --- */}
         <section className="surface p-6">
-          <h2 className="text-sm font-semibold">Vurgu rengi</h2>
-          <p className="mt-1 text-xs text-[var(--color-muted)]">Profilinde kullanılır.</p>
+          <h2 className="text-sm font-semibold">Accent colour</h2>
+          <p className="mt-1 text-xs text-[var(--color-muted)]">Used across your profile.</p>
           <div className="mt-4 flex flex-wrap gap-2.5">
             {ACCENTS.map((a) => (
               <button
@@ -200,20 +182,24 @@ export default function ProfileEditor() {
         </section>
 
         <div className="flex flex-wrap items-center gap-4">
-          <button type="button" className="btn btn-primary" onClick={() => void save()} disabled={saving}>
-            {saving ? 'Kaydediliyor…' : mode === 'onboarding' ? 'Kaydet ve başla' : 'Kaydet'}
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => void save()}
+            disabled={saving}
+          >
+            {saving ? 'Saving…' : mode === 'onboarding' ? 'Save and start' : 'Save'}
           </button>
-          {saved && <span className="text-xs text-[var(--color-good)]">Kaydedildi</span>}
+          {saved && <span className="text-xs text-[var(--color-good)]">Saved</span>}
           {error && <span className="text-xs text-[var(--color-bad)]">{error}</span>}
           {mode === 'onboarding' && (
             <a href="/app/" className="btn btn-quiet">
-              Şimdilik atla
+              Skip for now
             </a>
           )}
         </div>
       </div>
 
-      {/* --- Önizleme --- */}
       <aside className="lg:sticky lg:top-24 lg:self-start">
         <div className="surface overflow-hidden">
           <div
@@ -234,7 +220,7 @@ export default function ProfileEditor() {
             {profile.bio?.trim() && (
               <p className="mt-3 text-sm text-[var(--color-muted)]">{profile.bio}</p>
             )}
-            <p className="mt-4 text-xs text-[var(--color-faint)]">Böyle görüneceksin.</p>
+            <p className="mt-4 text-xs text-[var(--color-faint)]">This is how you will look.</p>
           </div>
         </div>
       </aside>

@@ -1,29 +1,10 @@
-/**
- * GitHub Actions iş akışı denetimi.
- * Kaynak: exc_analyzer/commands/actions_audit.py
- *
- * CLI'ye göre bilinçli bir DÜZELTME içeriyor.
- *
- * CLI riski şu düzenli ifadeyle arıyor:
- *     (curl|wget|bash|sh|powershell|python|node)
- * `sh` kelime sınırı olmadan arandığı için "push", "shell", "bash" gibi hemen
- * her kelimenin içinde eşleşiyor. Sonuç: neredeyse her iş akışı "riskli"
- * işaretleniyor ve uyarı hiçbir şey ifade etmiyor.
- *
- * Burada kelime sınırı kullanılıyor ve asıl önemli olan, gerçekten tehlikeli
- * olan kalıplar ayrıca aranıyor: kabuğa boru, pull_request_target, sabitlenmemiş
- * action sürümü ve script enjeksiyonu.
- */
 import { GitHubClient } from '../lib/github';
-
 export type WorkflowSeverity = 'critical' | 'risky' | 'warning' | 'info' | 'ok' | 'error';
-
 export interface WorkflowFinding {
   severity: WorkflowSeverity;
   title: string;
   detail: string;
 }
-
 export interface WorkflowAudit {
   name: string;
   path: string;
@@ -31,7 +12,6 @@ export interface WorkflowAudit {
   severity: WorkflowSeverity;
   findings: WorkflowFinding[];
 }
-
 export interface ActionsAuditResult {
   owner: string;
   repo: string;
@@ -40,85 +20,69 @@ export interface ActionsAuditResult {
 }
 
 const SEVERITY_ORDER: WorkflowSeverity[] = ['error', 'ok', 'info', 'warning', 'risky', 'critical'];
-
 function worst(a: WorkflowSeverity, b: WorkflowSeverity): WorkflowSeverity {
   return SEVERITY_ORDER.indexOf(a) >= SEVERITY_ORDER.indexOf(b) ? a : b;
 }
-
 function inspect(content: string): WorkflowFinding[] {
   const findings: WorkflowFinding[] = [];
-
-  // İnternetten indirip doğrudan kabuğa vermek: tedarik zinciri açığı.
   if (/\b(curl|wget)\b[^\n|]*\|\s*(sudo\s+)?(bash|sh|zsh)\b/i.test(content)) {
     findings.push({
       severity: 'critical',
-      title: 'İnternetten indirilen betik doğrudan çalıştırılıyor',
+      title: 'A downloaded script is piped straight into a shell',
       detail:
-        'curl/wget çıktısı doğrudan kabuğa veriliyor. Kaynak ele geçirilirse iş akışının bütün yetkileriyle kod çalışır. İndirileni önce doğrula, sürümü sabitle.',
+        'curl/wget output goes straight into a shell. If that source is ever compromised, arbitrary code runs with every permission this workflow holds. Verify what you download and pin the version.',
     });
   }
-
-  // pull_request_target, fork'tan gelen kodu depo sırlarıyla aynı bağlamda çalıştırır.
   if (/^\s*pull_request_target\s*:/m.test(content)) {
     findings.push({
       severity: 'critical',
-      title: 'pull_request_target tetikleyicisi',
+      title: 'pull_request_target trigger',
       detail:
-        'Bu tetikleyici fork PR’larını deponun sırlarına erişebilen bir bağlamda çalıştırır. PR kodunu checkout ediyorsa yabancı kod sırlarına ulaşabilir.',
+        'This trigger runs fork pull requests in a context that can read the repository secrets. If it also checks out the pull request code, untrusted code reaches them.',
     });
   }
-
-  // ${{ ... }} doğrudan run: içine gömülürse kabuk enjeksiyonu olur.
   if (/run:\s*[|>]?[\s\S]{0,400}?\$\{\{\s*github\.event\.[^}]*\}\}/.test(content)) {
     findings.push({
       severity: 'risky',
-      title: 'Kullanıcı girdisi kabuk komutuna gömülü',
+      title: 'User input is interpolated into a shell command',
       detail:
-        'github.event alanları (PR başlığı, dal adı gibi) doğrudan run: içine yazılmış. Bu alanları saldırgan belirleyebilir; env değişkeni üzerinden geçir.',
+        'github.event fields such as the pull request title or branch name are written directly into run:. An attacker controls those fields, so pass them through an env variable instead.',
     });
   }
-
-  // Oynak etiketle sabitlenmiş third-party action.
   const mutableUses = [...content.matchAll(/uses:\s*([\w.-]+\/[\w.-]+)@(v?\d+(?:\.\d+)*|main|master|latest)\s*$/gim)]
     .map((m) => `${m[1]}@${m[2]}`)
     .filter((u) => !u.startsWith('actions/'));
   if (mutableUses.length > 0) {
     findings.push({
       severity: 'warning',
-      title: 'Action sürümü commit SHA’ya sabitlenmemiş',
-      detail: `Etiket taşınabilir; ele geçirilen bir action bu iş akışının yetkileriyle çalışır. Sabitlenmemiş: ${[...new Set(mutableUses)].slice(0, 5).join(', ')}`,
+      title: 'Action version is not pinned to a commit SHA',
+      detail: `A tag can be moved, and a compromised action would run with this workflow's permissions. Unpinned: ${[...new Set(mutableUses)].slice(0, 5).join(', ')}`,
     });
   }
-
-  // permissions bloğu yoksa varsayılan (geniş) token izinleri geçerli olur.
   if (!/^\s*permissions\s*:/m.test(content)) {
     findings.push({
       severity: 'warning',
-      title: 'permissions bloğu yok',
+      title: 'No permissions block',
       detail:
-        'GITHUB_TOKEN varsayılan izinlerle çalışır. En dar izni açıkça yaz: permissions: contents: read',
+        'GITHUB_TOKEN runs with default permissions. State the narrowest one explicitly: permissions: contents: read',
     });
   }
-
   if (/\bsecrets\.[A-Z_]/.test(content)) {
     findings.push({
       severity: 'info',
-      title: 'İş akışı sır kullanıyor',
-      detail: 'Sırların yalnızca gerektiği adımlarda ve en dar kapsamda kullanıldığını gözden geçir.',
+      title: 'Workflow uses secrets',
+      detail: 'Check that secrets are only exposed to the steps that actually need them.',
     });
   }
-
   if (findings.length === 0) {
     findings.push({
       severity: 'ok',
-      title: 'Belirgin risk görülmedi',
-      detail: 'Aranan kalıplarda bir bulgu yok. Bu, iş akışının güvenli olduğunun kanıtı değildir.',
+      title: 'No obvious risk found',
+      detail: 'None of the patterns we look for matched. That is not proof the workflow is safe.',
     });
   }
-
   return findings;
 }
-
 interface ContentEntry {
   name: string;
   path: string;
@@ -126,7 +90,6 @@ interface ContentEntry {
   download_url: string | null;
   html_url: string;
 }
-
 export async function actionsAudit(
   gh: GitHubClient,
   owner: string,
@@ -136,15 +99,11 @@ export async function actionsAudit(
   if (res.status !== 200 || !Array.isArray(res.data)) {
     return { owner, repo, workflows: [], hasWorkflows: false };
   }
-
   const files = res.data.filter(
     (f) => f.type === 'file' && /\.ya?ml$/i.test(f.name),
   );
-
   const workflows: WorkflowAudit[] = [];
   for (const file of files) {
-    // Icerik raw.githubusercontent.com yerine API uzerinden aliniyor;
-    // o adres bazi aglarda engelli.
     const content = await gh.getFileContent(owner, repo, file.path);
     if (content === null) {
       workflows.push({
@@ -153,12 +112,11 @@ export async function actionsAudit(
         url: file.html_url,
         severity: 'error',
         findings: [
-          { severity: 'error', title: 'İçerik okunamadı', detail: 'Dosya indirilemedi.' },
+          { severity: 'error', title: 'Could not read the file', detail: 'The file could not be downloaded.' },
         ],
       });
       continue;
     }
-
     const findings = inspect(content);
     workflows.push({
       name: file.name,
@@ -168,6 +126,5 @@ export async function actionsAudit(
       findings,
     });
   }
-
   return { owner, repo, workflows, hasWorkflows: workflows.length > 0 };
 }

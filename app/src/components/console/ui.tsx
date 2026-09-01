@@ -174,12 +174,6 @@ export function ExternalLink({ href, children }: { href: string; children: React
   );
 }
 
-/**
- * Hüküm kartı — her raporun en üstünde.
- *
- * Ham sayı ve liste vermek kullanıcıyı yorumla baş başa bırakıyor. Önce tek
- * cümlelik bir hüküm geliyor: "bu ne demek". Ayrıntı altında, ikinci planda.
- */
 export function Verdict({
   tone,
   headline,
@@ -199,7 +193,6 @@ export function Verdict({
         : tone === 'bad'
           ? 'from-red-500/25'
           : 'from-sky-500/20';
-
   return (
     <div
       className={`surface relative overflow-hidden bg-gradient-to-br ${ring} to-transparent p-6 sm:p-7`}
@@ -209,7 +202,6 @@ export function Verdict({
           <h2 className={`text-lg font-bold ${TONE_TEXT[tone]}`}>{headline}</h2>
           <p className="mt-2 text-sm text-[var(--color-muted)]">{summary}</p>
         </div>
-
         {score && (
           <div className="shrink-0 text-right">
             <div className={`text-4xl font-bold tabular-nums ${TONE_TEXT[tone]}`}>
@@ -223,13 +215,6 @@ export function Verdict({
     </div>
   );
 }
-
-/**
- * Yapılacaklar listesi, etkiye göre sıralı.
- *
- * En çok puan kazandıran ya da en çok risk azaltan madde başta: kullanıcı
- * listenin tamamını okumasa bile en önemlisini görmüş oluyor.
- */
 export function ActionList({
   title,
   items,
@@ -238,7 +223,6 @@ export function ActionList({
   items: { key: string; text: string; weight?: number }[];
 }) {
   if (items.length === 0) return null;
-
   return (
     <div>
       <SectionTitle>{title}</SectionTitle>
@@ -263,8 +247,6 @@ export function ActionList({
     </div>
   );
 }
-
-/** Katlanabilir ayrıntı. Kanıt görünür olmalı ama başrolde olmamalı. */
 export function Details({ summary, children }: { summary: string; children: ReactNode }) {
   return (
     <details className="group">
@@ -275,8 +257,6 @@ export function Details({ summary, children }: { summary: string; children: Reac
     </details>
   );
 }
-
-/** Küçük, tek satırlık olumlu bildirim listesi. */
 export function GoodList({ items }: { items: string[] }) {
   if (items.length === 0) return null;
   return (

@@ -2,17 +2,7 @@ import { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { friendlyDbError } from '../lib/dbError';
 
-/**
- * Bildirme.
- *
- * Otomatik içerik denetimi sıfır bütçeyle güvenilir biçimde mümkün olmadığı
- * için asıl koruma bu: gördüğün bir şeyi bildirebiliyorsun, kaydı kim
- * hakkında olduğu ve kimin bildirdiği belli oluyor.
- *
- * Kimin kimi bildirdiği herkese açık değil — görünür olsaydı misilleme olurdu.
- */
 export type AbuseTarget = 'avatar' | 'comment' | 'profile' | 'report';
-
 export default function ReportButton({
   targetType,
   targetId,
@@ -26,16 +16,14 @@ export default function ReportButton({
   const [reason, setReason] = useState('');
   const [state, setState] = useState<'idle' | 'sending' | 'done' | 'error'>('idle');
   const [message, setMessage] = useState<string | null>(null);
-
   async function send() {
     if (!supabase || reason.trim().length < 3) return;
     setState('sending');
-
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData.session?.user.id;
     if (!userId) {
       setState('error');
-      setMessage('Bildirmek için giriş yapmalısın.');
+      setMessage('Sign in to report something.');
       return;
     }
 
@@ -45,20 +33,16 @@ export default function ReportButton({
       reporter_id: userId,
       reason: reason.trim(),
     });
-
     if (error) {
       setState('error');
-      // Ayni kisi ayni hedefi bir kez bildirebilir.
       setMessage(
-        error.code === '23505' ? 'Bunu zaten bildirmiştin.' : friendlyDbError(error),
+        error.code === '23505' ? 'You already reported this.' : friendlyDbError(error),
       );
       return;
     }
-
     setState('done');
-    setMessage('Bildirimin alındı. Teşekkürler.');
+    setMessage('Report received. Thank you.');
   }
-
   if (state === 'done') {
     return <span className="text-xs text-[var(--color-good)]">{message}</span>;
   }
@@ -74,7 +58,6 @@ export default function ReportButton({
       </button>
     );
   }
-
   return (
     <div className="mt-2 w-full space-y-2 rounded-[var(--radius-control)] border border-[var(--color-line)] p-3">
       <label className="label" htmlFor={`reason-${targetId}`}>
@@ -85,7 +68,7 @@ export default function ReportButton({
         className="field"
         value={reason}
         maxLength={500}
-        placeholder="Kısaca yaz: uygunsuz görsel, hakaret, spam…"
+        placeholder="In a line: abusive image, insult, spam…"
         onChange={(e) => setReason(e.target.value)}
       />
       <div className="flex flex-wrap items-center gap-2">
@@ -95,10 +78,10 @@ export default function ReportButton({
           disabled={reason.trim().length < 3 || state === 'sending'}
           className="btn btn-ghost"
         >
-          {state === 'sending' ? 'Gönderiliyor…' : 'Gönder'}
+          {state === 'sending' ? 'Sending…' : 'Send'}
         </button>
         <button type="button" onClick={() => setOpen(false)} className="btn btn-quiet">
-          Vazgeç
+          Cancel
         </button>
         {message && <span className="text-xs text-[var(--color-bad)]">{message}</span>}
       </div>

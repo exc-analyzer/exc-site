@@ -1,9 +1,4 @@
-/**
- * Kullanıcı profili analizi.
- * Kaynak: exc_analyzer/commands/user_a.py
- */
 import { GitHubClient } from '../lib/github';
-
 export interface UserAnalysisResult {
   login: string;
   name: string | null;
@@ -20,7 +15,6 @@ export interface UserAnalysisResult {
   topRepos: { name: string; stars: number; language: string | null; url: string; description: string | null }[];
   languages: { name: string; count: number }[];
 }
-
 interface UserData {
   login: string;
   name: string | null;
@@ -35,7 +29,6 @@ interface UserData {
   public_repos: number;
   public_gists: number;
 }
-
 interface RepoData {
   name: string;
   stargazers_count: number;
@@ -44,7 +37,6 @@ interface RepoData {
   description: string | null;
   fork: boolean;
 }
-
 export async function userAnalysis(
   gh: GitHubClient,
   username: string,
@@ -53,7 +45,6 @@ export async function userAnalysis(
     gh.get<UserData>(`/users/${username}`),
     gh.getAll<RepoData>(`/users/${username}/repos`, { sort: 'updated' }, 3),
   ]);
-
   const topRepos = [...repos]
     .sort((a, b) => (b.stargazers_count ?? 0) - (a.stargazers_count ?? 0))
     .slice(0, 5)
@@ -64,7 +55,6 @@ export async function userAnalysis(
       url: r.html_url,
       description: r.description,
     }));
-
   const langCounts = new Map<string, number>();
   for (const r of repos) {
     if (!r.language) continue;
@@ -74,7 +64,6 @@ export async function userAnalysis(
     .map(([name, count]) => ({ name, count }))
     .sort((a, b) => b.count - a.count)
     .slice(0, 6);
-
   return {
     login: user.login,
     name: user.name,

@@ -1,12 +1,5 @@
 @import "tailwindcss";
 
-/**
- * Tasarım dili tanıtım sayfasından geliyor.
- *
- * Değerler public/index.html içindeki :root bloğuyla birebir aynı. Uygulama
- * ile tanıtım sayfası arasında geçiş yapan biri hiçbir kopma hissetmemeli;
- * bunun için iki ayrı palet değil, tek bir palet var.
- */
 @theme {
   --color-bg: #0a0a0c;
   --color-surface: #13131f;
@@ -50,7 +43,6 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Tanıtım sayfasındaki gibi: sayfanın üstünde yumuşak bir ışık. */
 body::before {
   content: '';
   position: fixed;
@@ -76,7 +68,6 @@ pre,
   font-family: var(--font-mono);
 }
 
-/* Odak halkası her yerde aynı: klavyeyle gezen biri nerede olduğunu görmeli. */
 :focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
@@ -87,11 +78,6 @@ pre,
   background: rgba(99, 102, 241, 0.35);
 }
 
-/* --------------------------------------------------------------------------
-   Bileşen sınıfları.
-   Aynı görünüm onlarca yerde Tailwind sınıfı tekrarlayarak değil, tek yerden
-   tanımlanarak sağlanıyor; tasarımı değiştirmek tek dosyaya dokunmak oluyor.
-   -------------------------------------------------------------------------- */
 @layer components {
   .surface {
     background-color: var(--color-surface);

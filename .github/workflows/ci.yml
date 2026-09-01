@@ -7,19 +7,16 @@ on:
   pull_request:
   workflow_dispatch:
 
-# Yalnızca okur; deploy etmez.
 permissions:
   contents: read
 
 jobs:
   check:
-    name: Tip kontrolü ve derleme
+    name: Type check and build
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
     env:
-      # Bu iki değer gizli değil, tarayıcıda zaten görünüyor. Derlemeye
-      # verilmesinin sebebi çıktının üretimdekiyle aynı olması.
       PUBLIC_SUPABASE_URL: ${{ vars.PUBLIC_SUPABASE_URL }}
       PUBLIC_SUPABASE_ANON_KEY: ${{ vars.PUBLIC_SUPABASE_ANON_KEY }}
 
@@ -32,27 +29,21 @@ jobs:
           cache: npm
           cache-dependency-path: app/package-lock.json
 
-      # `npm ci` package-lock.json'a birebir uyar. Beyan edilmemiş bir
-      # bağımlılık varsa burada ortaya çıkar — geliştirici makinesinde
-      # başka bir paket üzerinden geçişli gelmiş olabilir.
-      - name: Bağımlılıkları kur
+      - name: Install dependencies
         working-directory: app
         run: npm ci
 
-      - name: Tip kontrolü ve derleme
+      - name: Type check and build
         working-directory: app
         run: npm test
 
-      # Derleme sonrası çıktı, depodaki public/app ile aynı olmalı.
-      # Farklıysa biri derlemeyi çalıştırmadan commit atmış demektir ve
-      # yayınlanan dosyalar kaynak kodun gerisinde kalır.
-      - name: Derleme çıktısı depodakiyle aynı mı
+      - name: Build output matches the repository
         run: |
           if [ -n "$(git status --porcelain public/app)" ]; then
-            echo "public/app derleme sonrası değişti — commit'lenmemiş derleme çıktısı var:"
+            echo "public/app changed after the build - there is uncommitted build output:"
             git status --porcelain public/app
             echo ""
-            echo "Düzeltmek için: cd app && npm run build, sonra public/app değişikliklerini commit'le."
+            echo "To fix: cd app && npm run build, then commit the public/app changes."
             exit 1
           fi
-          echo "public/app güncel."
+          echo "public/app is up to date."

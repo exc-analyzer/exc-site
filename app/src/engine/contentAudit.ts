@@ -1,16 +1,6 @@
-/**
- * Topluluk standartları denetimi.
- * Kaynak: exc_analyzer/commands/content_audit.py
- *
- * CLI'ye göre bir düzeltme: GitHub bu dosyaların hepsini kökte, .github/ ve
- * docs/ altında arar. Yalnızca köke bakmak, dosyası .github/ altında duran
- * depolara "eksik" demek olur.
- */
 import { GitHubClient } from '../lib/github';
 import { decodeBase64 } from './shared';
-
 export type AuditQuality = 'ok' | 'too_short' | 'empty' | 'missing' | 'unknown';
-
 export interface AuditItem {
   file: string;
   description: string;
@@ -19,7 +9,6 @@ export interface AuditItem {
   qualityLabel: string;
   passed: boolean;
 }
-
 export interface ContentAuditResult {
   owner: string;
   repo: string;
@@ -27,43 +16,40 @@ export interface ContentAuditResult {
   presentCount: number;
   totalCount: number;
 }
-
 const FILES: { name: string; description: string; paths: string[] }[] = [
   {
     name: 'LICENSE',
-    description: 'Kullanım koşulları',
+    description: 'Terms of use',
     paths: ['LICENSE', 'LICENSE.md', 'LICENSE.txt', 'COPYING'],
   },
   {
     name: 'SECURITY.md',
-    description: 'Güvenlik açığı bildirim politikası',
+    description: 'How to report a vulnerability',
     paths: ['SECURITY.md', '.github/SECURITY.md', 'docs/SECURITY.md'],
   },
   {
     name: 'CODE_OF_CONDUCT.md',
-    description: 'Topluluk davranış kuralları',
+    description: 'Community conduct rules',
     paths: ['CODE_OF_CONDUCT.md', '.github/CODE_OF_CONDUCT.md', 'docs/CODE_OF_CONDUCT.md'],
   },
   {
     name: 'CONTRIBUTING.md',
-    description: 'Katkı rehberi',
+    description: 'Contribution guide',
     paths: ['CONTRIBUTING.md', '.github/CONTRIBUTING.md', 'docs/CONTRIBUTING.md'],
   },
   {
     name: 'README.md',
-    description: 'Proje tanıtımı',
+    description: 'What the project is',
     paths: ['README.md', 'README', 'readme.md'],
   },
 ];
-
 const QUALITY_LABELS: Record<AuditQuality, string> = {
-  ok: 'Yeterli',
-  too_short: 'Var ama çok kısa',
-  empty: 'Boş',
-  missing: 'Yok',
-  unknown: 'Okunamadı',
+  ok: 'Adequate',
+  too_short: 'Present but very short',
+  empty: 'Empty',
+  missing: 'Missing',
+  unknown: 'Could not read',
 };
-
 export async function contentAudit(
   gh: GitHubClient,
   owner: string,
@@ -74,7 +60,6 @@ export async function contentAudit(
   for (const spec of FILES) {
     let found: { path: string; content: string } | null = null;
     let sawUnexpected = false;
-
     for (const path of spec.paths) {
       const res = await gh.raw<{ content?: string; encoding?: string }>(
         `/repos/${owner}/${repo}/contents/${path}`,
@@ -85,7 +70,6 @@ export async function contentAudit(
       }
       if (res.status !== 404) sawUnexpected = true;
     }
-
     if (!found) {
       const quality: AuditQuality = sawUnexpected ? 'unknown' : 'missing';
       items.push({
@@ -98,7 +82,6 @@ export async function contentAudit(
       });
       continue;
     }
-
     const text = found.content;
     let quality: AuditQuality;
     if (!text.trim()) {
@@ -110,7 +93,6 @@ export async function contentAudit(
     } else {
       quality = 'ok';
     }
-
     items.push({
       file: spec.name,
       description: spec.description,
@@ -120,7 +102,6 @@ export async function contentAudit(
       passed: quality === 'ok',
     });
   }
-
   return {
     owner,
     repo,

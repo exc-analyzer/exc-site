@@ -8,7 +8,7 @@ interface Props {
 
 const {
   title,
-  description = 'GitHub depolarını analiz et, güvenlik duruşunu ölç, bulgularını toplulukla paylaş.',
+  description = 'Analyse GitHub repositories, measure how well they are defended, and share what you find.',
 } = Astro.props;
 ---
 
@@ -21,7 +21,6 @@ const {
     <meta name="description" content={description} />
     <link rel="icon" href="/favicon.png" />
 
-    <!-- Tanıtım sayfasıyla aynı yazı tipleri; iki taraf arasında kopma olmasın. -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -63,8 +62,8 @@ const {
         <div
           class="mx-auto flex max-w-[1200px] flex-wrap items-center justify-between gap-3 px-6 py-6 text-xs text-[var(--color-faint)]"
         >
-          <p>Analizler tarayıcında, kendi GitHub hesabınla çalışır. Kodun bize gönderilmez.</p>
-          <a href="https://github.com/exc-analyzer/exc" class="link">Kaynak kod</a>
+          <p>Scans run in your browser, on your own GitHub account. Your code never reaches us.</p>
+          <a href="https://github.com/exc-analyzer/exc" class="link">Source</a>
         </div>
       </footer>
     </div>

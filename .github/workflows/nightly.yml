@@ -2,11 +2,9 @@ name: Nightly
 
 on:
   schedule:
-    # Her gece 03:00 UTC (Türkiye saatiyle 06:00)
     - cron: '0 3 * * *'
   workflow_dispatch:
 
-# Bu iş yalnızca okur ve dışarıya deploy eder; depoya yazmaz.
 permissions:
   contents: read
 
@@ -16,7 +14,7 @@ concurrency:
 
 jobs:
   publish:
-    name: Rozetler, rapor sayfaları ve site haritası
+    name: Badges, report pages and sitemap
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -34,45 +32,32 @@ jobs:
           cache: npm
           cache-dependency-path: app/package-lock.json
 
-      - name: Bağımlılıkları kur
+      - name: Install dependencies
         working-directory: app
         run: npm ci
 
-      - name: Uygulamayı derle
+      - name: Build the app
         working-directory: app
         run: npm run build
 
-      # Güvenlik politikalarının gerçekten tuttuğunu doğrular.
-      #
-      # Şema dosyaları herkese açık bir depoda duruyor. Bu bir zafiyet değil —
-      # kuralı Postgres sunucu tarafında uyguluyor, bilmek aşmaya yaramıyor.
-      # Ama saldırganın neyi deneyeceğini bilmesi hata payımızı daraltıyor:
-      # politikalarda bir yanlışlık olursa çabuk bulunur. Bu yüzden doğrulama
-      # "hatırlandığında" değil her gece çalışıyor.
-      - name: Güvenlik politikalarını doğrula
+      - name: Verify the security policies
         working-directory: app
         run: npm run check:rls
 
-      # Rozetleri, önceden üretilmiş rapor sayfalarını ve site haritasını üretir.
-      # Aynı adım Supabase'e de dokunuyor: ücretsiz proje bir hafta hareketsiz
-      # kalırsa duraklatılıyor, bu iş her gece çalıştığı için o hiç olmuyor.
-      - name: Rozet ve sayfaları üret
+      - name: Generate badges and pages
         working-directory: app
         run: npm run prerender
 
-      # Gizli deger komut satirina gomulmuyor, ortam degiskeni olarak
-      # geciriliyor: hem JSON icerigi bozulmuyor hem de kabuk yorumlamasindan
-      # gecmiyor.
-      - name: Firebase kimliğini hazırla
+      - name: Write the Firebase credentials
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
         run: |
           printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/firebase-key.json"
           echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/firebase-key.json" >> "$GITHUB_ENV"
 
-      - name: Yayınla
+      - name: Deploy
         run: npx --yes firebase-tools@15 deploy --only hosting --project exc-analyzer --non-interactive
 
-      - name: Kimliği sil
+      - name: Remove the credentials
         if: always()
         run: rm -f "$RUNNER_TEMP/firebase-key.json"

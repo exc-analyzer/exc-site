@@ -20,31 +20,15 @@ interface Target {
 
 const VALID_KINDS = new Set(COMMANDS.map((c) => c.id));
 
-/**
- * Hedefi adresten okur.
- *
- * Iki bicim destekleniyor:
- *   /app/r/<sahip>/<depo>/<komut>   ve   /app/u/<kullanici>/<komut>
- *   /app/r/?t=<sahip>/<depo>/<komut>
- *
- * Ikincisi yerel gelistirme icin: statik sunucu yalnizca /app/r/ adresini
- * taniyor. Uretimde Firebase yonlendirmesi derin yollari da bu sayfaya
- * dusuruyor.
- */
 function parseTarget(): Target | null {
   if (typeof window === 'undefined') return null;
-
   const query = new URLSearchParams(window.location.search).get('t');
   const source = query ?? window.location.pathname;
-
   const parts = source
     .replace(/^\/app\//, '')
     .split('/')
     .filter(Boolean);
-
-  // Sorgu bicimi geldiginde basta r/ ya da u/ olmayabilir.
   const scoped = parts[0] === 'r' || parts[0] === 'u' ? parts.slice(1) : parts;
-
   if (scoped.length === 3) {
     const [owner, repo, kind] = scoped;
     if (!VALID_KINDS.has(kind as CommandId)) return null;
@@ -57,33 +41,25 @@ function parseTarget(): Target | null {
   }
   return null;
 }
-
 type State =
   | { kind: 'loading' }
   | { kind: 'bad-url' }
   | { kind: 'missing'; target: Target }
   | { kind: 'ready'; target: Target; report: StoredReport; siblings: StoredReport[] };
-
 export default function ReportPage() {
   const [state, setState] = useState<State>({ kind: 'loading' });
-
   useEffect(() => {
-    // Gecelik is, arama motorlari icin okunabilir bir ozet gomuyor.
-    // Uygulama devraldiginda o blok kaldiriliyor ki icerik iki kez gorunmesin.
     document.getElementById('exc-prerendered')?.remove();
-
     const target = parseTarget();
     if (!target) {
       setState({ kind: 'bad-url' });
       return;
     }
-
     void (async () => {
       const [report, siblings] = await Promise.all([
         loadReport(target.owner, target.repo, target.kind),
         loadTargetReports(target.owner, target.repo),
       ]);
-
       if (!report) {
         setState({ kind: 'missing', target });
         return;
@@ -96,30 +72,26 @@ export default function ReportPage() {
       });
     })();
   }, []);
-
   if (state.kind === 'loading') {
-    return <p className="text-sm text-[var(--color-muted)]">Yükleniyor…</p>;
+    return <p className="text-sm text-[var(--color-muted)]">Loading…</p>;
   }
-
   if (state.kind === 'bad-url') {
     return (
       <Card>
         <div className="px-6 py-8">
           <Empty>
-            Bu adres bir rapora işaret etmiyor.{' '}
+            This address does not point at a report.{' '}
             <a href="/app/" className="text-sky-400 hover:underline">
-              Uygulamaya dön
+              Back to the app
             </a>
           </Empty>
         </div>
       </Card>
     );
   }
-
   const label = state.target.repo
     ? `${state.target.owner}/${state.target.repo}`
     : state.target.owner;
-
   if (state.kind === 'missing') {
     return (
       <div className="space-y-4">
@@ -127,10 +99,10 @@ export default function ReportPage() {
         <Card>
           <div className="px-6 py-8">
             <Empty>
-              Bu hedef için <strong>{getCommand(state.target.kind).name}</strong> raporu yok — henüz
-              kimse çalıştırmamış.{' '}
+              No <strong>{getCommand(state.target.kind).name}</strong> report for this target yet.
+              Nobody has run one.{' '}
               <a href="/app/" className="text-sky-400 hover:underline">
-                İlk sen çalıştır
+                Be the first
               </a>
             </Empty>
           </div>
@@ -138,46 +110,39 @@ export default function ReportPage() {
       </div>
     );
   }
-
   const { report, siblings, target } = state;
   const scanner = report.profiles?.gh_login;
-
   return (
     <div className="space-y-6">
       <Header label={label} kind={target.kind} />
-
       <ResultView result={toCommandResult(report)} />
-
       <Card>
         <div className="flex flex-wrap items-center justify-between gap-4 px-6 py-4 text-xs text-[var(--color-muted)]">
           <p>
             {scanner ? (
               <>
-                Son tarayan{' '}
+                Last scanned by{' '}
                 <ExternalLink href={`https://github.com/${scanner}`}>{scanner}</ExternalLink>
               </>
             ) : (
-              'Son tarayan bilinmiyor'
+              'Last scanner unknown'
             )}{' '}
-            · {relativeTime(report.updated_at)} · {report.scan_count} kez tarandı
+            · {relativeTime(report.updated_at)} · scanned {report.scan_count} times
           </p>
           <a href="/app/" className="text-sky-400 hover:underline">
-            Yeniden tara
+            Scan again
           </a>
         </div>
       </Card>
-
       {target.kind === 'security-score' && target.repo && (
         <BadgeSnippet owner={target.owner} repo={target.repo} />
       )}
-
       <Comments reportId={report.id} />
-
       {siblings.length > 0 && (
         <Card>
           <div className="px-6 py-4">
             <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-[var(--color-muted)]">
-              Bu hedef için diğer raporlar
+              Other reports for this target
             </p>
             <ul className="flex flex-wrap gap-2">
               {siblings.map((s) => (
@@ -202,37 +167,23 @@ export default function ReportPage() {
     </div>
   );
 }
-
-/**
- * README'ye konulacak rozet.
- *
- * Rozet adresi sonsuza kadar sabit kalmali: baskalarinin depolarina gomuluyor.
- * Bu yuzden shields.io'nun endpoint bicimi ve gecelik is tarafindan uretilen
- * statik JSON kullaniliyor. Supabase'e dogrudan baglanan dinamik bir adres de
- * mumkundu ama o adres anahtari icerir ve anahtar degisirse herkesin rozeti
- * kirilir.
- */
 function BadgeSnippet({ owner, repo }: { owner: string; repo: string }) {
   const [copied, setCopied] = useState(false);
-  // Yayindaki adres kullaniliyor, bakilan adres degil: bu parca baskasinin
-  // deposuna gomulecek.
   const badgeUrl = `https://img.shields.io/endpoint?url=${encodeURIComponent(`${SITE_URL}/badge/${owner}/${repo}.json`)}`;
   const pageUrl = `${SITE_URL}/app/r/${owner}/${repo}/security-score/`;
-  const markdown = `[![EXC güvenlik](${badgeUrl})](${pageUrl})`;
-
+  const markdown = `[![EXC security](${badgeUrl})](${pageUrl})`;
   return (
     <Card>
       <div className="space-y-3 px-6 py-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-sm font-semibold">README rozeti</h2>
+            <h2 className="text-sm font-semibold">README badge</h2>
             <p className="mt-1 text-xs text-[var(--color-muted)]">
-              Depona ekle; puan her gece kendiliğinden güncellenir.
+              Drop it in your repository. The score refreshes itself every night.
             </p>
           </div>
           <img src={badgeUrl} alt="" height={20} />
         </div>
-
         <div className="flex items-center gap-2">
           <code className="min-w-0 flex-1 truncate rounded-lg border border-[var(--color-line)] bg-[var(--color-bg)] px-3 py-2 text-xs">
             {markdown}
@@ -247,14 +198,13 @@ function BadgeSnippet({ owner, repo }: { owner: string; repo: string }) {
             }}
             className="shrink-0 rounded-lg border border-[var(--color-line)] px-3 py-2 text-xs transition hover:border-[var(--color-line-active)]"
           >
-            {copied ? 'Kopyalandı' : 'Kopyala'}
+            {copied ? 'Copied' : 'Copy'}
           </button>
         </div>
       </div>
     </Card>
   );
 }
-
 function Header({ label, kind }: { label: string; kind: CommandId }) {
   const command = getCommand(kind);
   return (
