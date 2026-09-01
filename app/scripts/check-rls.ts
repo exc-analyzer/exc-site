@@ -76,6 +76,18 @@ const CHECKS: Check[] = [
     why: 'Who voted for what must stay private.',
   },
   {
+    name: 'Follows NOT readable anonymously',
+    run: () => get('/rest/v1/follows?select=user_id'),
+    expect: [401, 403],
+    why: 'What someone watches is their business alone.',
+  },
+  {
+    name: 'Follow activity NOT readable anonymously',
+    run: () => get('/rest/v1/follow_activity?select=owner'),
+    expect: [401, 403],
+    why: 'The view must answer with the caller rights, not the creator rights.',
+  },
+  {
     name: 'auth.users is NOT exposed',
     run: () => get('/rest/v1/users?select=email'),
     expect: [401, 403, 404],

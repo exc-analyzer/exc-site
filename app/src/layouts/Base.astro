@@ -1,5 +1,6 @@
 ---
 import '../styles/global.css';
+import FollowingLink from '../components/follow/FollowingLink.tsx';
 
 interface Props {
   title: string;
@@ -52,6 +53,7 @@ const {
 
           <nav class="flex items-center gap-1 text-sm">
             <a href="/app/" class="btn btn-quiet">Console</a>
+            <FollowingLink client:idle />
             <a href="/app/profile/" class="btn btn-quiet">Profile</a>
             <a
               href="https://github.com/exc-analyzer/exc"

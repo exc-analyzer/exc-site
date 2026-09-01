@@ -6,6 +6,7 @@ import { Card, Empty, ExternalLink, SectionTitle, Verdict } from '../console/ui'
 import type { Tone } from '../console/ui';
 import { relativeTime } from '../../engine/shared';
 import BadgeSnippet from './BadgeSnippet';
+import FollowButton from './FollowButton';
 
 interface Line {
   tone: Tone;
@@ -158,7 +159,10 @@ export default function RepoHub({ owner, repo }: { owner: string; repo: string }
           </p>
           <h1 className="mt-1 font-mono text-2xl tracking-tight">{label}</h1>
         </div>
-        <ExternalLink href={githubUrl}>View on GitHub</ExternalLink>
+        <div className="flex items-center gap-4">
+          <ExternalLink href={githubUrl}>View on GitHub</ExternalLink>
+          <FollowButton owner={owner} repo={repo} />
+        </div>
       </header>
 
       {reports === null ? (
