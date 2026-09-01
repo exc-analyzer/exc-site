@@ -9,9 +9,9 @@ import {
 import { ResultView } from '../console/ResultView';
 import { Card, Empty, ExternalLink } from '../console/ui';
 import { relativeTime } from '../../engine/shared';
-import { SITE_URL } from '../../lib/site';
 import Comments from './Comments';
 import RepoHub from './RepoHub';
+import BadgeSnippet from './BadgeSnippet';
 
 interface Target {
   owner: string;
@@ -160,7 +160,7 @@ function ReportDetail({ target: parsed }: { target: Target | null }) {
         </div>
       </Card>
       {target.kind === 'security-score' && target.repo && (
-        <BadgeSnippet owner={target.owner} repo={target.repo} />
+        <BadgeSnippet owner={target.owner} repo={target.repo} score={report.score} />
       )}
       <Comments reportId={report.id} />
       {siblings.length > 0 && (
@@ -190,44 +190,6 @@ function ReportDetail({ target: parsed }: { target: Target | null }) {
         </Card>
       )}
     </div>
-  );
-}
-function BadgeSnippet({ owner, repo }: { owner: string; repo: string }) {
-  const [copied, setCopied] = useState(false);
-  const badgeUrl = `https://img.shields.io/endpoint?url=${encodeURIComponent(`${SITE_URL}/badge/${owner}/${repo}.json`)}`;
-  const pageUrl = `${SITE_URL}/app/r/${owner}/${repo}/security-score/`;
-  const markdown = `[![EXC security](${badgeUrl})](${pageUrl})`;
-  return (
-    <Card>
-      <div className="space-y-3 px-6 py-5">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 className="text-sm font-semibold">README badge</h2>
-            <p className="mt-1 text-xs text-[var(--color-muted)]">
-              Drop it in your repository. The score refreshes itself every night.
-            </p>
-          </div>
-          <img src={badgeUrl} alt="" height={20} />
-        </div>
-        <div className="flex items-center gap-2">
-          <code className="min-w-0 flex-1 truncate rounded-lg border border-[var(--color-line)] bg-[var(--color-bg)] px-3 py-2 text-xs">
-            {markdown}
-          </code>
-          <button
-            type="button"
-            onClick={() => {
-              void navigator.clipboard.writeText(markdown).then(() => {
-                setCopied(true);
-                setTimeout(() => setCopied(false), 1600);
-              });
-            }}
-            className="shrink-0 rounded-lg border border-[var(--color-line)] px-3 py-2 text-xs transition hover:border-[var(--color-line-active)]"
-          >
-            {copied ? 'Copied' : 'Copy'}
-          </button>
-        </div>
-      </div>
-    </Card>
   );
 }
 function Header({ label, kind }: { label: string; kind: CommandId }) {

@@ -5,7 +5,7 @@ import { loadRepoComments, type RepoComment } from '../../lib/comments';
 import { Card, Empty, ExternalLink, SectionTitle, Verdict } from '../console/ui';
 import type { Tone } from '../console/ui';
 import { relativeTime } from '../../engine/shared';
-import { SITE_URL } from '../../lib/site';
+import BadgeSnippet from './BadgeSnippet';
 
 interface Line {
   tone: Tone;
@@ -62,7 +62,7 @@ function describe(report: StoredReport): Line {
       const people = Array.isArray(s.contributors) ? s.contributors.length : 0;
       return {
         tone: people <= 1 ? 'warn' : 'good',
-        headline: people === 0 ? 'No data' : `${people} people`,
+        headline: people === 0 ? 'No data' : `${people} ${people === 1 ? 'person' : 'people'}`,
         detail: people <= 1 ? 'The work sits on one person' : 'The work is shared',
       };
     }
@@ -76,7 +76,11 @@ function describe(report: StoredReport): Line {
     }
     case 'file-history': {
       const commits = Array.isArray(s.commits) ? s.commits.length : 0;
-      return { tone: 'info', headline: `${commits} commits`, detail: String(s.path ?? '') };
+      return {
+        tone: 'info',
+        headline: `${commits} commit${commits === 1 ? '' : 's'}`,
+        detail: String(s.path ?? ''),
+      };
     }
     case 'user-anomaly': {
       const score = report.score ?? 0;
@@ -90,7 +94,7 @@ function describe(report: StoredReport): Line {
       const repos = Number(s.publicRepos ?? 0);
       return {
         tone: 'info',
-        headline: `${repos} repositories`,
+        headline: `${repos} repositor${repos === 1 ? 'y' : 'ies'}`,
         detail: `${Number(s.followers ?? 0)} followers`,
       };
     }
@@ -134,6 +138,9 @@ export default function RepoHub({ owner, repo }: { owner: string; repo: string }
     : `/app/?user=${encodeURIComponent(owner)}`;
 
   const byKind = new Map((reports ?? []).map((r) => [r.kind, r]));
+  const ordered = [...relevant].sort(
+    (a, b) => Number(byKind.has(b.id)) - Number(byKind.has(a.id)),
+  );
   const security = byKind.get('security-score');
   const scanned = reports?.length ?? 0;
 
@@ -199,7 +206,7 @@ export default function RepoHub({ owner, repo }: { owner: string; repo: string }
           <div>
             <SectionTitle>What is known</SectionTitle>
             <ul className="grid gap-3 sm:grid-cols-2">
-              {relevant.map((command) => {
+              {ordered.map((command) => {
                 const report = byKind.get(command.id);
                 const line = report ? describe(report) : null;
                 const href = repo
@@ -241,7 +248,9 @@ export default function RepoHub({ owner, repo }: { owner: string; repo: string }
             </ul>
           </div>
 
-          {security && repo && <BadgeSnippet owner={owner} repo={repo} />}
+          {security && repo && (
+            <BadgeSnippet owner={owner} repo={repo} score={security.score} />
+          )}
 
           <Card>
             <div className="px-6 py-5">
@@ -327,47 +336,6 @@ function verdictSummary(report: StoredReport): string {
     'Open the security score for what to fix first.',
   ];
   return parts.join(' ');
-}
-
-function BadgeSnippet({ owner, repo }: { owner: string; repo: string }) {
-  const [copied, setCopied] = useState(false);
-  const badgeUrl = `https://img.shields.io/endpoint?url=${encodeURIComponent(`${SITE_URL}/badge/${owner}/${repo}.json`)}`;
-  const pageUrl = `${SITE_URL}/app/r/${owner}/${repo}/`;
-  const markdown = `[![EXC security](${badgeUrl})](${pageUrl})`;
-
-  return (
-    <Card>
-      <div className="space-y-3 px-6 py-5">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 className="text-sm font-semibold">README badge</h2>
-            <p className="mt-1 text-xs text-[var(--color-muted)]">
-              Drop it in your repository. The score refreshes itself every night and the badge
-              links back here.
-            </p>
-          </div>
-          <img src={badgeUrl} alt="" height={20} />
-        </div>
-        <div className="flex items-center gap-2">
-          <code className="min-w-0 flex-1 truncate rounded-lg border border-[var(--color-line)] bg-[var(--color-bg)] px-3 py-2 text-xs">
-            {markdown}
-          </code>
-          <button
-            type="button"
-            onClick={() => {
-              void navigator.clipboard.writeText(markdown).then(() => {
-                setCopied(true);
-                setTimeout(() => setCopied(false), 1600);
-              });
-            }}
-            className="shrink-0 rounded-lg border border-[var(--color-line)] px-3 py-2 text-xs transition hover:border-[var(--color-line-active)]"
-          >
-            {copied ? 'Copied' : 'Copy'}
-          </button>
-        </div>
-      </div>
-    </Card>
-  );
 }
 
 export { describe as describeReport };

@@ -13,7 +13,7 @@ export default function RecentReports() {
   return (
     <Card className="flex h-full max-h-[22rem] flex-col">
       <div className="flex items-baseline justify-between gap-4 border-b border-[var(--color-line)] px-5 py-3.5">
-        <h2 className="text-sm font-semibold">Son taranan</h2>
+        <h2 className="text-sm font-semibold">Recently scanned</h2>
         {reports && reports.length > 0 && (
           <span className="text-xs text-[var(--color-faint)]">{reports.length}</span>
         )}

@@ -107,21 +107,20 @@ export default function AuthPanel() {
   if (!session) {
     return (
       <div className="surface overflow-hidden">
-        <div className="p-6 sm:p-8">
-          <h2 className="text-xl font-bold">Scanning works without an account</h2>
-          <p className="mt-2 max-w-md text-sm text-[var(--color-muted)]">
-            Signing in raises your limit from 60 requests an hour to 5,000, and lets you save,
-            share and comment on what you find.
-          </p>
-          <ul className="mt-4 space-y-1.5 text-sm text-[var(--color-muted)]">
-            <li>Only public repository data and your profile are requested.</li>
-            <li>Access to your private repositories is never asked for.</li>
-            <li>Scans run in your browser, against your own quota.</li>
-          </ul>
-
-          <button onClick={signIn} disabled={busy} className="btn btn-primary mt-6">
-            {busy ? 'Redirecting…' : 'Continue with GitHub'}
-          </button>
+        <div className="p-5 sm:p-6">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="min-w-0 max-w-lg">
+              <h2 className="text-base font-semibold">Scanning works without an account</h2>
+              <p className="mt-1 text-sm text-[var(--color-muted)]">
+                Signing in raises your limit from 60 requests an hour to 5,000, and lets you save,
+                share and comment on what you find. Only public repository data is requested, never
+                your private repositories.
+              </p>
+            </div>
+            <button onClick={signIn} disabled={busy} className="btn btn-primary shrink-0">
+              {busy ? 'Redirecting…' : 'Continue with GitHub'}
+            </button>
+          </div>
           {error && <p className="mt-3 text-sm text-[var(--color-bad)]">{error}</p>}
         </div>
       </div>
