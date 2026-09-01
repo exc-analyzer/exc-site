@@ -1,1 +1,0 @@
-var e=`exc.github_token`;function t(t){if(t)try{sessionStorage.setItem(e,t)}catch{}}function n(){try{return sessionStorage.getItem(e)}catch{return null}}function r(){try{sessionStorage.removeItem(e)}catch{}}export{n,t as r,r as t};

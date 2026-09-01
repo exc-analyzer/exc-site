@@ -60,8 +60,7 @@ app/.env
 public/badge/
 public/sitemap.xml
 public/robots.txt
-public/app/r/*/
-public/app/u/*/
+public/app/
 .rls.mjs
 .env.*
 !.env.example

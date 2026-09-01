@@ -36,14 +36,3 @@ jobs:
       - name: Type check and build
         working-directory: app
         run: npm test
-
-      - name: Build output matches the repository
-        run: |
-          if [ -n "$(git status --porcelain public/app)" ]; then
-            echo "public/app changed after the build - there is uncommitted build output:"
-            git status --porcelain public/app
-            echo ""
-            echo "To fix: cd app && npm run build, then commit the public/app changes."
-            exit 1
-          fi
-          echo "public/app is up to date."
