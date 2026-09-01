@@ -49,7 +49,7 @@ export async function softDeleteComment(id: string): Promise<boolean> {
     .update({ deleted_at: new Date().toISOString(), body: '[silindi]' })
     .eq('id', id);
   if (error) {
-    console.warn('Yorum silinemedi:', error.message);
+    console.warn('Could not delete comment:', error.message);
     return false;
   }
   return true;

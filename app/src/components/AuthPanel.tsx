@@ -58,8 +58,8 @@ export default function AuthPanel() {
       if (next) {
         void loadMyProfile().then((p) => {
           setProfile(p);
-          if (p && !p.onboarded_at && !window.location.pathname.startsWith('/app/profil')) {
-            window.location.href = '/app/profil/';
+          if (p && !p.onboarded_at && !window.location.pathname.startsWith('/app/profile')) {
+            window.location.href = '/app/profile/';
           }
         });
       }
@@ -145,7 +145,7 @@ export default function AuthPanel() {
           )}
         </div>
         <div className="flex items-center gap-2">
-          <a href="/app/profil/" className="btn btn-ghost">
+          <a href="/app/profile/" className="btn btn-ghost">
             Profile
           </a>
           <button onClick={signOut} disabled={busy} className="btn btn-quiet">

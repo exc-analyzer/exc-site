@@ -103,6 +103,30 @@ begin
 end;
 $$;
 
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  insert into public.profiles (id, gh_login, avatar_url, gh_avatar_url, gh_name)
+  values (
+    new.id,
+    coalesce(
+      new.raw_user_meta_data ->> 'user_name',
+      new.raw_user_meta_data ->> 'preferred_username',
+      'user-' || left(new.id::text, 8)
+    ),
+    new.raw_user_meta_data ->> 'avatar_url',
+    new.raw_user_meta_data ->> 'avatar_url',
+    new.raw_user_meta_data ->> 'full_name'
+  )
+  on conflict (id) do nothing;
+  return new;
+end;
+$$;
+
 select 'policies renamed' as step,
        (select count(*) from pg_policies
          where schemaname = 'public'

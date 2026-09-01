@@ -62,17 +62,17 @@ alter table public.abuse_reports
   add constraint abuse_reports_target_type_check
   check (target_type in ('comment', 'profile', 'report'));
 
-select 'kolonlar kaldirildi' as kontrol,
+select 'columns dropped' as step,
        case when not exists (
          select 1 from information_schema.columns
           where table_schema = 'public' and table_name = 'profiles'
             and column_name in ('custom_avatar_url', 'avatar_source')
-       ) then 'temiz' else 'HALA VAR' end as sonuc
+       ) then 'clean' else 'STILL THERE' end as result
 union all
-select 'avatars kovasi',
+select 'avatars bucket',
        case when not exists (select 1 from storage.buckets where id = 'avatars')
-            then 'temiz' else 'HALA VAR - panelden sil' end
+            then 'clean' else 'STILL THERE - delete it from the dashboard' end
 union all
-select 'yuklenmis dosya',
+select 'uploaded files',
        case when not exists (select 1 from storage.objects where bucket_id = 'avatars')
-            then 'temiz' else 'HALA VAR - panelden sil' end;
+            then 'clean' else 'STILL THERE - delete it from the dashboard' end;

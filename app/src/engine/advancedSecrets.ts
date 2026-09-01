@@ -61,7 +61,7 @@ export async function advancedSecrets(
         path: item.path,
         line: match.line,
         source: 'tree',
-        sourceLabel: 'mevcut dosya',
+        sourceLabel: 'current file',
         url: `https://github.com/${owner}/${repo}/blob/HEAD/${item.path}#L${match.line}`,
       });
     }

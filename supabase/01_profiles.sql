@@ -57,7 +57,7 @@ begin
     coalesce(
       new.raw_user_meta_data ->> 'user_name',
       new.raw_user_meta_data ->> 'preferred_username',
-      'kullanici-' || left(new.id::text, 8)
+      'user-' || left(new.id::text, 8)
     ),
     new.raw_user_meta_data ->> 'avatar_url'
   )

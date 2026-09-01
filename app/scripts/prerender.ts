@@ -6,7 +6,7 @@ const SITE = process.env.PUBLIC_SITE_URL ?? 'https://exc-analyzer.web.app';
 const MAX_PAGES = Number(process.env.PRERENDER_LIMIT ?? 500);
 const PUBLIC_DIR = path.resolve('../public');
 if (!SUPABASE_URL || !SUPABASE_KEY) {
-  console.error('PUBLIC_SUPABASE_URL ve PUBLIC_SUPABASE_ANON_KEY gerekli.');
+  console.error('PUBLIC_SUPABASE_URL and PUBLIC_SUPABASE_ANON_KEY are required.');
   process.exit(1);
 }
 interface Report {

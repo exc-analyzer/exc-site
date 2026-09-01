@@ -1,7 +1,7 @@
 const URL_BASE = process.env.PUBLIC_SUPABASE_URL;
 const KEY = process.env.PUBLIC_SUPABASE_ANON_KEY;
 if (!URL_BASE || !KEY) {
-  console.error('PUBLIC_SUPABASE_URL ve PUBLIC_SUPABASE_ANON_KEY gerekli.');
+  console.error('PUBLIC_SUPABASE_URL and PUBLIC_SUPABASE_ANON_KEY are required.');
   process.exit(1);
 }
 const FAKE = '00000000-0000-0000-0000-000000000000';
@@ -27,25 +27,25 @@ function post(path: string, body: unknown): Promise<Response> {
 }
 const CHECKS: Check[] = [
   {
-    name: 'Profiller anonim okunabilir',
+    name: 'Profiles readable anonymously',
     run: () => get('/rest/v1/profiles?select=id&limit=1'),
     expect: [200],
     why: 'Comments and reports must be visible to signed-out visitors.',
   },
   {
-    name: 'Raporlar anonim okunabilir',
+    name: 'Reports readable anonymously',
     run: () => get('/rest/v1/reports?select=id&limit=1'),
     expect: [200],
     why: 'Whoever opens a shared link may not be signed in.',
   },
   {
-    name: 'Anonim profil YAZAMAZ',
-    run: () => post('/rest/v1/profiles', { id: FAKE, gh_login: 'sahte' }),
+    name: 'Anonymous profile write BLOCKED',
+    run: () => post('/rest/v1/profiles', { id: FAKE, gh_login: 'fake' }),
     expect: [401, 403],
     why: 'Nobody may create a profile in someone else name.',
   },
   {
-    name: 'Anonim rapor YAZAMAZ',
+    name: 'Anonymous report write BLOCKED',
     run: () =>
       post('/rest/v1/reports', {
         owner: 'x',
@@ -58,19 +58,19 @@ const CHECKS: Check[] = [
     why: 'Fabricated reports must not be writable.',
   },
   {
-    name: 'Anonim yorum YAZAMAZ',
+    name: 'Anonymous comment write BLOCKED',
     run: () => post('/rest/v1/comments', { report_id: FAKE, author_id: FAKE, body: 'test' }),
     expect: [401, 403],
     why: 'Commenting requires signing in.',
   },
   {
-    name: 'Bildirimler anonim OKUNAMAZ',
+    name: 'Abuse reports NOT readable anonymously',
     run: () => get('/rest/v1/abuse_reports?select=reason'),
     expect: [401, 403],
     why: 'Exposing who reported whom invites retaliation.',
   },
   {
-    name: 'Oylar anonim OKUNAMAZ',
+    name: 'Votes NOT readable anonymously',
     run: () => get('/rest/v1/votes?select=user_id'),
     expect: [401, 403],
     why: 'Who voted for what must stay private.',
