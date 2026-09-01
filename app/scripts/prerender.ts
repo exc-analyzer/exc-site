@@ -95,7 +95,7 @@ function summaryHtml(report: Report): string {
   } else if (report.kind === 'analysis') {
     if (typeof s.stars === 'number') rows.push(`<li>Stars: ${s.stars}</li>`);
     if (typeof s.forks === 'number') rows.push(`<li>Fork: ${s.forks}</li>`);
-    if (typeof s.license === 'string') rows.push(`<li>Lisans: ${escapeHtml(s.license)}</li>`);
+    if (typeof s.license === 'string') rows.push(`<li>License: ${escapeHtml(s.license)}</li>`);
   }
 
   return rows.length > 0 ? `<ul>${rows.join('')}</ul>` : '';
@@ -133,10 +133,83 @@ function buildPage(shell: string, report: Report): string {
       <p>Last updated ${report.updated_at.slice(0, 10)} · scanned ${report.scan_count} times</p>
     </div>`;
 
-  html = html.replace('<body', `${readable ? '' : ''}<body`);
   html = html.replace(/(<body[^>]*>)/, `$1${readable}`);
   return html;
 }
+interface Target {
+  owner: string;
+  repo: string;
+  reports: Report[];
+}
+
+function groupTargets(reports: Report[]): Target[] {
+  const map = new Map<string, Target>();
+  for (const report of reports) {
+    const key = `${report.owner}/${report.repo}`;
+    const found = map.get(key);
+    if (found) found.reports.push(report);
+    else map.set(key, { owner: report.owner, repo: report.repo, reports: [report] });
+  }
+  for (const target of map.values()) {
+    target.reports.sort((a, b) => a.kind.localeCompare(b.kind));
+  }
+  return [...map.values()];
+}
+
+function hubUrl(target: Target): string {
+  return target.repo ? `/app/r/${target.owner}/${target.repo}/` : `/app/u/${target.owner}/`;
+}
+
+function hubDescription(target: Target): string {
+  const label = target.repo ? `${target.owner}/${target.repo}` : target.owner;
+  const security = target.reports.find((r) => r.kind === 'security-score');
+  const names = target.reports.map((r) => KIND_NAMES[r.kind] ?? r.kind).join(', ');
+  const count = target.reports.length;
+  const plural = count === 1 ? 'report' : 'reports';
+  if (security && security.score !== null) {
+    return `${label} scores ${security.score}/100 on security. ${count} ${plural} so far: ${names}.`;
+  }
+  return `Everything known about ${label}: ${count} ${plural} so far — ${names}.`;
+}
+
+function hubSummaryHtml(target: Target): string {
+  const items = target.reports.map((report) => {
+    const name = KIND_NAMES[report.kind] ?? report.kind;
+    const score = report.score !== null ? ` — ${report.score}/100` : '';
+    return `<li><a href="${reportUrl(report)}">${escapeHtml(name)}</a>${score} · updated ${report.updated_at.slice(0, 10)}</li>`;
+  });
+  return `<ul>${items.join('')}</ul>`;
+}
+
+function buildHub(shell: string, target: Target): string {
+  const label = target.repo ? `${target.owner}/${target.repo}` : target.owner;
+  const title = `${label} · EXC Analyzer`;
+  const description = hubDescription(target);
+  const canonical = `${SITE}${hubUrl(target)}`;
+  const head = [
+    `<title>${escapeHtml(title)}</title>`,
+    `<meta name="description" content="${escapeHtml(description)}">`,
+    `<link rel="canonical" href="${canonical}">`,
+    `<meta property="og:type" content="website">`,
+    `<meta property="og:title" content="${escapeHtml(title)}">`,
+    `<meta property="og:description" content="${escapeHtml(description)}">`,
+    `<meta property="og:url" content="${canonical}">`,
+    `<meta name="twitter:card" content="summary">`,
+  ].join('\n    ');
+  const readable = `
+    <div id="exc-prerendered">
+      <h1>${escapeHtml(label)}</h1>
+      <p>${escapeHtml(description)}</p>
+      ${hubSummaryHtml(target)}
+      <p><a href="https://github.com/${escapeHtml(label)}">View on GitHub</a></p>
+    </div>`;
+  return shell
+    .replace(/<title>[\s\S]*?<\/title>/, '')
+    .replace(/<meta\s+name="description"[^>]*>/, '')
+    .replace('</head>', `    ${head}\n  </head>`)
+    .replace(/(<body[^>]*>)/, `$1${readable}`);
+}
+
 async function writeFile(relativePath: string, content: string): Promise<void> {
   const full = path.join(PUBLIC_DIR, relativePath);
   await fs.mkdir(path.dirname(full), { recursive: true });
@@ -171,6 +244,18 @@ async function main(): Promise<void> {
 
     urls.push({ loc: `${SITE}${url}`, lastmod: report.updated_at.slice(0, 10) });
   }
+
+  const targets = groupTargets(reports);
+  for (const target of targets) {
+    const url = hubUrl(target);
+    await writeFile(`${url.replace(/^\//, '').replace(/\/$/, '')}/index.html`, buildHub(shell, target));
+    pages += 1;
+    const lastmod = target.reports
+      .map((r) => r.updated_at.slice(0, 10))
+      .sort()
+      .at(-1)!;
+    urls.unshift({ loc: `${SITE}${url}`, lastmod });
+  }
   const sitemap = [
     '<?xml version="1.0" encoding="UTF-8"?>',
     '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
@@ -184,6 +269,6 @@ async function main(): Promise<void> {
     'robots.txt',
     ['User-agent: *', 'Allow: /', `Sitemap: ${SITE}/sitemap.xml`, ''].join('\n'),
   );
-  console.log(`Wrote ${badges} badges, ${pages} pages and ${urls.length} sitemap entries.`);
+  console.log(`Wrote ${badges} badges, ${pages} pages (${targets.length} hubs) and ${urls.length} sitemap entries.`);
 }
 await main();

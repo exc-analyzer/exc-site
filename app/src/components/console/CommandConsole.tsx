@@ -54,6 +54,23 @@ export default function CommandConsole() {
     return () => window.removeEventListener('focus', sync);
   }, []);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const wanted = params.get('cmd');
+    const repo = params.get('repo');
+    const user = params.get('user');
+    if (!wanted && !repo && !user) return;
+
+    const target = COMMANDS.find((c) => c.id === wanted) ?? null;
+    const id = target?.id ?? (user ? 'user-analysis' : 'security-score');
+    const def = getCommand(id);
+    const next = defaultsFor(def.fields);
+    if (repo && def.fields.some((f) => f.key === 'repo')) next.repo = repo;
+    if (user && def.fields.some((f) => f.key === 'username')) next.username = user;
+    setActiveId(id);
+    setValues(next);
+  }, []);
+
   const locked = Boolean(command.requiresAuth) && !hasToken;
 
   function select(id: CommandId) {

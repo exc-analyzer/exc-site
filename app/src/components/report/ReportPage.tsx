@@ -11,6 +11,7 @@ import { Card, Empty, ExternalLink } from '../console/ui';
 import { relativeTime } from '../../engine/shared';
 import { SITE_URL } from '../../lib/site';
 import Comments from './Comments';
+import RepoHub from './RepoHub';
 
 interface Target {
   owner: string;
@@ -20,7 +21,17 @@ interface Target {
 
 const VALID_KINDS = new Set(COMMANDS.map((c) => c.id));
 
-function parseTarget(): Target | null {
+type Route =
+  | { view: 'hub'; owner: string; repo: string }
+  | { view: 'report'; owner: string; repo: string; kind: CommandId }
+  | null;
+
+function reportRoute(owner: string, repo: string, kind: string): Route {
+  if (!VALID_KINDS.has(kind as CommandId)) return null;
+  return { view: 'report', owner, repo, kind: kind as CommandId };
+}
+
+function parseRoute(): Route {
   if (typeof window === 'undefined') return null;
   const query = new URLSearchParams(window.location.search).get('t');
   const source = query ?? window.location.pathname;
@@ -28,17 +39,21 @@ function parseTarget(): Target | null {
     .replace(/^\/app\//, '')
     .split('/')
     .filter(Boolean);
-  const scoped = parts[0] === 'r' || parts[0] === 'u' ? parts.slice(1) : parts;
-  if (scoped.length === 3) {
-    const [owner, repo, kind] = scoped;
-    if (!VALID_KINDS.has(kind as CommandId)) return null;
-    return { owner, repo, kind: kind as CommandId };
+  const prefix = parts[0] === 'r' || parts[0] === 'u' ? parts[0] : null;
+  const scoped = prefix ? parts.slice(1) : parts;
+
+  if (prefix === 'r') {
+    if (scoped.length === 2) return { view: 'hub', owner: scoped[0], repo: scoped[1] };
+    if (scoped.length === 3) return reportRoute(scoped[0], scoped[1], scoped[2]);
+    return null;
   }
-  if (scoped.length === 2) {
-    const [owner, kind] = scoped;
-    if (!VALID_KINDS.has(kind as CommandId)) return null;
-    return { owner, repo: '', kind: kind as CommandId };
+  if (prefix === 'u') {
+    if (scoped.length === 1) return { view: 'hub', owner: scoped[0], repo: '' };
+    if (scoped.length === 2) return reportRoute(scoped[0], '', scoped[1]);
+    return null;
   }
+  if (scoped.length === 3) return reportRoute(scoped[0], scoped[1], scoped[2]);
+  if (scoped.length === 2) return reportRoute(scoped[0], '', scoped[1]);
   return null;
 }
 type State =
@@ -47,10 +62,20 @@ type State =
   | { kind: 'missing'; target: Target }
   | { kind: 'ready'; target: Target; report: StoredReport; siblings: StoredReport[] };
 export default function ReportPage() {
+  const [route, setRoute] = useState<Route | undefined>();
+  useEffect(() => {
+    setRoute(parseRoute());
+  }, []);
+  if (route === undefined) return null;
+  if (route && route.view === 'hub') return <RepoHub owner={route.owner} repo={route.repo} />;
+  return <ReportDetail target={route} />;
+}
+
+function ReportDetail({ target: parsed }: { target: Target | null }) {
   const [state, setState] = useState<State>({ kind: 'loading' });
   useEffect(() => {
     document.getElementById('exc-prerendered')?.remove();
-    const target = parseTarget();
+    const target = parsed;
     if (!target) {
       setState({ kind: 'bad-url' });
       return;

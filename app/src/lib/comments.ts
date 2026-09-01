@@ -46,13 +46,44 @@ export async function softDeleteComment(id: string): Promise<boolean> {
   if (!supabase) return false;
   const { error } = await supabase
     .from('comments')
-    .update({ deleted_at: new Date().toISOString(), body: '[silindi]' })
+    .update({ deleted_at: new Date().toISOString(), body: '[removed]' })
     .eq('id', id);
   if (error) {
     console.warn('Could not delete comment:', error.message);
     return false;
   }
   return true;
+}
+export interface RepoComment {
+  id: string;
+  body: string;
+  created_at: string;
+  report_id: string;
+  deleted_at: string | null;
+  author?: { gh_login: string; avatar_url: string | null } | null;
+  report?: { owner: string; repo: string; kind: string } | null;
+}
+export async function loadRepoComments(
+  owner: string,
+  repo: string,
+  limit = 8,
+): Promise<RepoComment[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from('comments')
+    .select(
+      'id, body, created_at, report_id, deleted_at, author:author_id (gh_login, avatar_url), report:report_id!inner (owner, repo, kind)',
+    )
+    .eq('report.owner', owner)
+    .eq('report.repo', repo)
+    .is('deleted_at', null)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  if (error) {
+    console.warn('Could not load discussion:', error.message);
+    return [];
+  }
+  return (data as unknown as RepoComment[]) ?? [];
 }
 export type VoteValue = -1 | 0 | 1;
 export async function loadMyVotes(commentIds: string[]): Promise<Map<string, VoteValue>> {
