@@ -133,7 +133,7 @@ export function cardHtml(data: CardData, logo: string): string {
 </style>
 </head>
 <body>
-  <div class="layer brand"><img class="mark" src="${logo}" alt=""><span>EXC Analyzer</span></div>
+  <div class="layer brand"><img class="mark" src="${logo}" alt=""><span>EXC</span></div>
   <div class="layer middle">
     <div>
       <div class="repo">${escapeHtml(data.label)}</div>

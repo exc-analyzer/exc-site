@@ -109,7 +109,7 @@ function reportUrl(report: Report): string {
 function buildPage(shell: string, report: Report): string {
   const target = report.repo ? `${report.owner}/${report.repo}` : report.owner;
   const kindName = KIND_NAMES[report.kind] ?? report.kind;
-  const title = `${target} — ${kindName} · EXC Analyzer`;
+  const title = `${target} — ${kindName} · EXC`;
   const description = describe(report);
   const canonical = `${SITE}${reportUrl(report)}`;
   const head = [
@@ -248,7 +248,7 @@ function hubSummaryHtml(target: Target): string {
 
 function buildHub(shell: string, target: Target): string {
   const label = target.repo ? `${target.owner}/${target.repo}` : target.owner;
-  const title = `${label} · EXC Analyzer`;
+  const title = `${label} · EXC`;
   const description = hubDescription(target);
   const canonical = `${SITE}${hubUrl(target)}`;
   const head = [
@@ -331,7 +331,7 @@ async function main(): Promise<void> {
   }));
   cards.push({
     data: {
-      label: 'EXC Analyzer',
+      label: 'EXC',
       score: null,
       headline: 'Rate a repository before you depend on it',
       facts: [{ text: 'Security score' }, { text: 'Content audit' }, { text: 'Actions audit' }],

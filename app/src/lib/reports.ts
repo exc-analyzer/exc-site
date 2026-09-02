@@ -103,20 +103,6 @@ export async function loadTargetReports(owner: string, repo: string): Promise<St
   return (data as StoredReport[]) ?? [];
 }
 
-export async function loadRecentReports(limit = 20): Promise<StoredReport[]> {
-  if (!supabase) return [];
-  const { data, error } = await supabase
-    .from('reports')
-    .select('*, profiles:created_by (gh_login, avatar_url)')
-    .order('updated_at', { ascending: false })
-    .limit(limit);
-  if (error) {
-    console.warn('Could not load feed:', error.message);
-    return [];
-  }
-  return (data as StoredReport[]) ?? [];
-}
-
 export function toCommandResult(report: StoredReport): CommandResult {
   return { id: report.kind, data: report.summary } as CommandResult;
 }
