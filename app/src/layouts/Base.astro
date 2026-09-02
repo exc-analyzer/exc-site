@@ -21,10 +21,12 @@ const ICONS: Record<string, string[]> = {
   ],
   search: ['M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16Z', 'm21 21-4.35-4.35'],
   bookmark: ['M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2Z'],
+  shield: ['M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1Z'],
 };
 
 const NAV = [
-  { href: '/app/', label: 'Discover', icon: 'compass', active: path === '/app/' || path === '/app' },
+  { href: '/app/', label: 'Home', icon: 'compass', active: path === '/app/' || path === '/app' },
+  { href: '/app/explore/', label: 'Explore', icon: 'shield', active: path.startsWith('/app/explore') },
   { href: '/app/scan/', label: 'Scan', icon: 'search', active: path.startsWith('/app/scan') },
   { href: '/app/saved/', label: 'Saved', icon: 'bookmark', active: path.startsWith('/app/saved') },
 ];

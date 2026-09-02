@@ -1,0 +1,18 @@
+---
+import Base from '../../layouts/Base.astro';
+import Explore from '../../components/explore/Explore.tsx';
+import PageHeader from '../../components/console/PageHeader.astro';
+---
+
+<Base title="EXC - Explore repositories">
+  <div class="mx-auto max-w-[640px]">
+    <PageHeader
+      eyebrow="Explore"
+      title="Which repositories are worth your attention"
+      lead="Built from what everyone here has scanned. No shaming lists: the point is what is holding up and what is getting better."
+    >
+      <a slot="actions" href="/app/scan/" class="btn btn-ghost">Add one</a>
+    </PageHeader>
+    <Explore client:load />
+  </div>
+</Base>
