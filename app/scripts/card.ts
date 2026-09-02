@@ -55,7 +55,7 @@ function scoreColor(score: number): string {
   return '#f87171';
 }
 
-export function cardHtml(data: CardData): string {
+export function cardHtml(data: CardData, logo: string): string {
   const accent = data.score === null ? '#818cf8' : scoreColor(data.score);
   const scoreBlock =
     data.score === null
@@ -74,7 +74,7 @@ export function cardHtml(data: CardData): string {
   body {
     width: ${CARD_WIDTH}px;
     height: ${CARD_HEIGHT}px;
-    background: #0a0a0c;
+    background: #0a0912;
     color: #f4f4f7;
     font-family: Inter, system-ui, sans-serif;
     display: flex;
@@ -88,23 +88,18 @@ export function cardHtml(data: CardData): string {
     content: '';
     position: absolute;
     inset: -40% 30% 40% -10%;
-    background: radial-gradient(circle at 30% 30%, rgba(99,102,241,0.30), transparent 62%);
+    background: radial-gradient(circle at 30% 30%, rgba(130,83,234,0.30), transparent 62%);
   }
   body::after {
     content: '';
     position: absolute;
     inset: 45% -15% -45% 45%;
-    background: radial-gradient(circle at 70% 70%, rgba(236,72,153,0.18), transparent 60%);
+    background: radial-gradient(circle at 70% 70%, rgba(225,71,135,0.18), transparent 60%);
   }
   .layer { position: relative; z-index: 1; }
   .brand { display: flex; align-items: center; gap: 14px; }
-  .mark {
-    width: 34px; height: 34px; border-radius: 9px;
-    background: linear-gradient(135deg, #6366f1, #8b5cf6);
-    display: flex; align-items: center; justify-content: center;
-    font-weight: 800; font-size: 19px;
-  }
-  .brand span { font-size: 19px; font-weight: 600; letter-spacing: 0.01em; }
+  .mark { width: 52px; height: 52px; display: block; }
+  .brand span { font-size: 22px; font-weight: 600; letter-spacing: 0.01em; }
   .middle { display: flex; align-items: flex-end; justify-content: space-between; gap: 48px; }
   .repo {
     font-family: 'Fira Code', ui-monospace, monospace;
@@ -126,14 +121,19 @@ export function cardHtml(data: CardData): string {
   .score .max { display: block; margin-top: 10px; font-size: 26px; color: #6f6f82; }
   .foot {
     display: flex; align-items: center; justify-content: space-between;
-    border-top: 1px solid rgba(255,255,255,0.10); padding-top: 22px;
+    padding-top: 24px; position: relative;
     font-size: 21px; color: #8a8a9e;
+  }
+  .foot::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, #f3802d, #e12649, #cd187e, #7d258f, #4f2f94, #1f61b2);
+    opacity: 0.85;
   }
   .foot .url { font-family: 'Fira Code', ui-monospace, monospace; font-size: 19px; }
 </style>
 </head>
 <body>
-  <div class="layer brand"><span class="mark">E</span><span>EXC Analyzer</span></div>
+  <div class="layer brand"><img class="mark" src="${logo}" alt=""><span>EXC Analyzer</span></div>
   <div class="layer middle">
     <div>
       <div class="repo">${escapeHtml(data.label)}</div>
@@ -161,6 +161,14 @@ export async function renderCards(
 ): Promise<number> {
   if (cards.length === 0) return 0;
 
+  const logoFile = path.join(publicDir, 'logo.png');
+  let logo: string;
+  try {
+    logo = `data:image/png;base64,${(await fs.readFile(logoFile)).toString('base64')}`;
+  } catch {
+    throw new Error(`The share card needs the logo at ${logoFile}.`);
+  }
+
   const executablePath = await findBrowser();
   const browser: Browser = await puppeteer.launch({
     executablePath,
@@ -175,7 +183,7 @@ export async function renderCards(
     await page.setViewport({ width: CARD_WIDTH, height: CARD_HEIGHT, deviceScaleFactor: 1 });
 
     for (const card of cards) {
-      await page.setContent(cardHtml(card.data), { waitUntil: 'load', timeout: 20_000 });
+      await page.setContent(cardHtml(card.data, logo), { waitUntil: 'load', timeout: 20_000 });
       const fontsLoaded = await page.evaluate(async () => {
         await document.fonts.ready;
         return document.fonts.check('600 30px Inter');
