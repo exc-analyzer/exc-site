@@ -1,0 +1,10 @@
+---
+import Base from '../../layouts/Base.astro';
+import MemberPage from '../../components/people/MemberPage.tsx';
+---
+
+<Base title="EXC Analyzer — Member">
+  <div class="mx-auto max-w-[640px]">
+    <MemberPage client:load />
+  </div>
+</Base>

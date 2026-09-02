@@ -1,5 +1,13 @@
 import { useEffect, useState } from 'react';
-import { loadPost, loadMyLikes, targetHref, targetLabel, type FeedItem as Item } from '../../lib/feed';
+import {
+  currentUserId,
+  loadMyLikes,
+  loadPost,
+  targetHref,
+  targetLabel,
+  type FeedItem as Item,
+} from '../../lib/feed';
+import { supabase } from '../../lib/supabase';
 import { Card, Empty } from '../console/ui';
 import Comments from '../report/Comments';
 import FeedItem from './FeedItem';
@@ -22,10 +30,17 @@ type State =
 
 export default function PostPage() {
   const [state, setState] = useState<State>({ kind: 'loading' });
+  const [me, setMe] = useState<string | null>(null);
+  const [signedIn, setSignedIn] = useState(false);
 
   useEffect(() => {
     document.getElementById('exc-prerendered')?.remove();
     void (async () => {
+      if (supabase) {
+        const { data } = await supabase.auth.getSession();
+        setSignedIn(Boolean(data.session));
+        setMe(await currentUserId());
+      }
       const id = postIdFromPath();
       if (!id) {
         setState({ kind: 'missing' });
@@ -77,6 +92,9 @@ export default function PostPage() {
       <FeedItem
         item={state.item}
         liked={state.liked}
+        mine={Boolean(me) && state.item.author_id === me}
+        signedIn={signedIn}
+        onChanged={() => window.location.reload()}
         onLiked={(liked) => setState({ ...state, liked })}
       />
 

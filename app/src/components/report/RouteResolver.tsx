@@ -1,14 +1,27 @@
 import { useEffect, useState } from 'react';
 import ReportPage from './ReportPage';
+import PostPage from '../feed/PostPage';
+import MemberPage from '../people/MemberPage';
 import { Card, Empty } from '../console/ui';
 
+type Route = 'report' | 'post' | 'member' | 'none';
+
 export default function RouteResolver() {
-  const [isReport, setIsReport] = useState<boolean | null>(null);
+  const [route, setRoute] = useState<Route | null>(null);
+
   useEffect(() => {
-    setIsReport(/^\/app\/(r|u)\//.test(window.location.pathname));
+    const path = window.location.pathname;
+    if (/^\/app\/(r|u)\//.test(path)) setRoute('report');
+    else if (/^\/app\/p\//.test(path)) setRoute('post');
+    else if (/^\/app\/people\//.test(path)) setRoute('member');
+    else setRoute('none');
   }, []);
-  if (isReport === null) return null;
-  if (isReport) return <ReportPage />;
+
+  if (route === null) return null;
+  if (route === 'report') return <ReportPage />;
+  if (route === 'post') return <PostPage />;
+  if (route === 'member') return <MemberPage />;
+
   return (
     <Card>
       <div className="px-6 py-10">

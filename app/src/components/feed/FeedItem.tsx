@@ -1,12 +1,22 @@
 import { useState } from 'react';
 import { getCommand } from '../../engine';
-import { itemHref, setLike, targetHref, targetLabel, type FeedItem as Item } from '../../lib/feed';
+import {
+  itemHref,
+  setLike,
+  targetHref,
+  targetLabel,
+  updatePost,
+  type FeedItem as Item,
+} from '../../lib/feed';
+import { parseRepo } from '../../lib/github';
+import { memberHref } from '../../lib/people';
 import { relativeTime } from '../../engine/shared';
+import { RichText } from '../../lib/richText';
 import { ScoreRing, type Tone } from '../console/ui';
 import { Avatar } from '../profile/ProfileEditor';
 import { SITE_URL } from '../../lib/site';
 import Icon from '../Icon';
-import { RichText } from '../../lib/richText';
+import ItemMenu from './ItemMenu';
 
 function scoreTone(score: number | null): Tone {
   if (score === null) return 'muted';
@@ -21,20 +31,30 @@ const ACTION =
 export default function FeedItem({
   item,
   liked,
+  mine = false,
+  signedIn = false,
   onLiked,
+  onChanged,
 }: {
   item: Item;
   liked: boolean;
+  mine?: boolean;
+  signedIn?: boolean;
   onLiked: (liked: boolean) => void;
+  onChanged?: () => void;
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [wasLiked] = useState(liked);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(item.body ?? '');
+  const [draftRepo, setDraftRepo] = useState(item.repo ? `${item.owner}/${item.repo}` : '');
 
   const href = itemHref(item);
   const label = targetLabel(item);
   const repoHref = targetHref(item);
+  const author = memberHref(item.author_login);
   const likes = item.likes + (liked === wasLiked ? 0 : liked ? 1 : -1);
 
   async function toggle() {
@@ -50,44 +70,118 @@ export default function FeedItem({
     onLiked(!liked);
   }
 
+  async function save() {
+    const parsed = draftRepo.trim() ? parseRepo(draftRepo) : null;
+    if (draftRepo.trim() && !parsed) {
+      setError('A repository is written as owner/repo.');
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    const problem = await updatePost(item.id, draft, parsed ?? undefined);
+    setBusy(false);
+    if (problem) {
+      setError(problem);
+      return;
+    }
+    setEditing(false);
+    onChanged?.();
+  }
+
   return (
     <article className="flex gap-3.5 px-5 py-4 transition hover:bg-[rgba(163,145,224,0.03)] sm:gap-4 sm:px-6">
       <Avatar src={item.author_avatar} name={item.author_login ?? '?'} size={38} />
 
       <div className="min-w-0 flex-1">
-        <p className="flex flex-wrap items-baseline gap-x-1.5 text-xs text-[var(--color-faint)]">
-          <span className="font-medium text-[var(--color-text)]">
-            {item.author_login ?? 'someone'}
-          </span>
-          {item.kind === 'report' && item.report_kind && (
-            <span>ran {getCommand(item.report_kind).name.toLowerCase()}</span>
-          )}
-          <span>· {relativeTime(item.happened_at)}</span>
-        </p>
+        <div className="flex items-start justify-between gap-2">
+          <p className="flex min-w-0 flex-wrap items-baseline gap-x-1.5 text-xs text-[var(--color-faint)]">
+            {author ? (
+              <a href={author} className="font-medium text-[var(--color-text)] hover:underline">
+                {item.author_login}
+              </a>
+            ) : (
+              <span className="font-medium text-[var(--color-text)]">someone</span>
+            )}
+            {item.kind === 'report' && item.report_kind && (
+              <span>ran {getCommand(item.report_kind).name.toLowerCase()}</span>
+            )}
+            <span>· {relativeTime(item.happened_at)}</span>
+          </p>
 
-        <a href={href} className="mt-1.5 block">
-          {item.kind === 'post' ? (
-            <RichText body={item.body ?? ''} />
-          ) : (
-            <div className="flex items-center justify-between gap-4">
-              <div className="min-w-0">
-                <p className="truncate font-mono text-base text-[var(--color-text)]">{label}</p>
-                <p className="mt-0.5 text-sm text-[var(--color-muted)]">
-                  {item.report_kind ? getCommand(item.report_kind).name : 'Scanned'}
-                </p>
-              </div>
-              {item.score !== null && (
-                <ScoreRing value={item.score} tone={scoreTone(item.score)} size={54} />
-              )}
+          <ItemMenu
+            item={item}
+            href={href}
+            mine={mine}
+            signedIn={signedIn}
+            onEdit={() => setEditing(true)}
+            onRemoved={() => onChanged?.()}
+          />
+        </div>
+
+        {editing ? (
+          <div className="mt-2 space-y-2">
+            <textarea
+              className="field resize-y"
+              rows={4}
+              maxLength={4000}
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+            />
+            <input
+              className="field font-mono text-xs"
+              value={draftRepo}
+              placeholder="owner/repo"
+              spellCheck={false}
+              onChange={(e) => setDraftRepo(e.target.value)}
+            />
+            <div className="flex gap-2">
+              <button
+                type="button"
+                className="btn btn-primary px-4 py-1.5 text-xs"
+                disabled={busy || !draft.trim()}
+                onClick={() => void save()}
+              >
+                {busy ? 'Saving…' : 'Save'}
+              </button>
+              <button
+                type="button"
+                className="btn btn-quiet px-3 py-1.5 text-xs"
+                onClick={() => {
+                  setEditing(false);
+                  setDraft(item.body ?? '');
+                  setError(null);
+                }}
+              >
+                Cancel
+              </button>
             </div>
-          )}
-        </a>
+          </div>
+        ) : (
+          <a href={href} className="mt-1.5 block">
+            {item.kind === 'post' ? (
+              <RichText body={item.body ?? ''} />
+            ) : (
+              <div className="flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <p className="truncate font-mono text-base text-[var(--color-text)]">{label}</p>
+                  <p className="mt-0.5 text-sm text-[var(--color-muted)]">
+                    {item.report_kind ? getCommand(item.report_kind).name : 'Scanned'}
+                  </p>
+                </div>
+                {item.score !== null && (
+                  <ScoreRing value={item.score} tone={scoreTone(item.score)} size={54} />
+                )}
+              </div>
+            )}
+          </a>
+        )}
 
-        {item.kind === 'post' && label && repoHref && (
+        {!editing && item.kind === 'post' && label && repoHref && (
           <a
             href={repoHref}
-            className="mt-2.5 inline-flex rounded-full border border-[var(--color-line)] px-2.5 py-0.5 font-mono text-xs text-[var(--color-muted)] transition hover:border-[var(--color-line-active)]"
+            className="mt-2.5 inline-flex items-center gap-1.5 rounded-full border border-[var(--color-line)] px-2.5 py-0.5 font-mono text-xs text-[var(--color-muted)] transition hover:border-[var(--color-line-active)]"
           >
+            <Icon name="repo" size={12} />
             {label}
           </a>
         )}

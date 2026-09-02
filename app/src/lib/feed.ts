@@ -20,10 +20,17 @@ export interface FeedItem {
   replies: number;
 }
 
+export type FeedFilter = 'all' | 'posts' | 'scans';
+
 const COLUMNS =
   'kind, id, author_id, author_login, author_avatar, body, owner, repo, report_kind, score, happened_at, likes, replies';
 
-export async function loadFeed(limit = 25, before?: string): Promise<FeedItem[]> {
+export async function loadFeed(
+  limit = 25,
+  before?: string,
+  filter: FeedFilter = 'all',
+  search = '',
+): Promise<FeedItem[]> {
   if (!supabase) return [];
   let query = supabase
     .from('feed')
@@ -31,6 +38,13 @@ export async function loadFeed(limit = 25, before?: string): Promise<FeedItem[]>
     .order('happened_at', { ascending: false })
     .limit(limit);
   if (before) query = query.lt('happened_at', before);
+  if (filter !== 'all') query = query.eq('kind', filter === 'posts' ? 'post' : 'report');
+
+  const term = search.trim();
+  if (term) {
+    const safe = term.replace(/[%,()]/g, ' ').trim();
+    if (safe) query = query.or(`body.ilike.%${safe}%,owner.ilike.%${safe}%,repo.ilike.%${safe}%`);
+  }
 
   const { data, error } = await query;
   if (error) {
@@ -92,13 +106,36 @@ export async function createPost(
   return { id: (data as { id: string }).id, error: null };
 }
 
-export async function deletePost(id: string): Promise<boolean> {
-  if (!supabase) return false;
+export async function deletePost(id: string): Promise<string | null> {
+  if (!supabase) return 'No connection.';
   const { error } = await supabase
     .from('posts')
     .update({ deleted_at: new Date().toISOString() })
     .eq('id', id);
-  return !error;
+  return error ? friendlyDbError(error) : null;
+}
+
+export async function updatePost(
+  id: string,
+  body: string,
+  repo?: { owner: string; repo: string },
+): Promise<string | null> {
+  if (!supabase) return 'No connection.';
+  const { error } = await supabase
+    .from('posts')
+    .update({
+      body: body.trim(),
+      repo_owner: repo?.owner ?? '',
+      repo_name: repo?.repo ?? '',
+    })
+    .eq('id', id);
+  return error ? friendlyDbError(error) : null;
+}
+
+export async function currentUserId(): Promise<string | null> {
+  if (!supabase) return null;
+  const { data } = await supabase.auth.getSession();
+  return data.session?.user.id ?? null;
 }
 
 export async function loadMyLikes(items: FeedItem[]): Promise<Set<string>> {

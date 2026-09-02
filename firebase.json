@@ -23,6 +23,10 @@
         "destination": "/app/p/index.html"
       },
       {
+        "source": "/app/people/**",
+        "destination": "/app/people/index.html"
+      },
+      {
         "source": "/app/**",
         "destination": "/app/index.html"
       }

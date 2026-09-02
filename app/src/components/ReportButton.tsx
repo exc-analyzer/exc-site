@@ -1,12 +1,11 @@
 import { useState } from 'react';
-import { supabase } from '../lib/supabase';
-import { friendlyDbError } from '../lib/dbError';
+import { reportAbuse, type AbuseTarget } from '../lib/abuse';
 
-export type AbuseTarget = 'avatar' | 'comment' | 'profile' | 'report';
+export type { AbuseTarget };
 export default function ReportButton({
   targetType,
   targetId,
-  label = 'Bildir',
+  label = 'Report',
 }: {
   targetType: AbuseTarget;
   targetId: string;
@@ -17,27 +16,11 @@ export default function ReportButton({
   const [state, setState] = useState<'idle' | 'sending' | 'done' | 'error'>('idle');
   const [message, setMessage] = useState<string | null>(null);
   async function send() {
-    if (!supabase || reason.trim().length < 3) return;
     setState('sending');
-    const { data: sessionData } = await supabase.auth.getSession();
-    const userId = sessionData.session?.user.id;
-    if (!userId) {
+    const problem = await reportAbuse(targetType, targetId, reason);
+    if (problem) {
       setState('error');
-      setMessage('Sign in to report something.');
-      return;
-    }
-
-    const { error } = await supabase.from('abuse_reports').insert({
-      target_type: targetType,
-      target_id: targetId,
-      reporter_id: userId,
-      reason: reason.trim(),
-    });
-    if (error) {
-      setState('error');
-      setMessage(
-        error.code === '23505' ? 'You already reported this.' : friendlyDbError(error),
-      );
+      setMessage(problem);
       return;
     }
     setState('done');

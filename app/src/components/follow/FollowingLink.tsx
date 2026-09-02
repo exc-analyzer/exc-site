@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { loadFollows, unreadTargets } from '../../lib/follows';
+import { lastSeenAt, loadMyReplies, unseen } from '../../lib/notifications';
 import { supabase } from '../../lib/supabase';
 import Icon from '../Icon';
 
@@ -11,7 +12,12 @@ export default function FollowingLink() {
       if (!supabase) return;
       const { data } = await supabase.auth.getSession();
       if (!data.session) return;
-      setUnread(unreadTargets(await loadFollows()));
+      const [follows, replies, seen] = await Promise.all([
+        loadFollows(),
+        loadMyReplies(),
+        lastSeenAt(),
+      ]);
+      setUnread(unreadTargets(follows) + unseen(replies, seen));
     })();
   }, []);
 

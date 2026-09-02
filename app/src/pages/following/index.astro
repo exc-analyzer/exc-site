@@ -1,17 +1,20 @@
 ---
 import Base from '../../layouts/Base.astro';
 import FollowingList from '../../components/follow/FollowingList.tsx';
+import Replies from '../../components/follow/Replies.tsx';
 ---
 
 <Base title="EXC Analyzer — Following">
-  <div class="mb-8 max-w-2xl">
-    <p class="eyebrow">Following</p>
-    <h1 class="mt-2 text-3xl font-bold">What moved while you were away</h1>
-    <p class="mt-3 text-[var(--color-muted)]">
-      Every repository you follow, with whatever has happened to it since you last looked: a new
-      scan, a changed score, someone leaving a comment.
-    </p>
-  </div>
+  <div class="mx-auto max-w-[680px] space-y-8">
+    <div>
+      <h1 class="text-xl">What moved while you were away</h1>
+      <p class="mt-2 text-sm text-[var(--color-muted)]">
+        Replies addressed to you, and every repository you follow with whatever has happened to it
+        since you last looked.
+      </p>
+    </div>
 
-  <FollowingList client:load />
+    <Replies client:load />
+    <FollowingList client:load />
+  </div>
 </Base>
