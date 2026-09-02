@@ -13,6 +13,9 @@ function scoreTone(score: number | null): Tone {
   return 'bad';
 }
 
+const ACTION =
+  'inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-xs text-[var(--color-faint)] transition hover:bg-[rgba(163,145,224,0.08)] hover:text-[var(--color-text)]';
+
 export default function FeedItem({
   item,
   liked,
@@ -46,89 +49,80 @@ export default function FeedItem({
   }
 
   return (
-    <article className="rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-surface)] shadow-[var(--shadow-lift)]">
-      <div className="flex items-center gap-3 px-5 pt-4">
-        <Avatar src={item.author_avatar} name={item.author_login ?? '?'} size={30} />
-        <p className="min-w-0 flex-1 truncate text-xs text-[var(--color-muted)]">
+    <article className="flex gap-3.5 px-5 py-4 transition hover:bg-[rgba(163,145,224,0.03)] sm:gap-4 sm:px-6">
+      <Avatar src={item.author_avatar} name={item.author_login ?? '?'} size={38} />
+
+      <div className="min-w-0 flex-1">
+        <p className="flex flex-wrap items-baseline gap-x-1.5 text-xs text-[var(--color-faint)]">
           <span className="font-medium text-[var(--color-text)]">
             {item.author_login ?? 'someone'}
           </span>
           {item.kind === 'report' && item.report_kind && (
-            <> ran {getCommand(item.report_kind).name.toLowerCase()}</>
+            <span>ran {getCommand(item.report_kind).name.toLowerCase()}</span>
           )}
-          <> · {relativeTime(item.happened_at)}</>
+          <span>· {relativeTime(item.happened_at)}</span>
         </p>
-      </div>
 
-      <a href={href} className="block px-5 py-3.5">
-        {item.kind === 'post' ? (
-          <>
+        <a href={href} className="mt-1.5 block">
+          {item.kind === 'post' ? (
             <p className="whitespace-pre-wrap text-base text-[var(--color-text)]">{item.body}</p>
-            {label && (
-              <span className="mt-3 inline-flex rounded-full border border-[var(--color-line)] px-2.5 py-0.5 font-mono text-xs text-[var(--color-muted)]">
-                {label}
-              </span>
-            )}
-          </>
-        ) : (
-          <div className="flex items-center justify-between gap-5">
-            <div className="min-w-0">
-              <p className="truncate font-mono text-lg text-[var(--color-text)]">{label}</p>
-              <p className="mt-1 text-sm text-[var(--color-muted)]">
-                {item.report_kind ? getCommand(item.report_kind).name : 'Scanned'}
-              </p>
+          ) : (
+            <div className="flex items-center justify-between gap-4">
+              <div className="min-w-0">
+                <p className="truncate font-mono text-base text-[var(--color-text)]">{label}</p>
+                <p className="mt-0.5 text-sm text-[var(--color-muted)]">
+                  {item.report_kind ? getCommand(item.report_kind).name : 'Scanned'}
+                </p>
+              </div>
+              {item.score !== null && (
+                <ScoreRing value={item.score} tone={scoreTone(item.score)} size={54} />
+              )}
             </div>
-            {item.score !== null && (
-              <ScoreRing value={item.score} tone={scoreTone(item.score)} size={62} />
-            )}
-          </div>
-        )}
-      </a>
-
-      <div className="flex flex-wrap items-center gap-1 border-t border-[var(--color-line)] px-3 py-2 text-xs">
-        <button
-          type="button"
-          onClick={() => void toggle()}
-          disabled={busy}
-          aria-pressed={liked}
-          className={`rounded-[var(--radius-control)] px-3 py-1.5 transition hover:bg-[rgba(163,145,224,0.08)] ${
-            liked ? 'text-[var(--color-accent)]' : 'text-[var(--color-muted)]'
-          }`}
-        >
-          {liked ? '♥' : '♡'} {likes > 0 ? likes : ''}
-        </button>
-
-        <a
-          href={href}
-          className="rounded-[var(--radius-control)] px-3 py-1.5 text-[var(--color-muted)] transition hover:bg-[rgba(163,145,224,0.08)] hover:text-[var(--color-text)]"
-        >
-          ○ {item.replies > 0 ? item.replies : 'Reply'}
+          )}
         </a>
 
-        <button
-          type="button"
-          onClick={() => {
-            void navigator.clipboard.writeText(`${SITE_URL}${href}`).then(() => {
-              setCopied(true);
-              setTimeout(() => setCopied(false), 1600);
-            });
-          }}
-          className="rounded-[var(--radius-control)] px-3 py-1.5 text-[var(--color-muted)] transition hover:bg-[rgba(163,145,224,0.08)] hover:text-[var(--color-text)]"
-        >
-          {copied ? 'Link copied' : '↗ Share'}
-        </button>
-
-        {repoHref && (
+        {item.kind === 'post' && label && repoHref && (
           <a
             href={repoHref}
-            className="ml-auto rounded-[var(--radius-control)] px-3 py-1.5 font-mono text-xs text-[var(--color-faint)] transition hover:text-[var(--color-text)]"
+            className="mt-2.5 inline-flex rounded-full border border-[var(--color-line)] px-2.5 py-0.5 font-mono text-xs text-[var(--color-muted)] transition hover:border-[var(--color-line-active)]"
           >
             {label}
           </a>
         )}
-      </div>
 
-      {error && <p className="px-5 pb-3 text-xs text-[var(--color-bad)]">{error}</p>}
+        <div className="-ml-2 mt-2 flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => void toggle()}
+            disabled={busy}
+            aria-pressed={liked}
+            aria-label={liked ? 'Undo like' : 'Like'}
+            className={`${ACTION} ${liked ? 'text-[var(--color-accent)] hover:text-[var(--color-accent)]' : ''}`}
+          >
+            {liked ? '♥' : '♡'}
+            {likes > 0 && <span className="tabular-nums">{likes}</span>}
+          </button>
+
+          <a href={href} className={ACTION} aria-label="Replies">
+            ↩{item.replies > 0 && <span className="tabular-nums">{item.replies}</span>}
+          </a>
+
+          <button
+            type="button"
+            className={ACTION}
+            onClick={() => {
+              void navigator.clipboard.writeText(`${SITE_URL}${href}`).then(() => {
+                setCopied(true);
+                setTimeout(() => setCopied(false), 1600);
+              });
+            }}
+          >
+            {copied ? 'Copied' : '↗'}
+          </button>
+        </div>
+
+        {error && <p className="mt-1.5 text-xs text-[var(--color-bad)]">{error}</p>}
+      </div>
     </article>
   );
 }

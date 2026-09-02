@@ -12,6 +12,12 @@ const {
   title,
   description = 'Analyse GitHub repositories, measure how well they are defended, and share what you find.',
 } = Astro.props;
+
+const path = Astro.url.pathname;
+const NAV = [
+  { href: '/app/', label: 'Discover', active: path === '/app/' || path === '/app' },
+  { href: '/app/scan/', label: 'Scan', active: path.startsWith('/app/scan') },
+];
 ---
 
 <!doctype html>
@@ -41,48 +47,70 @@ const {
   </head>
 
   <body class="min-h-screen">
-    <div class="relative z-10 flex min-h-screen flex-col">
-      <header class="sticky top-0 z-30 border-b border-[var(--color-line)] bg-[rgba(10,9,18,0.72)] backdrop-blur-xl">
-        <div class="mx-auto flex h-16 max-w-[1200px] items-center justify-between px-6">
-          <a href="/" class="flex items-center gap-2.5">
-            <img
-              src="/app/logo.png"
-              alt=""
-              width="28"
-              height="28"
-              class="size-7"
-              aria-hidden="true"
-            >
-            <span class="text-sm font-semibold tracking-tight">EXC Analyzer</span>
+    <div class="relative z-10 mx-auto flex w-full max-w-[1180px]">
+      <aside
+        class="sticky top-0 hidden h-screen w-[232px] shrink-0 flex-col border-r border-[var(--color-line)] px-4 py-6 lg:flex"
+      >
+        <a href="/" class="mb-8 flex items-center gap-2.5 px-3">
+          <img src="/app/logo.png" alt="" width="26" height="26" class="size-[26px]" />
+          <span class="text-sm font-semibold tracking-tight">EXC Analyzer</span>
+        </a>
+
+        <nav class="flex flex-col gap-1">
+          {
+            NAV.map((item) => (
+              <a href={item.href} class:list={['nav-item', item.active && 'nav-item-active']}>
+                {item.label}
+              </a>
+            ))
+          }
+          <FollowingLink client:idle />
+        </nav>
+
+        <div class="mt-auto space-y-4 px-3">
+          <HeaderAuth client:idle />
+          <p class="text-2xs leading-relaxed text-[var(--color-faint)]">
+            Scans run in your browser, on your own GitHub account. Your code never reaches us.
+          </p>
+          <a href="https://github.com/exc-analyzer/exc" class="text-2xs text-[var(--color-faint)] hover:text-[var(--color-muted)]">
+            Source on GitHub
           </a>
-
-          <nav class="flex items-center gap-1 text-sm">
-            <a href="/app/" class="btn btn-quiet">Discover</a>
-            <a href="/app/scan/" class="btn btn-quiet">Scan</a>
-            <FollowingLink client:idle />
-            <HeaderAuth client:idle />
-            <a
-              href="https://github.com/exc-analyzer/exc"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="btn btn-quiet">GitHub</a
-            >
-          </nav>
         </div>
-      </header>
+      </aside>
 
-      <main class="mx-auto w-full max-w-[1200px] flex-1 px-6 py-10 sm:py-14">
-        <slot />
-      </main>
-
-      <footer class="border-t border-[var(--color-line)]">
-        <div
-          class="mx-auto flex max-w-[1200px] flex-wrap items-center justify-between gap-3 px-6 py-6 text-xs text-[var(--color-faint)]"
+      <div class="min-w-0 flex-1">
+        <header
+          class="sticky top-0 z-30 border-b border-[var(--color-line)] bg-[rgba(10,9,18,0.82)] backdrop-blur-xl lg:hidden"
         >
-          <p>Scans run in your browser, on your own GitHub account. Your code never reaches us.</p>
-          <a href="https://github.com/exc-analyzer/exc" class="link">Source</a>
-        </div>
-      </footer>
+          <div class="flex h-14 items-center justify-between gap-3 px-4">
+            <a href="/" class="flex items-center gap-2">
+              <img src="/app/logo.png" alt="" width="24" height="24" class="size-6" />
+              <span class="text-sm font-semibold">EXC Analyzer</span>
+            </a>
+            <HeaderAuth client:idle />
+          </div>
+          <nav class="flex gap-1 overflow-x-auto px-3 pb-2">
+            {
+              NAV.map((item) => (
+                <a href={item.href} class:list={['nav-pill', item.active && 'nav-pill-active']}>
+                  {item.label}
+                </a>
+              ))
+            }
+            <FollowingLink client:idle />
+          </nav>
+        </header>
+
+        <main class="px-4 py-8 sm:px-8 sm:py-10">
+          <slot />
+        </main>
+
+        <footer class="border-t border-[var(--color-line)] px-4 py-6 sm:px-8 lg:hidden">
+          <p class="text-2xs text-[var(--color-faint)]">
+            Scans run in your browser, on your own GitHub account.
+          </p>
+        </footer>
+      </div>
     </div>
   </body>
 </html>

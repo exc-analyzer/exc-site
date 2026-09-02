@@ -48,13 +48,10 @@ export default function Feed() {
       {signedIn ? (
         <Composer onPosted={refresh} />
       ) : (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-surface)] px-5 py-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-card)] border border-dashed border-[var(--color-line)] px-5 py-3.5">
           <p className="text-sm text-[var(--color-muted)]">
             Reading is open to everyone. Sign in to post, reply and like.
           </p>
-          <a href="/app/scan/" className="btn btn-ghost shrink-0">
-            Scan something
-          </a>
         </div>
       )}
 
@@ -66,7 +63,7 @@ export default function Feed() {
         </Empty>
       ) : (
         <>
-          <ul className="space-y-4">
+          <ul className="divide-y divide-[var(--color-line)] overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-surface)]">
             {items.map((item) => {
               const key = `${item.kind}:${item.id}`;
               return (
@@ -89,7 +86,7 @@ export default function Feed() {
           </ul>
 
           {more && (
-            <div className="pt-1 text-center">
+            <div className="pt-4 text-center">
               <button
                 type="button"
                 className="btn btn-ghost"
@@ -131,7 +128,7 @@ function Composer({ onPosted }: { onPosted: () => void }) {
   }
 
   return (
-    <div className="rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-surface)] p-5 shadow-[var(--shadow-lift)]">
+    <div className="rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-surface)] p-4 sm:p-5">
       <textarea
         className="field resize-y"
         rows={3}

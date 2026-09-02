@@ -16,11 +16,17 @@ export default function FollowingLink() {
 
   if (unread === null) return null;
 
+  const active =
+    typeof window !== 'undefined' && window.location.pathname.startsWith('/app/following');
+
   return (
-    <a href="/app/following/" className="btn btn-quiet relative">
-      Following
+    <a
+      href="/app/following/"
+      className={active ? 'nav-item nav-item-active' : 'nav-item'}
+    >
+      <span>Following</span>
       {unread > 0 && (
-        <span className="ml-2 inline-flex min-w-5 items-center justify-center rounded-full bg-[var(--color-primary)] px-1.5 text-[11px] font-semibold leading-5 text-white">
+        <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-[var(--color-primary)] px-1.5 text-2xs font-semibold leading-5 text-white">
           {unread}
         </span>
       )}
