@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { COMMANDS, getCommand, type CommandId } from '../../engine';
 import { loadTargetReports, type StoredReport } from '../../lib/reports';
 import { loadRepoComments, type RepoComment } from '../../lib/comments';
-import { Card, Empty, ExternalLink, SectionTitle, Verdict } from '../console/ui';
+import { Card, Empty, ExternalLink, SectionTitle, Verdict, toneText } from '../console/ui';
 import type { Tone } from '../console/ui';
 import { relativeTime } from '../../engine/shared';
 import BadgeSnippet from './BadgeSnippet';
@@ -144,9 +144,8 @@ export default function RepoHub({ owner, repo }: { owner: string; repo: string }
     .at(-1);
 
   const byKind = new Map((reports ?? []).map((r) => [r.kind, r]));
-  const ordered = [...relevant].sort(
-    (a, b) => Number(byKind.has(b.id)) - Number(byKind.has(a.id)),
-  );
+  const done = relevant.filter((c) => byKind.has(c.id));
+  const todo = relevant.filter((c) => !byKind.has(c.id));
   const security = byKind.get('security-score');
   const scanned = reports?.length ?? 0;
 
@@ -215,46 +214,52 @@ export default function RepoHub({ owner, repo }: { owner: string; repo: string }
           <div>
             <SectionTitle>What is known</SectionTitle>
             <ul className="grid gap-3 sm:grid-cols-2">
-              {ordered.map((command) => {
-                const report = byKind.get(command.id);
-                const line = report ? describe(report) : null;
+              {done.map((command) => {
+                const report = byKind.get(command.id)!;
+                const line = describe(report);
                 const href = repo
                   ? `/app/r/${owner}/${repo}/${command.id}/`
                   : `/app/u/${owner}/${command.id}/`;
-                const runHref = repo
-                  ? `/app/?cmd=${command.id}&repo=${encodeURIComponent(`${owner}/${repo}`)}`
-                  : `/app/?cmd=${command.id}&user=${encodeURIComponent(owner)}`;
                 return (
                   <li key={command.id}>
                     <a
-                      href={report ? href : runHref}
-                      className={`block h-full rounded-xl border bg-[var(--color-surface)] p-4 transition hover:border-[var(--color-line-active)] ${
-                        report ? TONE_RING[line!.tone] : 'border-dashed border-[var(--color-line)]'
-                      }`}
+                      href={href}
+                      className={`surface-hover block h-full rounded-[var(--radius-card)] border bg-[var(--color-surface)] p-5 ${TONE_RING[line.tone]}`}
                     >
                       <div className="flex items-baseline justify-between gap-3">
                         <span className="text-sm font-medium">{command.name}</span>
-                        {report && (
-                          <span className="shrink-0 text-xs text-[var(--color-faint)]">
-                            {relativeTime(report.updated_at)}
-                          </span>
-                        )}
+                        <span className="shrink-0 text-2xs uppercase tracking-wider text-[var(--color-faint)]">
+                          {relativeTime(report.updated_at)}
+                        </span>
                       </div>
-                      {report ? (
-                        <>
-                          <p className="mt-2 text-lg tabular-nums">{line!.headline}</p>
-                          <p className="mt-0.5 text-xs text-[var(--color-muted)]">{line!.detail}</p>
-                        </>
-                      ) : (
-                        <p className="mt-2 text-xs text-[var(--color-muted)]">
-                          Not run yet — you can be the first.
-                        </p>
-                      )}
+                      <p className={`mt-2.5 text-xl tabular-nums ${toneText(line.tone)}`}>
+                        {line.headline}
+                      </p>
+                      <p className="mt-1 text-xs text-[var(--color-muted)]">{line.detail}</p>
                     </a>
                   </li>
                 );
               })}
             </ul>
+
+            {todo.length > 0 && (
+              <div className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-2 rounded-[var(--radius-control)] border border-dashed border-[var(--color-line)] px-4 py-3">
+                <span className="text-xs text-[var(--color-faint)]">Nobody has run yet:</span>
+                {todo.map((command) => (
+                  <a
+                    key={command.id}
+                    href={
+                      repo
+                        ? `/app/?cmd=${command.id}&repo=${encodeURIComponent(`${owner}/${repo}`)}`
+                        : `/app/?cmd=${command.id}&user=${encodeURIComponent(owner)}`
+                    }
+                    className="rounded-full border border-[var(--color-line)] px-2.5 py-1 text-xs text-[var(--color-muted)] transition hover:border-[var(--color-line-active)] hover:text-[var(--color-text)]"
+                  >
+                    {command.name}
+                  </a>
+                ))}
+              </div>
+            )}
           </div>
 
           {security && repo && (
