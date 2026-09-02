@@ -689,7 +689,14 @@ function CommitAnomalyView({ data }: { data: CA }) {
           ) : (
             <ul className="space-y-4">
               {flagged.map((c) => (
-                <li key={c.sha} className="border-l-2 border-amber-700/60 pl-4">
+                <li
+                  key={c.sha}
+                  className={`border-l-2 pl-4 ${
+                    c.signals.some((s) => s.level === 'strong')
+                      ? 'border-red-800/70'
+                      : 'border-[var(--color-line-strong)]'
+                  }`}
+                >
                   <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
                     <ExternalLink href={c.url}>
                       <code className="text-xs">{c.sha}</code>
@@ -697,9 +704,22 @@ function CommitAnomalyView({ data }: { data: CA }) {
                     <span className="text-sm">{c.message}</span>
                   </div>
                   <p className="mt-1 text-xs text-[var(--color-muted)]">
-                    {c.author} · {relativeTime(c.date)} · matched:{' '}
-                    <span className="text-amber-400">{c.matched.join(', ')}</span>
+                    {c.author} · {relativeTime(c.date)}
                   </p>
+                  <ul className="mt-1.5 flex flex-wrap gap-2">
+                    {c.signals.map((s, i) => (
+                      <li
+                        key={i}
+                        className={`rounded-full border px-2.5 py-0.5 text-xs ${
+                          s.level === 'strong'
+                            ? 'border-red-900/60 text-red-300'
+                            : 'border-[var(--color-line)] text-[var(--color-muted)]'
+                        }`}
+                      >
+                        {s.label}
+                      </li>
+                    ))}
+                  </ul>
                 </li>
               ))}
             </ul>

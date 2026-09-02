@@ -24,15 +24,17 @@ export async function contribImpact(
 
   let data: StatsContributor[] | null = null;
   let pending = false;
-  for (let attempt = 0; attempt < 3; attempt += 1) {
+  const waits = [1000, 2000, 3000, 4000, 5000];
+  for (let attempt = 0; attempt <= waits.length; attempt += 1) {
     const res = await gh.raw<StatsContributor[]>(`/repos/${owner}/${repo}/stats/contributors`);
     if (res.status === 200 && Array.isArray(res.data)) {
       data = res.data;
+      pending = false;
       break;
     }
-    if (res.status === 202) {
+    if (res.status === 202 && attempt < waits.length) {
       pending = true;
-      await new Promise((resolve) => setTimeout(resolve, 1500 * (attempt + 1)));
+      await new Promise((resolve) => setTimeout(resolve, waits[attempt]));
       continue;
     }
     break;

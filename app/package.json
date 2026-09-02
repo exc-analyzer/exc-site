@@ -4,7 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "npm run check && npm run build",
+    "test": "npm run check && npm run test:rules && npm run build",
+    "test:rules": "node --run _rules:bundle && node .rules.mjs",
+    "_rules:bundle": "esbuild scripts/rules.test.ts --bundle --platform=node --format=esm --target=node22 --outfile=.rules.mjs --log-level=warning",
     "dev": "astro dev",
     "build": "astro build",
     "check": "astro check",
