@@ -88,6 +88,36 @@ const CHECKS: Check[] = [
     why: 'The view must answer with the caller rights, not the creator rights.',
   },
   {
+    name: 'Feed readable anonymously',
+    run: () => get('/rest/v1/feed?select=kind&limit=1'),
+    expect: [200],
+    why: 'A visitor who has not signed in still gets to read the place.',
+  },
+  {
+    name: 'Anonymous post write BLOCKED',
+    run: () => post('/rest/v1/posts', { body: 'x', author_id: FAKE }),
+    expect: [401, 403],
+    why: 'Nobody may write in someone else name.',
+  },
+  {
+    name: 'Bookmarks NOT readable anonymously',
+    run: () => get('/rest/v1/bookmarks?select=user_id'),
+    expect: [401, 403],
+    why: 'What a person keeps is theirs alone.',
+  },
+  {
+    name: 'Replies view NOT readable anonymously',
+    run: () => get('/rest/v1/my_replies?select=id'),
+    expect: [401, 403],
+    why: 'Notifications belong to whoever they are addressed to.',
+  },
+  {
+    name: 'Anonymous cannot follow a person',
+    run: () => post('/rest/v1/people_follows', { follower_id: FAKE, followee_id: FAKE }),
+    expect: [401, 403],
+    why: 'A follow must come from the person doing it.',
+  },
+  {
     name: 'auth.users is NOT exposed',
     run: () => get('/rest/v1/users?select=email'),
     expect: [401, 403, 404],
