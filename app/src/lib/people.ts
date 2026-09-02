@@ -13,10 +13,12 @@ export interface Member {
   post_count: number;
   scan_count: number;
   comment_count: number;
+  follower_count: number;
+  following_count: number;
 }
 
 const MEMBER_COLUMNS =
-  'id, gh_login, avatar_url, accent, bio, created_at, shown_name, post_count, scan_count, comment_count';
+  'id, gh_login, avatar_url, accent, bio, created_at, shown_name, post_count, scan_count, comment_count, follower_count, following_count';
 
 export async function loadMember(login: string): Promise<Member | null> {
   if (!supabase) return null;

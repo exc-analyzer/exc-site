@@ -7,6 +7,8 @@ import { formatDate } from '../../engine/shared';
 import { Card, Empty, ExternalLink } from '../console/ui';
 import { Avatar } from '../profile/ProfileEditor';
 import FeedItem from '../feed/FeedItem';
+import PersonFollowButton from './PersonFollowButton';
+import { loadMyBookmarks } from '../../lib/social';
 
 function loginFromPath(): string | null {
   const parts = window.location.pathname
@@ -25,6 +27,7 @@ type State =
 export default function MemberPage() {
   const [state, setState] = useState<State>({ kind: 'loading' });
   const [likes, setLikes] = useState<Set<string>>(new Set());
+  const [saved, setSaved] = useState<Set<string>>(new Set());
   const [me, setMe] = useState<string | null>(null);
   const [signedIn, setSignedIn] = useState(false);
 
@@ -40,7 +43,9 @@ export default function MemberPage() {
       return;
     }
     const items = await loadMemberFeed(member.id);
-    setLikes(await loadMyLikes(items));
+    const [mine, kept] = await Promise.all([loadMyLikes(items), loadMyBookmarks(items)]);
+    setLikes(mine);
+    setSaved(kept);
     setState({ kind: 'ready', member, items });
   }
 
@@ -92,9 +97,10 @@ export default function MemberPage() {
               <h1 className="text-xl">{member.shown_name}</h1>
               <p className="font-mono text-sm text-[var(--color-muted)]">@{member.gh_login}</p>
             </div>
-            <ExternalLink href={`https://github.com/${member.gh_login}`}>
-              GitHub profile
-            </ExternalLink>
+            <div className="flex items-center gap-3">
+              <ExternalLink href={`https://github.com/${member.gh_login}`}>GitHub</ExternalLink>
+              {me !== member.id && <PersonFollowButton personId={member.id} signedIn={signedIn} />}
+            </div>
           </div>
 
           {member.bio?.trim() && (
@@ -103,6 +109,8 @@ export default function MemberPage() {
 
           <dl className="mt-5 flex flex-wrap gap-x-8 gap-y-3">
             {[
+              { label: 'Followers', value: member.follower_count },
+              { label: 'Following', value: member.following_count },
               { label: 'Posts', value: member.post_count },
               { label: 'Scans', value: member.scan_count },
               { label: 'Replies', value: member.comment_count },
@@ -133,8 +141,20 @@ export default function MemberPage() {
                 <FeedItem
                   item={item}
                   liked={likes.has(key)}
+                  saved={saved.has(key)}
                   mine={Boolean(me) && item.author_id === me}
                   signedIn={signedIn}
+                  onSaved={
+                    signedIn
+                      ? (on) =>
+                          setSaved((prev) => {
+                            const next = new Set(prev);
+                            if (on) next.add(key);
+                            else next.delete(key);
+                            return next;
+                          })
+                      : undefined
+                  }
                   onChanged={() => void load()}
                   onLiked={(on) =>
                     setLikes((prev) => {

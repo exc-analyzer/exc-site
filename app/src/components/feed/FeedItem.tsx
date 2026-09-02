@@ -17,6 +17,7 @@ import { Avatar } from '../profile/ProfileEditor';
 import { SITE_URL } from '../../lib/site';
 import Icon from '../Icon';
 import ItemMenu from './ItemMenu';
+import { setBookmark } from '../../lib/social';
 
 function scoreTone(score: number | null): Tone {
   if (score === null) return 'muted';
@@ -31,16 +32,22 @@ const ACTION =
 export default function FeedItem({
   item,
   liked,
+  saved = false,
   mine = false,
   signedIn = false,
   onLiked,
+  onSaved,
+  onQuote,
   onChanged,
 }: {
   item: Item;
   liked: boolean;
+  saved?: boolean;
   mine?: boolean;
   signedIn?: boolean;
   onLiked: (liked: boolean) => void;
+  onSaved?: (saved: boolean) => void;
+  onQuote?: (item: Item) => void;
   onChanged?: () => void;
 }) {
   const [busy, setBusy] = useState(false);
@@ -56,6 +63,19 @@ export default function FeedItem({
   const repoHref = targetHref(item);
   const author = memberHref(item.author_login);
   const likes = item.likes + (liked === wasLiked ? 0 : liked ? 1 : -1);
+
+  async function keep() {
+    if (busy || !onSaved) return;
+    setBusy(true);
+    setError(null);
+    const problem = await setBookmark(item.kind, item.id, !saved);
+    setBusy(false);
+    if (problem) {
+      setError(problem);
+      return;
+    }
+    onSaved(!saved);
+  }
 
   async function toggle() {
     if (busy) return;
@@ -106,6 +126,7 @@ export default function FeedItem({
               <span>ran {getCommand(item.report_kind).name.toLowerCase()}</span>
             )}
             <span>· {relativeTime(item.happened_at)}</span>
+            {item.edited_at && <span>· edited</span>}
           </p>
 
           <ItemMenu
@@ -159,7 +180,19 @@ export default function FeedItem({
         ) : (
           <a href={href} className="mt-1.5 block">
             {item.kind === 'post' ? (
-              <RichText body={item.body ?? ''} />
+              <>
+                <RichText body={item.body ?? ''} />
+                {item.quote_id && (
+                  <span className="mt-3 block rounded-[var(--radius-control)] border border-[var(--color-line)] px-3.5 py-2.5">
+                    <span className="block text-xs text-[var(--color-faint)]">
+                      {item.quote_login ?? 'someone'}
+                    </span>
+                    <span className="mt-1 block line-clamp-4 text-sm text-[var(--color-muted)]">
+                      {item.quote_body ?? 'This post is gone.'}
+                    </span>
+                  </span>
+                )}
+              </>
             ) : (
               <div className="flex items-center justify-between gap-4">
                 <div className="min-w-0">
@@ -203,6 +236,30 @@ export default function FeedItem({
             <Icon name="reply" size={15} />
             {item.replies > 0 && <span className="tabular-nums">{item.replies}</span>}
           </a>
+
+          {onQuote && (
+            <button
+              type="button"
+              className={ACTION}
+              aria-label="Quote"
+              onClick={() => onQuote(item)}
+            >
+              <Icon name="quote" size={15} />
+            </button>
+          )}
+
+          {onSaved && (
+            <button
+              type="button"
+              onClick={() => void keep()}
+              disabled={busy}
+              aria-pressed={saved}
+              aria-label={saved ? 'Remove from saved' : 'Save'}
+              className={`${ACTION} ${saved ? 'text-[var(--color-link)] hover:text-[var(--color-link)]' : ''}`}
+            >
+              <Icon name="bookmark" size={15} filled={saved} />
+            </button>
+          )}
 
           <button
             type="button"

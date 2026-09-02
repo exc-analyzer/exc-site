@@ -11,12 +11,15 @@ import { supabase } from '../../lib/supabase';
 import { Empty } from '../console/ui';
 import FeedItem from './FeedItem';
 import Composer from './Composer';
+import { loadMyBookmarks } from '../../lib/social';
 
 const PAGE = 25;
 
 export default function Feed() {
   const [items, setItems] = useState<Item[] | null>(null);
   const [likes, setLikes] = useState<Set<string>>(new Set());
+  const [saved, setSaved] = useState<Set<string>>(new Set());
+  const [quoting, setQuoting] = useState<Item | null>(null);
   const [signedIn, setSignedIn] = useState(false);
   const [me, setMe] = useState<string | null>(null);
   const [more, setMore] = useState(true);
@@ -26,8 +29,9 @@ export default function Feed() {
   const [query, setQuery] = useState('');
 
   async function absorb(rows: Item[], append: boolean) {
-    const mine = await loadMyLikes(rows);
+    const [mine, kept] = await Promise.all([loadMyLikes(rows), loadMyBookmarks(rows)]);
     setLikes((prev) => (append ? new Set([...prev, ...mine]) : mine));
+    setSaved((prev) => (append ? new Set([...prev, ...kept]) : kept));
     setItems((prev) => (append && prev ? [...prev, ...rows] : rows));
     setMore(rows.length === PAGE);
   }
@@ -62,7 +66,7 @@ export default function Feed() {
   return (
     <div className="space-y-5">
       {signedIn ? (
-        <Composer onPosted={refresh} />
+        <Composer onPosted={refresh} quoting={quoting} onClearQuote={() => setQuoting(null)} />
       ) : (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-card)] border border-dashed border-[var(--color-line)] px-5 py-3.5">
           <p className="text-sm text-[var(--color-muted)]">
@@ -73,14 +77,20 @@ export default function Feed() {
 
       <div className="flex flex-wrap items-center gap-2">
         <div className="flex items-center gap-1">
-          {(['all', 'posts', 'scans'] as FeedFilter[]).map((f) => (
+          {(['all', 'following', 'posts', 'scans'] as FeedFilter[]).map((f) => (
             <button
               key={f}
               type="button"
               onClick={() => setFilter(f)}
               className={filter === f ? 'nav-pill nav-pill-active' : 'nav-pill'}
             >
-              {f === 'all' ? 'Everything' : f === 'posts' ? 'Posts' : 'Scans'}
+              {f === 'all'
+                ? 'Everything'
+                : f === 'following'
+                  ? 'Following'
+                  : f === 'posts'
+                    ? 'Posts'
+                    : 'Scans'}
             </button>
           ))}
         </div>
@@ -121,7 +131,9 @@ export default function Feed() {
         <Empty>
           {query
             ? `Nothing matches ${query}.`
-            : 'Nothing here yet. Scan a repository and it becomes the first thing on this page.'}
+            : filter === 'following'
+              ? 'Nobody you follow has posted yet. Open someone and press Follow.'
+              : 'Nothing here yet. Scan a repository and it becomes the first thing on this page.'}
         </Empty>
       ) : (
         <>
@@ -133,9 +145,29 @@ export default function Feed() {
                   <FeedItem
                     item={item}
                     liked={likes.has(key)}
+                    saved={saved.has(key)}
                     mine={Boolean(me) && item.author_id === me}
                     signedIn={signedIn}
                     onChanged={refresh}
+                    onQuote={
+                      signedIn && item.kind === 'post'
+                        ? (target) => {
+                            setQuoting(target);
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                          }
+                        : undefined
+                    }
+                    onSaved={
+                      signedIn
+                        ? (on) =>
+                            setSaved((prev) => {
+                              const next = new Set(prev);
+                              if (on) next.add(key);
+                              else next.delete(key);
+                              return next;
+                            })
+                        : undefined
+                    }
                     onLiked={(on) =>
                       setLikes((prev) => {
                         const next = new Set(prev);

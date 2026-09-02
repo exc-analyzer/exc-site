@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { friendlyDbError } from './dbError';
+import { followedIds } from './social';
 import type { CommandId } from '../engine';
 
 export type FeedKind = 'post' | 'report';
@@ -16,14 +17,18 @@ export interface FeedItem {
   report_kind: CommandId | null;
   score: number | null;
   happened_at: string;
+  edited_at: string | null;
+  quote_id: string | null;
+  quote_body: string | null;
+  quote_login: string | null;
   likes: number;
   replies: number;
 }
 
-export type FeedFilter = 'all' | 'posts' | 'scans';
+export type FeedFilter = 'all' | 'posts' | 'scans' | 'following';
 
 const COLUMNS =
-  'kind, id, author_id, author_login, author_avatar, body, owner, repo, report_kind, score, happened_at, likes, replies';
+  'kind, id, author_id, author_login, author_avatar, body, owner, repo, report_kind, score, happened_at, edited_at, quote_id, quote_body, quote_login, likes, replies';
 
 export async function loadFeed(
   limit = 25,
@@ -38,7 +43,13 @@ export async function loadFeed(
     .order('happened_at', { ascending: false })
     .limit(limit);
   if (before) query = query.lt('happened_at', before);
-  if (filter !== 'all') query = query.eq('kind', filter === 'posts' ? 'post' : 'report');
+  if (filter === 'posts') query = query.eq('kind', 'post');
+  if (filter === 'scans') query = query.eq('kind', 'report');
+  if (filter === 'following') {
+    const ids = await followedIds();
+    if (ids.length === 0) return [];
+    query = query.in('author_id', ids);
+  }
 
   const term = search.trim();
   if (term) {
@@ -85,6 +96,7 @@ export async function loadPost(id: string): Promise<FeedItem | null> {
 export async function createPost(
   body: string,
   repo?: { owner: string; repo: string },
+  quoteOf?: string,
 ): Promise<{ id: string | null; error: string | null }> {
   if (!supabase) return { id: null, error: 'No connection.' };
   const { data: sessionData } = await supabase.auth.getSession();
@@ -98,6 +110,7 @@ export async function createPost(
       body: body.trim(),
       repo_owner: repo?.owner ?? '',
       repo_name: repo?.repo ?? '',
+      quote_of: quoteOf ?? null,
     })
     .select('id')
     .single();

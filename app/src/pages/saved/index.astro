@@ -1,0 +1,16 @@
+---
+import Base from '../../layouts/Base.astro';
+import Saved from '../../components/feed/Saved.tsx';
+---
+
+<Base title="EXC Analyzer — Saved">
+  <div class="mx-auto max-w-[640px] space-y-6">
+    <div>
+      <h1 class="text-xl">Saved</h1>
+      <p class="mt-2 text-sm text-[var(--color-muted)]">
+        Only you can see this. Nothing here is shared or counted anywhere.
+      </p>
+    </div>
+    <Saved client:load />
+  </div>
+</Base>

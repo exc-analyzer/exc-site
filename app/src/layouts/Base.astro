@@ -20,11 +20,13 @@ const ICONS: Record<string, string[]> = {
     'm16.24 7.76-2.12 6.36-6.36 2.12 2.12-6.36 6.36-2.12Z',
   ],
   search: ['M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16Z', 'm21 21-4.35-4.35'],
+  bookmark: ['M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2Z'],
 };
 
 const NAV = [
   { href: '/app/', label: 'Discover', icon: 'compass', active: path === '/app/' || path === '/app' },
   { href: '/app/scan/', label: 'Scan', icon: 'search', active: path.startsWith('/app/scan') },
+  { href: '/app/saved/', label: 'Saved', icon: 'bookmark', active: path.startsWith('/app/saved') },
 ];
 ---
 
