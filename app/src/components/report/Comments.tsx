@@ -6,6 +6,7 @@ import {
   softDeleteComment,
   voteComment,
   type Comment,
+  type CommentTarget,
   type VoteValue,
 } from '../../lib/comments';
 import { supabase } from '../../lib/supabase';
@@ -13,14 +14,14 @@ import { Card, Empty, ExternalLink } from '../console/ui';
 import { relativeTime } from '../../engine/shared';
 import ReportButton from '../ReportButton';
 
-export default function Comments({ reportId }: { reportId: string }) {
+export default function Comments({ target }: { target: CommentTarget }) {
   const [comments, setComments] = useState<Comment[]>([]);
   const [myVotes, setMyVotes] = useState<Map<string, VoteValue>>(new Map());
   const [me, setMe] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [replyTo, setReplyTo] = useState<string | null>(null);
   async function refresh() {
-    const list = await loadComments(reportId);
+    const list = await loadComments(target);
     setComments(list);
     setMyVotes(await loadMyVotes(list.map((c) => c.id)));
   }
@@ -33,7 +34,7 @@ export default function Comments({ reportId }: { reportId: string }) {
       await refresh();
       setLoading(false);
     })();
-  }, [reportId]);
+  }, [target.kind, target.id]);
   const roots = comments.filter((c) => !c.parent_id);
   const repliesOf = (id: string) => comments.filter((c) => c.parent_id === id);
   return (
@@ -49,7 +50,7 @@ export default function Comments({ reportId }: { reportId: string }) {
         </div>
         {me ? (
           <Composer
-            reportId={reportId}
+            target={target}
             parentId={null}
             onPosted={() => void refresh()}
             placeholder="What do you make of this report?"
@@ -94,7 +95,7 @@ export default function Comments({ reportId }: { reportId: string }) {
                 {replyTo === c.id && me && (
                   <div className="mt-4 border-l border-[var(--color-line)] pl-5">
                     <Composer
-                      reportId={reportId}
+                      target={target}
                       parentId={c.id}
                       placeholder="Your reply…"
                       onPosted={() => {
@@ -211,12 +212,12 @@ function CommentRow({
   );
 }
 function Composer({
-  reportId,
+  target,
   parentId,
   placeholder,
   onPosted,
 }: {
-  reportId: string;
+  target: CommentTarget;
   parentId: string | null;
   placeholder: string;
   onPosted: () => void;
@@ -228,7 +229,7 @@ function Composer({
     if (!body.trim() || busy) return;
     setBusy(true);
     setError(null);
-    const { error } = await postComment(reportId, body, parentId);
+    const { error } = await postComment(target, body, parentId);
     setBusy(false);
     if (error) {
       setError(error);

@@ -290,7 +290,7 @@ function SignInNudge() {
           it.
         </p>
       </div>
-      <a href="/app/" className="btn btn-ghost shrink-0">
+      <a href="/app/scan/" className="btn btn-ghost shrink-0">
         Sign in
       </a>
     </div>

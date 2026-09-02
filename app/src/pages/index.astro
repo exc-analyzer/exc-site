@@ -1,37 +1,26 @@
 ---
 import Base from '../layouts/Base.astro';
-import AuthPanel from '../components/AuthPanel.tsx';
-import CommandConsole from '../components/console/CommandConsole.tsx';
-import Diagnostics from '../components/console/Diagnostics.tsx';
+import Feed from '../components/feed/Feed.tsx';
 import RecentReports from '../components/console/RecentReports.tsx';
 ---
 
-<Base title="EXC Analyzer — Scan a repository">
-  <div class="mb-10 max-w-2xl">
-    <p class="eyebrow">Console</p>
-    <h1 class="mt-2 text-3xl font-bold sm:text-4xl">
-      Can you trust this repository?
-    </h1>
-    <p class="mt-3 text-[var(--color-muted)]">
-      Every command from the CLI runs here too. Scans happen in your browser on your own
-      GitHub account, so your code never reaches us and you spend your own API quota.
-    </p>
-  </div>
-
-  <div class="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
-    <div class="min-w-0">
-      <AuthPanel client:load />
+<Base title="EXC Analyzer — What people are finding">
+  <div class="mb-8 flex flex-wrap items-end justify-between gap-4">
+    <div class="max-w-2xl">
+      <p class="eyebrow">Discover</p>
+      <h1 class="mt-3 text-3xl">What people are finding</h1>
+      <p class="mt-3 text-[var(--color-muted)]">
+        Every scan anyone runs shows up here, alongside what people write about the repositories
+        they depend on.
+      </p>
     </div>
-    <div class="min-w-0">
-      <RecentReports client:load />
+    <a href="/app/scan/" class="btn btn-primary shrink-0">Scan a repository</a>
+  </div>
+
+  <div class="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_18rem]">
+    <Feed client:load />
+    <div class="hidden lg:block">
+      <RecentReports client:visible />
     </div>
-  </div>
-
-  <div class="mt-12">
-    <CommandConsole client:load />
-  </div>
-
-  <div class="mt-12 max-w-2xl">
-    <Diagnostics client:load />
   </div>
 </Base>

@@ -166,7 +166,7 @@ function ReportDetail({ target: parsed }: { target: Target | null }) {
       {target.kind === 'security-score' && target.repo && (
         <BadgeSnippet owner={target.owner} repo={target.repo} score={report.score} />
       )}
-      <Comments reportId={report.id} />
+      <Comments target={{ kind: 'report', id: report.id }} />
       {siblings.length > 0 && (
         <Card>
           <div className="px-6 py-4">

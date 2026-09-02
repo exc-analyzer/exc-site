@@ -1,0 +1,10 @@
+---
+import Base from '../../layouts/Base.astro';
+import PostPage from '../../components/feed/PostPage.tsx';
+---
+
+<Base title="EXC Analyzer — Post">
+  <div class="mx-auto max-w-2xl">
+    <PostPage client:load />
+  </div>
+</Base>

@@ -135,8 +135,8 @@ export default function RepoHub({ owner, repo }: { owner: string; repo: string }
   ).filter((c) => !c.sensitive);
 
   const scanHref = repo
-    ? `/app/?repo=${encodeURIComponent(`${owner}/${repo}`)}`
-    : `/app/?user=${encodeURIComponent(owner)}`;
+    ? `/app/scan/?repo=${encodeURIComponent(`${owner}/${repo}`)}`
+    : `/app/scan/?user=${encodeURIComponent(owner)}`;
 
   const cardVersion = (reports ?? [])
     .map((r) => r.updated_at.slice(0, 10))
@@ -200,7 +200,7 @@ export default function RepoHub({ owner, repo }: { owner: string; repo: string }
                 <a
                   href={
                     repo
-                      ? `/app/?cmd=security-score&repo=${encodeURIComponent(`${owner}/${repo}`)}`
+                      ? `/app/scan/?cmd=security-score&repo=${encodeURIComponent(`${owner}/${repo}`)}`
                       : scanHref
                   }
                   className="btn btn-ghost shrink-0"
@@ -250,8 +250,8 @@ export default function RepoHub({ owner, repo }: { owner: string; repo: string }
                     key={command.id}
                     href={
                       repo
-                        ? `/app/?cmd=${command.id}&repo=${encodeURIComponent(`${owner}/${repo}`)}`
-                        : `/app/?cmd=${command.id}&user=${encodeURIComponent(owner)}`
+                        ? `/app/scan/?cmd=${command.id}&repo=${encodeURIComponent(`${owner}/${repo}`)}`
+                        : `/app/scan/?cmd=${command.id}&user=${encodeURIComponent(owner)}`
                     }
                     className="rounded-full border border-[var(--color-line)] px-2.5 py-1 text-xs text-[var(--color-muted)] transition hover:border-[var(--color-line-active)] hover:text-[var(--color-text)]"
                   >

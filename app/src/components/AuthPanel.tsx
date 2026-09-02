@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase, isConfigured } from '../lib/supabase';
+import { signInWithGitHub } from '../lib/auth';
 import { rememberGithubToken, getGithubToken, forgetGithubToken } from '../lib/githubToken';
 import { accentColor, loadMyProfile, shownAvatar, shownName, type Profile } from '../lib/profile';
 import { Avatar } from './profile/ProfileEditor';
 
-const SCOPES = 'read:user public_repo';
+
 async function isTokenUsable(token: string): Promise<boolean> {
   try {
     const res = await fetch('https://api.github.com/user', {
@@ -67,15 +68,11 @@ export default function AuthPanel() {
     return () => sub.subscription.unsubscribe();
   }, []);
   async function signIn() {
-    if (!supabase) return;
     setBusy(true);
     setError(null);
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'github',
-      options: { scopes: SCOPES, redirectTo: `${window.location.origin}/app/` },
-    });
-    if (error) {
-      setError(error.message);
+    const problem = await signInWithGitHub('/app/scan/');
+    if (problem) {
+      setError(problem);
       setBusy(false);
     }
   }

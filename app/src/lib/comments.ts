@@ -1,8 +1,11 @@
 import { supabase } from './supabase';
 import { friendlyDbError } from './dbError';
+export type CommentTarget = { kind: 'report' | 'post'; id: string };
+
 export interface Comment {
   id: string;
-  report_id: string;
+  report_id: string | null;
+  post_id: string | null;
   author_id: string;
   parent_id: string | null;
   body: string;
@@ -12,12 +15,13 @@ export interface Comment {
   updated_at: string;
   author?: { gh_login: string; avatar_url: string | null } | null;
 }
-export async function loadComments(reportId: string): Promise<Comment[]> {
+export async function loadComments(target: CommentTarget): Promise<Comment[]> {
   if (!supabase) return [];
+  const column = target.kind === 'post' ? 'post_id' : 'report_id';
   const { data, error } = await supabase
     .from('comments')
     .select('*, author:author_id (gh_login, avatar_url)')
-    .eq('report_id', reportId)
+    .eq(column, target.id)
     .order('created_at', { ascending: true });
   if (error) {
     console.warn('Could not load comments:', error.message);
@@ -26,7 +30,7 @@ export async function loadComments(reportId: string): Promise<Comment[]> {
   return (data as Comment[]) ?? [];
 }
 export async function postComment(
-  reportId: string,
+  target: CommentTarget,
   body: string,
   parentId: string | null = null,
 ): Promise<{ comment: Comment | null; error: string | null }> {
@@ -34,9 +38,10 @@ export async function postComment(
   const { data: sessionData } = await supabase.auth.getSession();
   const userId = sessionData.session?.user.id;
   if (!userId) return { comment: null, error: 'Sign in to leave a comment.' };
+  const link = target.kind === 'post' ? { post_id: target.id } : { report_id: target.id };
   const { data, error } = await supabase
     .from('comments')
-    .insert({ report_id: reportId, author_id: userId, parent_id: parentId, body: body.trim() })
+    .insert({ ...link, author_id: userId, parent_id: parentId, body: body.trim() })
     .select('*, author:author_id (gh_login, avatar_url)')
     .single();
   if (error) return { comment: null, error: friendlyDbError(error) };

@@ -79,7 +79,7 @@ export default function FollowingList() {
             Open any repository page and press Follow. Whatever happens there afterwards shows up
             here.
           </p>
-          <a href="/app/" className="btn btn-ghost mt-5">
+          <a href="/app/scan/" className="btn btn-ghost mt-5">
             Scan something
           </a>
         </div>

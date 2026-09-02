@@ -1,6 +1,7 @@
 ---
 import '../styles/global.css';
 import FollowingLink from '../components/follow/FollowingLink.tsx';
+import HeaderAuth from '../components/HeaderAuth.tsx';
 
 interface Props {
   title: string;
@@ -56,9 +57,10 @@ const {
           </a>
 
           <nav class="flex items-center gap-1 text-sm">
-            <a href="/app/" class="btn btn-quiet">Console</a>
+            <a href="/app/" class="btn btn-quiet">Discover</a>
+            <a href="/app/scan/" class="btn btn-quiet">Scan</a>
             <FollowingLink client:idle />
-            <a href="/app/profile/" class="btn btn-quiet">Profile</a>
+            <HeaderAuth client:idle />
             <a
               href="https://github.com/exc-analyzer/exc"
               target="_blank"
