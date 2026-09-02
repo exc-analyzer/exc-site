@@ -9,6 +9,9 @@ import {
   type AccentId,
   type Profile,
 } from '../../lib/profile';
+import { signInWithGitHub } from '../../lib/auth';
+import { Blank, BlockSkeleton } from '../console/Chrome';
+import Icon from '../Icon';
 
 export default function ProfileEditor() {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -54,19 +57,30 @@ export default function ProfileEditor() {
   }
 
   if (loading) {
-    return <p className="text-sm text-[var(--color-muted)]">Loading…</p>;
+    return (
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_20rem]">
+        <div className="space-y-6">
+          <BlockSkeleton height="h-44" />
+          <BlockSkeleton height="h-36" />
+          <BlockSkeleton height="h-32" />
+        </div>
+        <BlockSkeleton height="h-56" />
+      </div>
+    );
   }
 
   if (!profile) {
     return (
-      <div className="surface p-8 text-center">
-        <p className="text-sm text-[var(--color-muted)]">
-          <a href="/app/" className="link">
+      <Blank
+        icon="users"
+        title="This page is yours once you sign in"
+        lead="Your name and picture come from GitHub. What you change here is how you appear to everyone else."
+        action={
+          <button type="button" className="btn btn-primary" onClick={() => void signInWithGitHub()}>
             Sign in with GitHub
-          </a>{' '}
-          to edit your profile.
-        </p>
-      </div>
+          </button>
+        }
+      />
     );
   }
 
@@ -74,7 +88,7 @@ export default function ProfileEditor() {
     <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_20rem]">
       <div className="space-y-6">
         <section className="surface p-6">
-          <h2 className="text-sm font-semibold">Display name</h2>
+          <h2 className="text-base">Display name</h2>
           <p className="mt-1 text-xs text-[var(--color-muted)]">
             This is the name on your comments and reports. Your GitHub username
             <span className="font-mono"> @{profile.gh_login}</span> always stays next to it.
@@ -113,7 +127,7 @@ export default function ProfileEditor() {
         </section>
 
         <section className="surface p-6">
-          <h2 className="text-sm font-semibold">Profile picture</h2>
+          <h2 className="text-base">Profile picture</h2>
           <div className="mt-4 flex items-center gap-4">
             <Avatar
               src={profile.gh_avatar_url}
@@ -144,7 +158,7 @@ export default function ProfileEditor() {
         </section>
 
         <section className="surface p-6">
-          <h2 className="text-sm font-semibold">About</h2>
+          <h2 className="text-base">About</h2>
           <p className="mt-1 text-xs text-[var(--color-muted)]">Optional, up to 280 characters.</p>
           <textarea
             className="field mt-4 resize-y"
@@ -160,7 +174,7 @@ export default function ProfileEditor() {
         </section>
 
         <section className="surface p-6">
-          <h2 className="text-sm font-semibold">Accent colour</h2>
+          <h2 className="text-base">Accent colour</h2>
           <p className="mt-1 text-xs text-[var(--color-muted)]">Used across your profile.</p>
           <div className="mt-4 flex flex-wrap gap-2.5">
             {ACCENTS.map((a) => (
@@ -221,6 +235,14 @@ export default function ProfileEditor() {
               <p className="mt-3 text-sm text-[var(--color-muted)]">{profile.bio}</p>
             )}
             <p className="mt-4 text-xs text-[var(--color-faint)]">This is how you will look.</p>
+
+            <a
+              href={`/app/people/${profile.gh_login}/`}
+              className="btn btn-ghost mt-4 w-full"
+            >
+              <Icon name="external" size={14} />
+              Open your public page
+            </a>
           </div>
         </div>
       </aside>

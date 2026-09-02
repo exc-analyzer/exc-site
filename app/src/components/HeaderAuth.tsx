@@ -94,9 +94,15 @@ export default function HeaderAuth() {
               @{profile.gh_login}
             </p>
           )}
+          {profile && (
+            <a href={`/app/people/${profile.gh_login}/`} role="menuitem" className="menu-item">
+              <Icon name="users" size={15} />
+              Your page
+            </a>
+          )}
           <a href="/app/profile/" role="menuitem" className="menu-item">
-            <Icon name="compass" size={15} />
-            Your profile
+            <Icon name="pencil" size={15} />
+            Edit profile
           </a>
           <a href="/app/following/" role="menuitem" className="menu-item">
             <Icon name="bell" size={15} />
