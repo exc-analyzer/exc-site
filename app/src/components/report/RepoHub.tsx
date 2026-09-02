@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react';
 import { COMMANDS, getCommand, type CommandId } from '../../engine';
 import { loadTargetReports, type StoredReport } from '../../lib/reports';
+import { currentUserId, loadMyLikes, loadRepoFeed, type FeedItem } from '../../lib/feed';
+import { loadMyBookmarks } from '../../lib/social';
+import { supabase } from '../../lib/supabase';
+import FeedItemView from '../feed/FeedItem';
 import { loadRepoComments, type RepoComment } from '../../lib/comments';
 import { Card, Empty, ExternalLink, SectionTitle, Verdict, toneText } from '../console/ui';
 import type { Tone } from '../console/ui';
@@ -115,16 +119,32 @@ const TONE_RING: Record<string, string> = {
 export default function RepoHub({ owner, repo }: { owner: string; repo: string }) {
   const [reports, setReports] = useState<StoredReport[] | null>(null);
   const [discussion, setDiscussion] = useState<RepoComment[]>([]);
+  const [posts, setPosts] = useState<FeedItem[]>([]);
+  const [likes, setLikes] = useState<Set<string>>(new Set());
+  const [saved, setSaved] = useState<Set<string>>(new Set());
+  const [me, setMe] = useState<string | null>(null);
+  const [signedIn, setSignedIn] = useState(false);
 
   useEffect(() => {
     document.getElementById('exc-prerendered')?.remove();
     void (async () => {
-      const [found, comments] = await Promise.all([
+      if (supabase) {
+        const { data } = await supabase.auth.getSession();
+        setSignedIn(Boolean(data.session));
+        setMe(await currentUserId());
+      }
+      const [found, comments, stream] = await Promise.all([
         loadTargetReports(owner, repo),
         loadRepoComments(owner, repo),
+        loadRepoFeed(owner, repo),
       ]);
+      const written = stream.filter((item) => item.kind === 'post');
+      const [mine, kept] = await Promise.all([loadMyLikes(written), loadMyBookmarks(written)]);
       setReports(found);
       setDiscussion(comments);
+      setPosts(written);
+      setLikes(mine);
+      setSaved(kept);
     })();
   }, [owner, repo]);
 
@@ -261,6 +281,47 @@ export default function RepoHub({ owner, repo }: { owner: string; repo: string }
               </div>
             )}
           </div>
+
+          {posts.length > 0 && (
+            <div>
+              <SectionTitle>What people said</SectionTitle>
+              <ul className="divide-y divide-[var(--color-line)] overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-surface)]">
+                {posts.map((item) => {
+                  const key = `${item.kind}:${item.id}`;
+                  return (
+                    <li key={key}>
+                      <FeedItemView
+                        item={item}
+                        liked={likes.has(key)}
+                        saved={saved.has(key)}
+                        mine={Boolean(me) && item.author_id === me}
+                        signedIn={signedIn}
+                        onSaved={
+                          signedIn
+                            ? (on) =>
+                                setSaved((prev) => {
+                                  const next = new Set(prev);
+                                  if (on) next.add(key);
+                                  else next.delete(key);
+                                  return next;
+                                })
+                            : undefined
+                        }
+                        onLiked={(on) =>
+                          setLikes((prev) => {
+                            const next = new Set(prev);
+                            if (on) next.add(key);
+                            else next.delete(key);
+                            return next;
+                          })
+                        }
+                      />
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
 
           {security && repo && (
             <BadgeSnippet
