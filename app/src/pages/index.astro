@@ -1,16 +1,16 @@
 ---
 import Base from '../layouts/Base.astro';
 import Feed from '../components/feed/Feed.tsx';
+import PageHeader from '../components/console/PageHeader.astro';
 import RecentReports from '../components/console/RecentReports.tsx';
 ---
 
-<Base title="EXC Analyzer — What people are finding">
+<Base title="EXC Analyzer - What people are finding">
   <div class="flex gap-10">
     <div class="min-w-0 max-w-[620px] flex-1">
-      <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <h1 class="text-xl">Discover</h1>
-        <a href="/app/scan/" class="btn btn-primary">Scan a repository</a>
-      </div>
+      <PageHeader eyebrow="Discover" title="What people are finding">
+        <a slot="actions" href="/app/scan/" class="btn btn-primary">Scan a repository</a>
+      </PageHeader>
       <Feed client:load />
     </div>
 

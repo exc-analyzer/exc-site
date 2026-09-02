@@ -34,7 +34,7 @@ export function toneText(tone: Tone): string {
 export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
   return (
     <section
-      className={`rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-surface)] shadow-[var(--shadow-lift)] ${className}`}
+      className={`rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-surface)] ${className}`}
     >
       {children}
     </section>
@@ -233,7 +233,7 @@ export function Verdict({
   score?: { value: number; caption: string };
 }) {
   return (
-    <section className="relative overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-surface)] shadow-[var(--shadow-lift)]">
+    <section className="relative overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-surface)]">
       <div className="rule-brand" />
       <div className="flex flex-wrap items-center justify-between gap-x-10 gap-y-6 px-6 py-6 sm:px-8 sm:py-7">
         <div className="min-w-0 max-w-2xl flex-1">

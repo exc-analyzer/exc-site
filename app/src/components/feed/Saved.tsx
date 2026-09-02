@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { currentUserId, loadMyLikes, type FeedItem as Item } from '../../lib/feed';
 import { loadMyBookmarks, loadSaved } from '../../lib/social';
 import { supabase } from '../../lib/supabase';
-import { Card, Empty } from '../console/ui';
+import { Blank, FeedSkeleton } from '../console/Chrome';
 import FeedItem from './FeedItem';
 
 export default function Saved() {
@@ -35,33 +35,33 @@ export default function Saved() {
     })();
   }, []);
 
-  if (signedIn === null) {
-    return <p className="text-sm text-[var(--color-muted)]">Loading…</p>;
-  }
+  if (signedIn === null) return <FeedSkeleton rows={3} />;
 
   if (!signedIn) {
     return (
-      <Card>
-        <div className="px-6 py-10 text-center">
-          <p className="text-base">Saving needs an account</p>
-          <p className="mx-auto mt-2 max-w-md text-sm text-[var(--color-muted)]">
-            Keep a post or a scan to come back to. What you save is yours alone; nobody else can
-            see it.
-          </p>
-          <a href="/app/" className="btn btn-ghost mt-5">
+      <Blank
+        icon="bookmark"
+        title="Saving needs an account"
+        lead="Keep a post or a scan to come back to. What you save is yours alone; nobody else can see it."
+        action={
+          <a href="/app/" className="btn btn-ghost">
             Back to the feed
           </a>
-        </div>
-      </Card>
+        }
+      />
     );
   }
 
-  if (items === null) {
-    return <p className="text-sm text-[var(--color-muted)]">Loading…</p>;
-  }
+  if (items === null) return <FeedSkeleton rows={3} />;
 
   if (items.length === 0) {
-    return <Empty>Nothing saved yet. Use the bookmark on anything worth returning to.</Empty>;
+    return (
+      <Blank
+        icon="bookmark"
+        title="Nothing saved yet"
+        lead="Use the bookmark on anything worth returning to."
+      />
+    );
   }
 
   return (

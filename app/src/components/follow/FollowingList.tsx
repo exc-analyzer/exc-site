@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { loadFollows, markAllSeen, unfollow, unreadTargets, type FollowActivity } from '../../lib/follows';
 import { supabase } from '../../lib/supabase';
 import { Card, Score } from '../console/ui';
+import { Blank, FeedSkeleton } from '../console/Chrome';
 import type { Tone } from '../console/ui';
 import { relativeTime } from '../../engine/shared';
 
@@ -45,45 +46,32 @@ export default function FollowingList() {
     })();
   }, []);
 
-  if (signedIn === null) {
-    return <p className="text-sm text-[var(--color-muted)]">Loading…</p>;
-  }
+  if (signedIn === null) return <FeedSkeleton rows={3} />;
 
   if (!signedIn) {
     return (
-      <Card>
-        <div className="px-6 py-10 text-center">
-          <p className="text-base">Following needs an account</p>
-          <p className="mx-auto mt-2 max-w-md text-sm text-[var(--color-muted)]">
-            Follow a repository and this page tells you when someone scans it again or leaves a
-            comment. Scanning itself still works without signing in.
-          </p>
-          <a href="/app/" className="btn btn-primary mt-5">
-            Sign in with GitHub
-          </a>
-        </div>
-      </Card>
+      <Blank
+        icon="bell"
+        title="Following needs an account"
+        lead="Follow a repository and this page tells you when someone scans it again or leaves a comment. Scanning itself still works without signing in."
+      />
     );
   }
 
-  if (rows === null) {
-    return <p className="text-sm text-[var(--color-muted)]">Loading…</p>;
-  }
+  if (rows === null) return <FeedSkeleton rows={3} />;
 
   if (rows.length === 0) {
     return (
-      <Card>
-        <div className="px-6 py-10 text-center">
-          <p className="text-base">You are not following anything yet</p>
-          <p className="mx-auto mt-2 max-w-md text-sm text-[var(--color-muted)]">
-            Open any repository page and press Follow. Whatever happens there afterwards shows up
-            here.
-          </p>
-          <a href="/app/scan/" className="btn btn-ghost mt-5">
+      <Blank
+        icon="bell"
+        title="You are not following anything yet"
+        lead="Open any repository page and press Follow. Whatever happens there afterwards shows up here."
+        action={
+          <a href="/app/scan/" className="btn btn-ghost">
             Scan something
           </a>
-        </div>
-      </Card>
+        }
+      />
     );
   }
 

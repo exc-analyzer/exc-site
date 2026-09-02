@@ -8,7 +8,7 @@ import {
   type FeedItem as Item,
 } from '../../lib/feed';
 import { supabase } from '../../lib/supabase';
-import { Card, Empty } from '../console/ui';
+import { Blank, FeedSkeleton } from '../console/Chrome';
 import Comments from '../report/Comments';
 import FeedItem from './FeedItem';
 
@@ -56,22 +56,20 @@ export default function PostPage() {
     })();
   }, []);
 
-  if (state.kind === 'loading') {
-    return <p className="text-sm text-[var(--color-muted)]">Loading…</p>;
-  }
+  if (state.kind === 'loading') return <FeedSkeleton rows={1} />;
 
   if (state.kind === 'missing') {
     return (
-      <Card>
-        <div className="px-6 py-10">
-          <Empty>
-            This post is gone.{' '}
-            <a href="/app/" className="link">
-              Back to the feed
-            </a>
-          </Empty>
-        </div>
-      </Card>
+      <Blank
+        icon="quote"
+        title="This post is gone"
+        lead="Its author may have deleted it."
+        action={
+          <a href="/app/" className="btn btn-ghost">
+            Back to the feed
+          </a>
+        }
+      />
     );
   }
 

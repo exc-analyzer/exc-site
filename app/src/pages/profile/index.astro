@@ -1,17 +1,14 @@
 ---
 import Base from '../../layouts/Base.astro';
 import ProfileEditor from '../../components/profile/ProfileEditor.tsx';
+import PageHeader from '../../components/console/PageHeader.astro';
 ---
 
-<Base title="EXC Analyzer — Your profile">
-  <div class="mb-8 max-w-2xl">
-    <p class="eyebrow">Profile</p>
-    <h1 class="mt-2 text-3xl font-bold">Decide how you appear</h1>
-    <p class="mt-3 text-[var(--color-muted)]">
-      Take your name from GitHub or write your own. Your GitHub username stays beside it
-      either way: the display name is free, your identity is not.
-    </p>
-  </div>
-
+<Base title="EXC Analyzer - Your profile">
+  <PageHeader
+    eyebrow="Profile"
+    title="Decide how you appear"
+    lead="Take your name from GitHub or write your own. Your GitHub username stays beside it either way: the display name is free, your identity is not."
+  />
   <ProfileEditor client:load />
 </Base>

@@ -4,7 +4,8 @@ import { currentUserId, loadMyLikes, type FeedItem as Item } from '../../lib/fee
 import { supabase } from '../../lib/supabase';
 import { accentColor } from '../../lib/profile';
 import { formatDate } from '../../engine/shared';
-import { Card, Empty, ExternalLink } from '../console/ui';
+import { ExternalLink } from '../console/ui';
+import { Blank, BlockSkeleton, FeedSkeleton } from '../console/Chrome';
 import { Avatar } from '../profile/ProfileEditor';
 import FeedItem from '../feed/FeedItem';
 import PersonFollowButton from './PersonFollowButton';
@@ -62,21 +63,26 @@ export default function MemberPage() {
   }, []);
 
   if (state.kind === 'loading') {
-    return <p className="text-sm text-[var(--color-muted)]">Loading…</p>;
+    return (
+      <div className="space-y-6">
+        <BlockSkeleton height="h-52" />
+        <FeedSkeleton rows={3} />
+      </div>
+    );
   }
 
   if (state.kind === 'missing') {
     return (
-      <Card>
-        <div className="px-6 py-10">
-          <Empty>
-            Nobody here by that name.{' '}
-            <a href="/app/" className="link">
-              Back to the feed
-            </a>
-          </Empty>
-        </div>
-      </Card>
+      <Blank
+        icon="users"
+        title="Nobody here by that name"
+        lead="They may not have signed in yet, or the address is wrong."
+        action={
+          <a href="/app/" className="btn btn-ghost">
+            Back to the feed
+          </a>
+        }
+      />
     );
   }
 
@@ -131,7 +137,7 @@ export default function MemberPage() {
       </header>
 
       {items.length === 0 ? (
-        <Empty>{member.shown_name} has not posted or scanned anything yet.</Empty>
+        <Blank icon="compass" title={`${member.shown_name} has not posted or scanned anything yet`} />
       ) : (
         <ul className="divide-y divide-[var(--color-line)] overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-surface)]">
           {items.map((item) => {

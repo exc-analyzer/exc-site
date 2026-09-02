@@ -8,7 +8,7 @@ import {
 } from '../../lib/feed';
 import Icon from '../Icon';
 import { supabase } from '../../lib/supabase';
-import { Empty } from '../console/ui';
+import { Blank, FeedSkeleton } from '../console/Chrome';
 import FeedItem from './FeedItem';
 import Composer from './Composer';
 import { loadMyBookmarks } from '../../lib/social';
@@ -75,7 +75,7 @@ export default function Feed() {
         </div>
       )}
 
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="sticky top-0 z-20 -mx-1 flex flex-wrap items-center gap-2 bg-[var(--color-bg)]/85 px-1 py-2 backdrop-blur-md lg:top-0">
         <div className="flex items-center gap-1">
           {(['all', 'following', 'posts', 'scans'] as FeedFilter[]).map((f) => (
             <button
@@ -126,15 +126,28 @@ export default function Feed() {
       </div>
 
       {items === null ? (
-        <p className="text-sm text-[var(--color-muted)]">Loading…</p>
+        <FeedSkeleton />
       ) : items.length === 0 ? (
-        <Empty>
-          {query
-            ? `Nothing matches ${query}.`
-            : filter === 'following'
-              ? 'Nobody you follow has posted yet. Open someone and press Follow.'
-              : 'Nothing here yet. Scan a repository and it becomes the first thing on this page.'}
-        </Empty>
+        query ? (
+          <Blank icon="search" title={`Nothing matches ${query}`} lead="Try a shorter word, or a repository name." />
+        ) : filter === 'following' ? (
+          <Blank
+            icon="users"
+            title="Nobody you follow has posted yet"
+            lead="Open someone from the feed and press Follow, and what they write lands here."
+          />
+        ) : (
+          <Blank
+            icon="compass"
+            title="Nothing here yet"
+            lead="Scan a repository and it becomes the first thing on this page."
+            action={
+              <a href="/app/scan/" className="btn btn-primary">
+                Scan a repository
+              </a>
+            }
+          />
+        )
       ) : (
         <>
           <ul className="divide-y divide-[var(--color-line)] overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-surface)]">
