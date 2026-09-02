@@ -66,3 +66,4 @@ public/app/
 .env.*
 !.env.example
 .rules.mjs
+.richtext.mjs

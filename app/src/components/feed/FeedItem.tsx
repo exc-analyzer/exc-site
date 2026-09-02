@@ -6,6 +6,7 @@ import { ScoreRing, type Tone } from '../console/ui';
 import { Avatar } from '../profile/ProfileEditor';
 import { SITE_URL } from '../../lib/site';
 import Icon from '../Icon';
+import { RichText } from '../../lib/richText';
 
 function scoreTone(score: number | null): Tone {
   if (score === null) return 'muted';
@@ -66,7 +67,7 @@ export default function FeedItem({
 
         <a href={href} className="mt-1.5 block">
           {item.kind === 'post' ? (
-            <p className="whitespace-pre-wrap text-base text-[var(--color-text)]">{item.body}</p>
+            <RichText body={item.body ?? ''} />
           ) : (
             <div className="flex items-center justify-between gap-4">
               <div className="min-w-0">

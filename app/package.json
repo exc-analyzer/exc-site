@@ -4,8 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "npm run check && npm run test:rules && npm run build",
+    "test": "npm run check && npm run test:rules && npm run test:richtext && npm run build",
     "test:rules": "node --run _rules:bundle && node .rules.mjs",
+    "test:richtext": "node --run _richtext:bundle && node .richtext.mjs",
+    "_richtext:bundle": "esbuild scripts/richtext.test.tsx --bundle --platform=node --format=esm --target=node22 --jsx=automatic --external:react --external:react-dom --outfile=.richtext.mjs --log-level=warning",
     "_rules:bundle": "esbuild scripts/rules.test.ts --bundle --platform=node --format=esm --target=node22 --outfile=.rules.mjs --log-level=warning",
     "dev": "astro dev",
     "build": "astro build",
