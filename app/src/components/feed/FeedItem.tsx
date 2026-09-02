@@ -5,6 +5,7 @@ import { relativeTime } from '../../engine/shared';
 import { ScoreRing, type Tone } from '../console/ui';
 import { Avatar } from '../profile/ProfileEditor';
 import { SITE_URL } from '../../lib/site';
+import Icon from '../Icon';
 
 function scoreTone(score: number | null): Tone {
   if (score === null) return 'muted';
@@ -99,12 +100,13 @@ export default function FeedItem({
             aria-label={liked ? 'Undo like' : 'Like'}
             className={`${ACTION} ${liked ? 'text-[var(--color-accent)] hover:text-[var(--color-accent)]' : ''}`}
           >
-            {liked ? '♥' : '♡'}
+            <Icon name="heart" size={15} filled={liked} />
             {likes > 0 && <span className="tabular-nums">{likes}</span>}
           </button>
 
           <a href={href} className={ACTION} aria-label="Replies">
-            ↩{item.replies > 0 && <span className="tabular-nums">{item.replies}</span>}
+            <Icon name="reply" size={15} />
+            {item.replies > 0 && <span className="tabular-nums">{item.replies}</span>}
           </a>
 
           <button
@@ -117,7 +119,8 @@ export default function FeedItem({
               });
             }}
           >
-            {copied ? 'Copied' : '↗'}
+            <Icon name={copied ? 'check' : 'share'} size={15} />
+            {copied && <span>Copied</span>}
           </button>
         </div>
 

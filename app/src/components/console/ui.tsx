@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import Icon from '../Icon';
 
 export type Tone = 'good' | 'warn' | 'bad' | 'muted' | 'info';
 
@@ -204,9 +205,10 @@ export function ExternalLink({ href, children }: { href: string; children: React
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="text-[var(--color-link)] underline-offset-[3px] hover:underline"
+      className="inline-flex items-center gap-1.5 text-[var(--color-link)] underline-offset-[3px] hover:underline"
     >
       {children}
+      <Icon name="external" size={13} />
     </a>
   );
 }
@@ -297,7 +299,9 @@ export function Details({ summary, children }: { summary: string; children: Reac
   return (
     <details className="group">
       <summary className="inline-flex cursor-pointer list-none items-center gap-2 text-xs font-medium text-[var(--color-muted)] transition hover:text-[var(--color-text)]">
-        <span className="inline-block transition group-open:rotate-90">›</span>
+        <span className="inline-flex transition group-open:rotate-90">
+          <Icon name="chevron" size={14} />
+        </span>
         {summary}
       </summary>
       <div className="mt-5">{children}</div>
@@ -311,7 +315,7 @@ export function GoodList({ items }: { items: string[] }) {
     <ul className="flex flex-wrap gap-x-5 gap-y-2">
       {items.map((t) => (
         <li key={t} className="flex items-center gap-2 text-xs text-[var(--color-muted)]">
-          <span className="text-[var(--color-good)]">✓</span>
+          <Icon name="check" size={14} className="text-[var(--color-good)]" />
           {t}
         </li>
       ))}

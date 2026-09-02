@@ -11,6 +11,7 @@ import {
 } from '../../lib/comments';
 import { supabase } from '../../lib/supabase';
 import { Card, Empty, ExternalLink } from '../console/ui';
+import Icon from '../Icon';
 import { relativeTime } from '../../engine/shared';
 import ReportButton from '../ReportButton';
 
@@ -148,7 +149,7 @@ function CommentRow({
             myVote === 1 ? 'text-emerald-400' : 'text-[var(--color-muted)] hover:text-[var(--color-text)]'
           } disabled:opacity-40`}
         >
-          ▲
+          <Icon name="up" size={14} />
         </button>
         <span className="text-xs tabular-nums text-[var(--color-muted)]">{comment.vote_score}</span>
         <button
@@ -160,7 +161,7 @@ function CommentRow({
             myVote === -1 ? 'text-red-400' : 'text-[var(--color-muted)] hover:text-[var(--color-text)]'
           } disabled:opacity-40`}
         >
-          ▼
+          <Icon name="down" size={14} />
         </button>
       </div>
       <div className="min-w-0 flex-1">

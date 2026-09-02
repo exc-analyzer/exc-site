@@ -14,9 +14,17 @@ const {
 } = Astro.props;
 
 const path = Astro.url.pathname;
+const ICONS: Record<string, string[]> = {
+  compass: [
+    'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20Z',
+    'm16.24 7.76-2.12 6.36-6.36 2.12 2.12-6.36 6.36-2.12Z',
+  ],
+  search: ['M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16Z', 'm21 21-4.35-4.35'],
+};
+
 const NAV = [
-  { href: '/app/', label: 'Discover', active: path === '/app/' || path === '/app' },
-  { href: '/app/scan/', label: 'Scan', active: path.startsWith('/app/scan') },
+  { href: '/app/', label: 'Discover', icon: 'compass', active: path === '/app/' || path === '/app' },
+  { href: '/app/scan/', label: 'Scan', icon: 'search', active: path.startsWith('/app/scan') },
 ];
 ---
 
@@ -60,7 +68,22 @@ const NAV = [
           {
             NAV.map((item) => (
               <a href={item.href} class:list={['nav-item', item.active && 'nav-item-active']}>
-                {item.label}
+                <span class="flex items-center gap-2.5">
+                  <svg
+                    width="17"
+                    height="17"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.75"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    {ICONS[item.icon].map((d) => <path d={d} />)}
+                  </svg>
+                  {item.label}
+                </span>
               </a>
             ))
           }
@@ -72,7 +95,14 @@ const NAV = [
           <p class="text-2xs leading-relaxed text-[var(--color-faint)]">
             Scans run in your browser, on your own GitHub account. Your code never reaches us.
           </p>
-          <a href="https://github.com/exc-analyzer/exc" class="text-2xs text-[var(--color-faint)] hover:text-[var(--color-muted)]">
+          <a
+            href="https://github.com/exc-analyzer/exc"
+            class="inline-flex items-center gap-2 text-2xs text-[var(--color-faint)] transition hover:text-[var(--color-muted)]"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5a4.3 4.3 0 0 0-1.2-3 4 4 0 0 0-.1-3S17.5 3 15 4.7a13 13 0 0 0-6 0C6.5 3 5.3 3 5.3 3a4 4 0 0 0-.1 3A4.3 4.3 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.4.5-.7 1.2-.8 2V22" />
+              <path d="M9 19c-4.3 1.4-4.3-2.5-6-3" />
+            </svg>
             Source on GitHub
           </a>
         </div>
@@ -93,6 +123,19 @@ const NAV = [
             {
               NAV.map((item) => (
                 <a href={item.href} class:list={['nav-pill', item.active && 'nav-pill-active']}>
+                  <svg
+                    width="15"
+                    height="15"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.75"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    {ICONS[item.icon].map((d) => <path d={d} />)}
+                  </svg>
                   {item.label}
                 </a>
               ))
