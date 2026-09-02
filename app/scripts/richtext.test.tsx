@@ -10,7 +10,7 @@ const CASES: [string, string, string[]][] = [
   ['list', '- one\n- two', ['<ul', '<li>one</li>', '<li>two</li>']],
   ['bare url', 'see https://example.com/x for more', ['href="https://example.com/x"']],
   ['markdown link', 'see [the docs](https://example.com) here', ['href="https://example.com"', 'the docs']],
-  ['mention', 'ask @torvalds about it', ['href="https://github.com/torvalds"', '@torvalds']],
+  ['mention', 'ask @torvalds about it', ['href="/app/people/torvalds/"', '@torvalds']],
   ['repo link', 'look at exc-analyzer/exc today', ['href="/app/r/exc-analyzer/exc/"']],
   ['plain', 'nothing special here', ['nothing special here']],
 ];

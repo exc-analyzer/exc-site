@@ -88,7 +88,7 @@ const RULES: Rule[] = [
       node: (
         <span key={key}>
           {m[1]}
-          {link(`https://github.com/${m[2]}`, `@${m[2]}`, `${key}-a`)}
+          {link(`/app/people/${m[2]}/`, `@${m[2]}`, `${key}-a`)}
         </span>
       ),
       before: m.input.slice(0, m.index),

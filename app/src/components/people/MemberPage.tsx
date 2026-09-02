@@ -76,11 +76,23 @@ export default function MemberPage() {
       <Blank
         icon="users"
         title="Nobody here by that name"
-        lead="They may not have signed in yet, or the address is wrong."
+        lead="They have not signed in here yet. You can still look them up on GitHub."
         action={
-          <a href="/app/" className="btn btn-ghost">
-            Back to the feed
-          </a>
+          <div className="flex flex-wrap justify-center gap-2">
+            {loginFromPath() && (
+              <a
+                href={`https://github.com/${loginFromPath()}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-ghost"
+              >
+                See them on GitHub
+              </a>
+            )}
+            <a href="/app/" className="btn btn-quiet">
+              Back to the feed
+            </a>
+          </div>
         }
       />
     );

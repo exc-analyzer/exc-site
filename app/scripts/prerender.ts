@@ -31,6 +31,25 @@ const KIND_NAMES: Record<string, string> = {
   'user-analysis': 'User analysis',
   'user-anomaly': 'User anomaly',
 };
+interface FeedRow {
+  kind: string;
+  id: string;
+  author_login: string | null;
+  happened_at: string;
+}
+
+async function fetchFeed(): Promise<FeedRow[]> {
+  const url = new URL('/rest/v1/feed', SUPABASE_URL);
+  url.searchParams.set('select', 'kind,id,author_login,happened_at');
+  url.searchParams.set('order', 'happened_at.desc');
+  url.searchParams.set('limit', '500');
+  const res = await fetch(url, {
+    headers: { apikey: SUPABASE_KEY!, Authorization: `Bearer ${SUPABASE_KEY}` },
+  });
+  if (!res.ok) return [];
+  return (await res.json()) as FeedRow[];
+}
+
 async function fetchReports(): Promise<Report[]> {
   const url = new URL('/rest/v1/reports', SUPABASE_URL);
   url.searchParams.set('select', 'id,owner,repo,kind,score,summary,scan_count,updated_at');
@@ -342,6 +361,18 @@ async function main(): Promise<void> {
   const written = await renderCards(cards, PUBLIC_DIR);
   console.log(`Rendered ${written} share cards.`);
 
+  const feedRows = await fetchFeed();
+  const posts = feedRows.filter((row) => row.kind === 'post');
+  const people = [...new Set(feedRows.map((row) => row.author_login).filter(Boolean))] as string[];
+
+  for (const post of posts) {
+    urls.push({ loc: `${SITE}/app/p/${post.id}/`, lastmod: post.happened_at.slice(0, 10) });
+  }
+  for (const login of people) {
+    urls.push({ loc: `${SITE}/app/people/${login}/`, lastmod: new Date().toISOString().slice(0, 10) });
+  }
+  urls.unshift({ loc: `${SITE}/app/explore/`, lastmod: new Date().toISOString().slice(0, 10) });
+
   const sitemap = [
     '<?xml version="1.0" encoding="UTF-8"?>',
     '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
@@ -355,6 +386,8 @@ async function main(): Promise<void> {
     'robots.txt',
     ['User-agent: *', 'Allow: /', `Sitemap: ${SITE}/sitemap.xml`, ''].join('\n'),
   );
-  console.log(`Wrote ${badges} badges, ${pages} pages (${targets.length} hubs) and ${urls.length} sitemap entries.`);
+  console.log(
+    `Wrote ${badges} badges, ${pages} pages (${targets.length} hubs) and ${urls.length} sitemap entries, ${posts.length} of them posts and ${people.length} people.`,
+  );
 }
 await main();

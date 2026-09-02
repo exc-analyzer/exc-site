@@ -10,8 +10,10 @@ import {
   type VoteValue,
 } from '../../lib/comments';
 import { supabase } from '../../lib/supabase';
-import { Card, Empty, ExternalLink } from '../console/ui';
+import { Card, Empty } from '../console/ui';
 import Icon from '../Icon';
+import { RichText } from '../../lib/richText';
+import { memberHref } from '../../lib/people';
 import { relativeTime } from '../../engine/shared';
 import ReportButton from '../ReportButton';
 
@@ -54,7 +56,7 @@ export default function Comments({ target }: { target: CommentTarget }) {
             target={target}
             parentId={null}
             onPosted={() => void refresh()}
-            placeholder="What do you make of this report?"
+            placeholder="What do you make of this report? Markdown works, and @names and owner/repo become links."
           />
         ) : (
           <p className="rounded-lg border border-[var(--color-line)] px-4 py-3 text-xs text-[var(--color-muted)]">
@@ -175,17 +177,21 @@ function CommentRow({
               className="rounded-full"
             />
           )}
-          <ExternalLink href={`https://github.com/${login}`}>{login}</ExternalLink>
+          <a href={memberHref(login) ?? '#'} className="font-medium text-[var(--color-text)] hover:underline">
+            {login}
+          </a>
           <span>{relativeTime(comment.created_at)}</span>
           {comment.updated_at !== comment.created_at && !removed && <span>· edited</span>}
         </div>
-        <p
-          className={`mt-1.5 whitespace-pre-wrap text-sm ${
-            removed ? 'italic text-[var(--color-muted)]' : ''
-          }`}
-        >
-          {removed ? 'This comment was deleted.' : comment.body}
-        </p>
+        {removed ? (
+          <p className="mt-1.5 text-sm italic text-[var(--color-muted)]">
+            This comment was deleted.
+          </p>
+        ) : (
+          <div className="mt-1.5 text-sm">
+            <RichText body={comment.body} />
+          </div>
+        )}
         {!removed && (
           <div className="mt-2 flex gap-4 text-xs text-[var(--color-muted)]">
             {onReply && me && (

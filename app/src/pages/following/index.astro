@@ -1,7 +1,7 @@
 ---
 import Base from '../../layouts/Base.astro';
 import FollowingList from '../../components/follow/FollowingList.tsx';
-import Replies from '../../components/follow/Replies.tsx';
+import Inbox from '../../components/follow/Inbox.tsx';
 import PageHeader from '../../components/console/PageHeader.astro';
 ---
 
@@ -10,10 +10,10 @@ import PageHeader from '../../components/console/PageHeader.astro';
     <PageHeader
       eyebrow="Following"
       title="What moved while you were away"
-      lead="Replies addressed to you, and every repository you follow with whatever has happened to it since you last looked."
+      lead="Replies and mentions addressed to you, and every repository you follow with whatever has happened to it since you last looked."
     />
     <div class="space-y-8">
-      <Replies client:load />
+      <Inbox client:load />
       <FollowingList client:load />
     </div>
   </div>
