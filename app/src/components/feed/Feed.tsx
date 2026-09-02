@@ -137,14 +137,14 @@ function Composer({ onPosted }: { onPosted: () => void }) {
         rows={3}
         maxLength={4000}
         value={body}
-        placeholder="Found something worth passing on?"
+        placeholder="What is on your mind?"
         onChange={(e) => setBody(e.target.value)}
       />
       <div className="mt-3 flex flex-wrap items-center gap-3">
         <input
           className="field max-w-xs flex-1"
           value={repo}
-          placeholder="About a repository? owner/repo"
+          placeholder="Add a repository (optional)"
           spellCheck={false}
           autoCapitalize="off"
           autoCorrect="off"

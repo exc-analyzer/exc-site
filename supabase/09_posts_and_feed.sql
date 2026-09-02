@@ -141,6 +141,25 @@ alter table public.votes
   add constraint votes_target_type_check
   check (target_type in ('report', 'comment', 'post'));
 
+create or replace function public.like_count(p_type text, p_id uuid)
+returns integer
+language sql
+security definer
+stable
+set search_path = ''
+as $$
+  select count(*)::integer
+    from public.votes
+   where target_type = p_type
+     and target_id = p_id
+     and value = 1;
+$$;
+
+revoke all on function public.like_count(text, uuid) from public;
+grant execute on function public.like_count(text, uuid) to anon, authenticated;
+
+grant select, insert, update, delete on public.votes to authenticated;
+
 drop view if exists public.feed;
 create view public.feed
 with (security_invoker = on) as
@@ -156,8 +175,7 @@ with (security_invoker = on) as
     null::text                           as report_kind,
     null::integer                        as score,
     p.created_at                         as happened_at,
-    (select count(*) from public.votes v
-      where v.target_type = 'post' and v.target_id = p.id and v.value = 1) as likes,
+    public.like_count('post', p.id) as likes,
     (select count(*) from public.comments c
       where c.post_id = p.id and c.deleted_at is null)                     as replies
   from public.posts p
@@ -178,8 +196,7 @@ with (security_invoker = on) as
     r.kind,
     r.score,
     r.updated_at,
-    (select count(*) from public.votes v
-      where v.target_type = 'report' and v.target_id = r.id and v.value = 1),
+    public.like_count('report', r.id),
     (select count(*) from public.comments c
       where c.report_id = r.id and c.deleted_at is null)
   from public.reports r
