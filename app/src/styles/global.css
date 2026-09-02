@@ -238,6 +238,20 @@ pre,
     margin-bottom: 6px;
   }
 
+  .menu-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    font-size: var(--text-sm);
+    color: var(--color-muted);
+    transition: color 0.14s ease, background-color 0.14s ease;
+  }
+  .menu-item:hover {
+    color: var(--color-text);
+    background: rgba(163, 145, 224, 0.09);
+  }
+
   .nav-item {
     display: flex;
     align-items: center;

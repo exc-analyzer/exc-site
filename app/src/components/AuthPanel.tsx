@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase, isConfigured } from '../lib/supabase';
-import { signInWithGitHub } from '../lib/auth';
+import { signInWithGitHub, signOutEverywhere } from '../lib/auth';
 import { rememberGithubToken, getGithubToken, forgetGithubToken } from '../lib/githubToken';
 import { accentColor, loadMyProfile, shownAvatar, shownName, type Profile } from '../lib/profile';
 import { Avatar } from './profile/ProfileEditor';
@@ -77,11 +77,8 @@ export default function AuthPanel() {
     }
   }
   async function signOut() {
-    if (!supabase) return;
     setBusy(true);
-    forgetGithubToken();
-    await supabase.auth.signOut();
-    setBusy(false);
+    await signOutEverywhere();
   }
   if (!isConfigured) {
     return (
