@@ -3,6 +3,7 @@ import { loadFollows, markAllSeen, unfollow, unreadTargets, type FollowActivity 
 import { supabase } from '../../lib/supabase';
 import { Card, Score } from '../console/ui';
 import { Blank, FeedSkeleton } from '../console/Chrome';
+import Suggestions from './Suggestions';
 import type { Tone } from '../console/ui';
 import { relativeTime } from '../../engine/shared';
 
@@ -62,16 +63,14 @@ export default function FollowingList() {
 
   if (rows.length === 0) {
     return (
-      <Blank
-        icon="bell"
-        title="You are not following anything yet"
-        lead="Open any repository page and press Follow. Whatever happens there afterwards shows up here."
-        action={
-          <a href="/app/scan/" className="btn btn-ghost">
-            Scan something
-          </a>
-        }
-      />
+      <div className="space-y-8">
+        <Blank
+          icon="bell"
+          title="You are not following anything yet"
+          lead="Follow a person or a repository and whatever happens next shows up here."
+        />
+        <Suggestions />
+      </div>
     );
   }
 
