@@ -58,5 +58,9 @@ for (const input of INJECTION) {
   }
 }
 
-console.log(bad === 0 ? `\n  ${CASES.length} bicim + ${INJECTION.length} enjeksiyon testi gecti` : `\n  ${bad} hata`);
+console.log(
+  bad === 0
+    ? `${CASES.length} formatting and ${INJECTION.length} injection cases behaved as expected.`
+    : `${bad} rich text cases behaved wrongly.`,
+);
 if (bad > 0) process.exit(1);
