@@ -67,3 +67,4 @@ public/app/
 !.env.example
 .rules.mjs
 .richtext.mjs
+.supabase-token
