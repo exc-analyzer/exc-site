@@ -1,0 +1,60 @@
+---
+import Legal from '../../layouts/Legal.astro';
+---
+
+<Legal title="Terms of Use" eyebrow="Terms" updated="3 September 2026">
+    <p><strong>Version 1.0 — effective 3 September 2026</strong></p>
+    <p>EXC is run by Berat Gökdemir, an individual in Türkiye. Contact: exc-analyzer@outlook.com.</p>
+    <h2>Short version</h2>
+    <p>EXC is a free hobby project. It reads public data from GitHub and shows you what it found. It is not a security audit and it is not run by GitHub. If something here is wrong or you want it removed, email us and we will fix it.</p>
+    <h2>1. What EXC is</h2>
+    <p>EXC runs checks against GitHub's public REST and GraphQL APIs. Scans run in your browser. Signed in, they use your own GitHub token; signed out, they use GitHub's anonymous allowance. We do not proxy scan traffic through a server, and we never receive or store your GitHub token.</p>
+    <p>Sign-in is different. Sign-in goes through Supabase Auth, which performs the OAuth exchange with GitHub on its servers and issues the token to your browser. From that point the token stays in your browser only.</p>
+    <p>EXC collects data only through GitHub's documented APIs. We never parse github.com web pages.</p>
+    <h2>2. Who can publish a result</h2>
+    <p>
+      Anyone signed in can scan any public repository and read the result. <strong>Publishing is
+      different.</strong> A result is only saved, given an address and shown to other people when
+      you have push access to the repository it describes. If you do not, the result is yours
+      alone — nothing is stored and nothing appears anywhere.
+    </p>
+    <p>
+      So every score on this site was published by somebody who works on that repository. We do
+      not publish judgements about projects on behalf of people who never asked us to.
+    </p>
+
+    <h2>3. What the scores are, and are not</h2>
+    <p>EXC scores are produced by automated checks against public GitHub metadata. They are not a security audit, not a vulnerability assessment, and not a statement that a project is safe or unsafe.</p>
+    <p>The checks are heuristics. There are false positives and false negatives. An aggregate score out of 100 tells you nothing about which individual things a repository does or does not do. Two repositories can reach the same score by entirely different routes.</p>
+    <p>Where a check could not be read — for example branch protection, which only repository admins can see — it is marked unknown and is not counted against the score. A low score means our public checks found few signals. It does not mean the project is unsafe.</p>
+    <p>The scoring method is our own subjective weighting and may change. A score shown today may not be reproducible after a change to the method. Every score carries the date it was computed. A result older than 90 days is marked stale on its page.</p>
+        <h2>4. What EXC does not find</h2>
+    <p>EXC does not find every problem. A clean result does not mean a repository has no leaked secrets, no vulnerabilities and no risk. This applies with particular force to Secret scan and Deep secret scan, which look at a limited number of recent commits and a limited set of known key formats.</p>
+    <p>We are not liable for any false positive or false negative, or for anything you do on the basis of a finding.</p>
+    <h2>5. Using EXC</h2>
+    <p>When you are signed in, scans consume your own GitHub API quota &mdash; 5,000 requests per hour, shared with every other GitHub tool you use. Signed out, they use GitHub's anonymous allowance of 60 requests an hour. GitHub decides at its sole discretion what counts as abusive or excessive API use, and may suspend your account's API access. That consequence lands on you, not on us.</p>
+    <p>The secret scans only run on repositories you can push to, so what they find is yours to fix. Rotate the key at the provider first — deleting the file does not remove it from the commit history.</p>
+    <p>Do not use EXC to attempt access to any system you are not authorised to use.</p>
+    <p>Do not use EXC to harass anyone.</p>
+    <h2>Messages</h2>
+    <p>Messaging is only open between two people who follow each other. Whatever you would not post in the open does not become acceptable because it is private: harassment, threats and unlawful content are grounds for removing your account, and the person you sent it to can report any single message to us.</p>
+
+    <h2>6. Your account</h2>
+    <p>You can delete your EXC account at any time from Settings. Deletion is immediate and removes your profile, your posts, your comments, your follows and your bookmarks. It cannot be undone. Scan results you published stay, because they describe a repository rather than you, but your name is detached from them and cannot be recovered. If you want those removed too, ask us on <a href="/app/takedown/">the takedown page</a>.</p>
+    <p>You can revoke EXC's GitHub authorisation at any time at https://github.com/settings/applications. We do not get told when you do that, so if you want your stored profile removed as well, delete your account or email us.</p>
+    <h2>7. Content you post</h2>
+    <p>You are responsible for what you post. We may remove posts and comments that break these terms, and we may suspend accounts. Reporting is built into the site.</p>
+    <h2>8. No warranty</h2>
+    <p>EXC is provided free of charge, on an "as is" and "as available" basis. We do not warrant that it will meet your requirements, that it will be uninterrupted, timely, secure or error-free, that the results obtained from it will be accurate or reliable, or that any errors will be corrected. Your use of EXC is at your own risk.</p>
+    <h2>9. Liability</h2>
+    <p>To the extent permitted by law, we are not liable for any loss arising from your use of, or inability to use, EXC, or from any finding or score it produces. Nothing here limits liability that cannot be limited by law, and nothing here affects your rights as a consumer under the law of the country you live in.</p>
+    <h2>10. Not affiliated with GitHub</h2>
+    <p>EXC is an independent project. It is not affiliated with, endorsed by, or sponsored by GitHub, Inc. GitHub and the GitHub logo are trademarks of GitHub, Inc.</p>
+    <p>Nothing in these terms restricts GitHub, Inc. from using, testing or benchmarking EXC.</p>
+    <h2>11. Law</h2>
+    <p>These terms are governed by Turkish law, and the courts of Türkiye have jurisdiction over disputes between EXC and its signed-in users. If you live in the EU or the UK, this does not remove your right to bring proceedings in your own country where the law gives you that right.</p>
+    <h2>12. Changes</h2>
+    <p>We may change these terms. The version and date at the top always tell you which version is in force.</p>
+    <h2>13. Contact</h2>
+    <p>Questions about EXC: exc-analyzer@outlook.com. Removal and correction requests: see <a href="/app/takedown/">Correction or removal</a>.</p>
+</Legal>

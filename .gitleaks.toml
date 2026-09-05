@@ -6,7 +6,5 @@ description = "Build output, dependencies and local environment files"
 paths = [
   '''app/node_modules/.*''',
   '''app/dist/.*''',
-  '''public/app/_astro/.*''',
-
-  '''(^|/)\.env(\..*)?$''',
+  '''(^|/)\.env\.example$''',
 ]

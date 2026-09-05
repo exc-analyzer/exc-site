@@ -36,9 +36,9 @@ jobs:
         working-directory: app
         run: npm ci
 
-      - name: Build the app
+      - name: Type check, test and build
         working-directory: app
-        run: npm run build
+        run: npm test
 
       - name: Verify the security policies
         working-directory: app

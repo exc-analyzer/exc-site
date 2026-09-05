@@ -1,19 +1,22 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 import {
   currentUserId,
   loadFeed,
   loadMyLikes,
   type FeedFilter,
   type FeedItem as Item,
-} from '../../lib/feed';
-import Icon from '../Icon';
-import { supabase } from '../../lib/supabase';
-import { Blank, FeedSkeleton } from '../console/Chrome';
-import FeedItem from './FeedItem';
-import Composer from './Composer';
-import { loadMyBookmarks } from '../../lib/social';
+} from "../../lib/feed";
+import Icon from "../Icon";
+import { supabase } from "../../lib/supabase";
+import { Blank, FeedSkeleton } from "../console/Chrome";
+import FeedItem from "./FeedItem";
+import Composer from "./Composer";
+import { loadMyBookmarks } from "../../lib/social";
+import { signInWithGitHub } from "../../lib/auth";
+import { probablySignedIn } from "../../lib/profile";
 
 const PAGE = 25;
+const GUEST_PREVIEW = 10;
 
 export default function Feed() {
   const [items, setItems] = useState<Item[] | null>(null);
@@ -24,12 +27,13 @@ export default function Feed() {
   const [me, setMe] = useState<string | null>(null);
   const [more, setMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [filter, setFilter] = useState<FeedFilter>('all');
-  const [search, setSearch] = useState('');
-  const [query, setQuery] = useState('');
+  const [filter, setFilter] = useState<FeedFilter>("all");
 
   async function absorb(rows: Item[], append: boolean) {
-    const [mine, kept] = await Promise.all([loadMyLikes(rows), loadMyBookmarks(rows)]);
+    const [mine, kept] = await Promise.all([
+      loadMyLikes(rows),
+      loadMyBookmarks(rows),
+    ]);
     setLikes((prev) => (append ? new Set([...prev, ...mine]) : mine));
     setSaved((prev) => (append ? new Set([...prev, ...kept]) : kept));
     setItems((prev) => (append && prev ? [...prev, ...rows] : rows));
@@ -37,100 +41,108 @@ export default function Feed() {
   }
 
   useEffect(() => {
-    void (async () => {
-      if (supabase) {
-        const { data } = await supabase.auth.getSession();
-        setSignedIn(Boolean(data.session));
-        setMe(await currentUserId());
-      }
-    })();
+    if (!supabase) return;
+    let alive = true;
+    if (probablySignedIn()) setSignedIn(true);
+
+    async function apply(session: unknown) {
+      if (!alive) return;
+      setSignedIn(Boolean(session));
+      setMe(session ? await currentUserId() : null);
+    }
+
+    const { data: watcher } = supabase.auth.onAuthStateChange((_event, session) => {
+      void apply(session);
+    });
+
+    void supabase.auth.getSession().then(({ data }) => {
+      if (data.session) void apply(data.session);
+    });
+
+    return () => {
+      alive = false;
+      watcher.subscription.unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
     setItems(null);
-    void (async () => absorb(await loadFeed(PAGE, undefined, filter, query), false))();
-  }, [filter, query]);
+    void (async () => absorb(await loadFeed(PAGE, undefined, filter), false))();
+  }, [filter]);
 
   async function loadMore() {
     if (!items || items.length === 0 || loadingMore) return;
     setLoadingMore(true);
-    const rows = await loadFeed(PAGE, items[items.length - 1].happened_at, filter, query);
+    const rows = await loadFeed(
+      PAGE,
+      items[items.length - 1].happened_at,
+      filter,
+    );
     await absorb(rows, true);
     setLoadingMore(false);
   }
 
   function refresh() {
-    void (async () => absorb(await loadFeed(PAGE, undefined, filter, query), false))();
+    void (async () => absorb(await loadFeed(PAGE, undefined, filter), false))();
   }
+
+  const onScreen = signedIn ? (items ?? []) : (items ?? []).slice(0, GUEST_PREVIEW);
+  const capped = !signedIn && items !== null && (items.length > GUEST_PREVIEW || more);
 
   return (
     <div className="space-y-5">
       {signedIn ? (
-        <Composer onPosted={refresh} quoting={quoting} onClearQuote={() => setQuoting(null)} />
+        <Composer
+          onPosted={refresh}
+          quoting={quoting}
+          onClearQuote={() => setQuoting(null)}
+        />
       ) : (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-card)] border border-dashed border-[var(--color-line)] px-5 py-3.5">
-          <p className="text-sm text-[var(--color-muted)]">
-            Reading is open to everyone. Sign in to post, reply and like.
-          </p>
-        </div>
+        <section className="guest-only overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-surface)]">
+          <div className="rule-brand" />
+          <div className="px-6 py-6">
+            <h2 className="text-xl">Nobody reads the code they depend on</h2>
+            <p className="mt-2 max-w-xl text-sm text-[var(--color-muted)]">
+              So people here scan it instead, and leave what they found in the open: how well a
+              repository is defended, what is missing, what got better. Everything below was found
+              by someone. Reading it costs you nothing, and scanning works without an account
+              either.
+            </p>
+            <div className="mt-5">
+              <a href="/app/explore/" className="btn btn-ghost">
+                <Icon name="compass" size={15} />
+                See what holds up
+              </a>
+            </div>
+          </div>
+        </section>
       )}
 
-      <div className="sticky top-0 z-20 -mx-1 flex flex-wrap items-center gap-2 bg-[var(--color-bg)]/85 px-1 py-2 backdrop-blur-md lg:top-0">
-        <div className="flex items-center gap-1">
-          {(['all', 'following', 'posts', 'scans'] as FeedFilter[]).map((f) => (
+      {signedIn && (
+        <div className="sticky top-0 z-20 -mx-1 flex items-center gap-1 bg-[var(--color-bg)]/85 px-1 py-2 backdrop-blur-md lg:top-0">
+          {(["all", "following", "posts", "scans"] as FeedFilter[]).map((f) => (
             <button
               key={f}
               type="button"
               onClick={() => setFilter(f)}
-              className={filter === f ? 'nav-pill nav-pill-active' : 'nav-pill'}
+              className={filter === f ? "nav-pill nav-pill-active" : "nav-pill"}
             >
-              {f === 'all'
-                ? 'Everything'
-                : f === 'following'
-                  ? 'Following'
-                  : f === 'posts'
-                    ? 'Posts'
-                    : 'Scans'}
+              {f === "all"
+                ? "Everything"
+                : f === "following"
+                  ? "Following"
+                  : f === "posts"
+                    ? "Posts"
+                    : "Scans"}
             </button>
           ))}
         </div>
-
-        <form
-          className="ml-auto flex min-w-0 flex-1 basis-44 items-center gap-2 rounded-full border border-[var(--color-line)] px-3 py-1.5 focus-within:border-[var(--color-line-active)]"
-          onSubmit={(e) => {
-            e.preventDefault();
-            setQuery(search);
-          }}
-        >
-          <Icon name="search" size={14} className="text-[var(--color-faint)]" />
-          <input
-            className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-[var(--color-faint)]"
-            value={search}
-            placeholder="Search posts and repositories"
-            onChange={(e) => setSearch(e.target.value)}
-          />
-          {query && (
-            <button
-              type="button"
-              aria-label="Clear"
-              className="text-[var(--color-faint)] hover:text-[var(--color-text)]"
-              onClick={() => {
-                setSearch('');
-                setQuery('');
-              }}
-            >
-              <Icon name="cross" size={13} />
-            </button>
-          )}
-        </form>
-      </div>
+      )}
 
       {items === null ? (
         <FeedSkeleton />
       ) : items.length === 0 ? (
-        query ? (
-          <Blank icon="search" title={`Nothing matches ${query}`} lead="Try a shorter word, or a repository name." />
-        ) : filter === 'following' ? (
+        filter === "following" ? (
           <Blank
             icon="users"
             title="Nobody you follow has posted yet"
@@ -151,7 +163,7 @@ export default function Feed() {
       ) : (
         <>
           <ul className="divide-y divide-[var(--color-line)] overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-surface)]">
-            {items.map((item) => {
+            {onScreen.map((item) => {
               const key = `${item.kind}:${item.id}`;
               return (
                 <li key={key}>
@@ -163,10 +175,10 @@ export default function Feed() {
                     signedIn={signedIn}
                     onChanged={refresh}
                     onQuote={
-                      signedIn && item.kind === 'post'
+                      signedIn && item.kind === "post"
                         ? (target) => {
                             setQuoting(target);
-                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                            window.scrollTo({ top: 0, behavior: "smooth" });
                           }
                         : undefined
                     }
@@ -195,17 +207,43 @@ export default function Feed() {
             })}
           </ul>
 
-          {more && (
-            <div className="pt-4 text-center">
-              <button
-                type="button"
-                className="btn btn-ghost"
-                disabled={loadingMore}
-                onClick={() => void loadMore()}
-              >
-                {loadingMore ? 'Loading…' : 'Show older'}
-              </button>
+          {!signedIn && capped ? (
+            <div className="guest-only rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-surface)] px-6 py-8 text-center">
+              <p className="text-base text-[var(--color-text)]">
+                There is more going on than this
+              </p>
+              <p className="mx-auto mt-2 max-w-md text-sm text-[var(--color-muted)]">
+                Sign in to read the rest of the feed, follow the repositories you depend on, and
+                say what you find. Scanning already works without an account.
+              </p>
+              <div className="mt-5 flex flex-wrap justify-center gap-2">
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={() => void signInWithGitHub()}
+                >
+                  <Icon name="github" size={15} />
+                  Sign in with GitHub
+                </button>
+                <a href="/app/scan/" className="btn btn-ghost">
+                  Scan a repository
+                </a>
+              </div>
             </div>
+          ) : (
+            more &&
+            signedIn && (
+              <div className="pt-4 text-center">
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  disabled={loadingMore}
+                  onClick={() => void loadMore()}
+                >
+                  {loadingMore ? "Loading…" : "Show older"}
+                </button>
+              </div>
+            )
           )}
         </>
       )}

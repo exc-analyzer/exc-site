@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react';
-import Icon, { type IconName } from '../Icon';
+import type { ReactNode } from "react";
+import Icon, { type IconName } from "../Icon";
 
 export function Blank({
   icon,
@@ -20,14 +20,22 @@ export function Blank({
         </span>
       )}
       <p className="text-base text-[var(--color-text)]">{title}</p>
-      {lead && <p className="mx-auto mt-2 max-w-md text-sm text-[var(--color-muted)]">{lead}</p>}
+      {lead && (
+        <p className="mx-auto mt-2 max-w-md text-sm text-[var(--color-muted)]">
+          {lead}
+        </p>
+      )}
       {action && <div className="mt-5 flex justify-center">{action}</div>}
     </div>
   );
 }
 
-function Shimmer({ className = '' }: { className?: string }) {
-  return <span className={`block animate-pulse rounded bg-[var(--color-raised)] ${className}`} />;
+function Shimmer({ className = "" }: { className?: string }) {
+  return (
+    <span
+      className={`block animate-pulse rounded bg-[var(--color-raised)] ${className}`}
+    />
+  );
 }
 
 export function FeedSkeleton({ rows = 4 }: { rows?: number }) {
@@ -55,7 +63,7 @@ export function FeedSkeleton({ rows = 4 }: { rows?: number }) {
   );
 }
 
-export function BlockSkeleton({ height = 'h-32' }: { height?: string }) {
+export function BlockSkeleton({ height = "h-32" }: { height?: string }) {
   return (
     <div
       className={`animate-pulse rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-surface)] ${height}`}

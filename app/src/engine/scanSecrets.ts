@@ -1,5 +1,6 @@
 import { GitHubClient } from '../lib/github';
 import { findSecrets, mapWithLimit, type SecretMatch } from './secretPatterns';
+import { requirePushAccess } from './shared';
 export interface SecretFinding {
   type: string;
   masked: string;
@@ -9,7 +10,6 @@ export interface SecretFinding {
   commitSha: string;
   commitUrl: string;
   date: string;
-  author: string;
 }
 export interface ScanSecretsResult {
   owner: string;
@@ -35,7 +35,10 @@ export async function scanSecrets(
   repo: string,
   limit = 10,
 ): Promise<ScanSecretsResult> {
-  if (limit > MAX_LIMIT) throw new Error(`En fazla ${MAX_LIMIT} commit taranabilir.`);
+  if (limit > MAX_LIMIT) {
+    throw new Error(`Secret scan reads at most ${MAX_LIMIT} commits in one run.`);
+  }
+  await requirePushAccess(gh, owner, repo, 'Secret scan');
   const commits = await gh.get<CommitListItem[]>(`/repos/${owner}/${repo}/commits`, {
     per_page: limit,
   });
@@ -60,7 +63,6 @@ export async function scanSecrets(
           commitSha: commit.sha.slice(0, 7),
           commitUrl: commit.html_url,
           date: commit.commit.author?.date ?? '',
-          author: commit.commit.author?.name ?? 'unknown',
         });
       }
     });

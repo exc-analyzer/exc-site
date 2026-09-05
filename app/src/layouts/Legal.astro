@@ -1,0 +1,91 @@
+---
+import Base from './Base.astro';
+
+interface Props {
+  title: string;
+  eyebrow: string;
+  updated: string;
+}
+
+const { title, eyebrow, updated } = Astro.props;
+---
+
+<Base title={`EXC - ${title}`}>
+  <article class="legal">
+    <p class="eyebrow mb-3">{eyebrow}</p>
+    <h1 class="text-2xl">{title}</h1>
+    <p class="mt-2 text-sm text-[var(--color-muted)]">Last updated {updated}</p>
+    <div class="mt-8">
+      <slot />
+    </div>
+    <footer class="mt-12 border-t border-[var(--color-line)] pt-6">
+      <nav class="flex flex-wrap gap-x-4 gap-y-2 text-sm">
+        <a href="/app/terms/" class="link">Terms of Use</a>
+        <a href="/app/privacy/" class="link">Privacy</a>
+        <a href="/app/methodology/" class="link">How the score works</a>
+        <a href="/app/takedown/" class="link">Correction or removal</a>
+      </nav>
+      <p class="mt-5 text-xs leading-relaxed text-[var(--color-faint)]">
+        <span>Operated by Berat Gökdemir — </span>
+        <a href="mailto:exc-analyzer@outlook.com" class="hover:text-[var(--color-muted)]"
+          >exc-analyzer@outlook.com</a
+        >
+      </p>
+      <p class="mt-2 text-xs leading-relaxed text-[var(--color-faint)]">
+        EXC is an independent project and is not affiliated with, endorsed by, or sponsored by
+        GitHub, Inc. GitHub is a trademark of GitHub, Inc.
+      </p>
+    </footer>
+  </article>
+</Base>
+
+<style is:global>
+  .legal h2 {
+    margin-top: 2.25rem;
+    font-size: var(--text-lg);
+  }
+  .legal h3 {
+    margin-top: 1.75rem;
+    font-size: var(--text-base);
+  }
+  .legal p,
+  .legal li {
+    margin-top: 0.85rem;
+    font-size: var(--text-sm);
+    line-height: 1.7;
+    color: var(--color-muted);
+  }
+  .legal strong {
+    color: var(--color-text);
+    font-weight: 600;
+  }
+  .legal ul {
+    list-style: disc;
+    padding-left: 1.25rem;
+  }
+  .legal a {
+    color: var(--color-link);
+    text-underline-offset: 3px;
+  }
+  .legal a:hover {
+    text-decoration: underline;
+  }
+  .legal table {
+    margin-top: 1rem;
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--text-sm);
+  }
+  .legal th,
+  .legal td {
+    border-bottom: 1px solid var(--color-line);
+    padding: 0.6rem 0.75rem 0.6rem 0;
+    text-align: left;
+    vertical-align: top;
+    color: var(--color-muted);
+  }
+  .legal th {
+    color: var(--color-text);
+    font-weight: 600;
+  }
+</style>

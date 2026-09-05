@@ -211,5 +211,9 @@ export function RichText({ body }: { body: string }) {
     }
   }
 
-  return <div className="space-y-1 text-base text-[var(--color-text)]">{blocks}</div>;
+  return (
+    <div className="space-y-1 text-base [overflow-wrap:anywhere] text-[var(--color-text)]">
+      {blocks}
+    </div>
+  );
 }

@@ -1,20 +1,27 @@
-import { useEffect, useRef, useState } from 'react';
-import { createPost, type FeedItem } from '../../lib/feed';
-import { parseRepo } from '../../lib/github';
-import { loadMyProfile, accentColor, shownAvatar, shownName, type Profile } from '../../lib/profile';
-import { RichText } from '../../lib/richText';
-import { Avatar } from '../profile/ProfileEditor';
-import Icon, { type IconName } from '../Icon';
+import { useEffect, useRef, useState } from "react";
+import { createPost, type FeedItem } from "../../lib/feed";
+import { parseRepo } from "../../lib/github";
+import {
+  loadMyProfile,
+  accentColor,
+  cachedProfile,
+  shownAvatar,
+  shownName,
+  type Profile,
+} from "../../lib/profile";
+import { RichText } from "../../lib/richText";
+import { Avatar } from "../profile/ProfileEditor";
+import Icon, { type IconName } from "../Icon";
 
 const LIMIT = 4000;
-const DRAFT_KEY = 'exc.draft';
+const DRAFT_KEY = "exc.draft";
 
 const PROMPTS = [
-  'What did you find?',
-  'Which repository surprised you this week?',
-  'Something worth warning people about?',
-  'A dependency you would vouch for?',
-  'What are you reading the source of?',
+  "What did you find?",
+  "Which repository surprised you this week?",
+  "Something worth warning people about?",
+  "A dependency you would vouch for?",
+  "What are you reading the source of?",
 ];
 
 interface Format {
@@ -26,12 +33,12 @@ interface Format {
 }
 
 const FORMATS: Format[] = [
-  { icon: 'bold', label: 'Bold', before: '**', after: '**' },
-  { icon: 'italic', label: 'Italic', before: '*', after: '*' },
-  { icon: 'code', label: 'Code', before: '`', after: '`' },
-  { icon: 'quote', label: 'Quote', before: '> ', after: '', block: true },
-  { icon: 'list', label: 'List', before: '- ', after: '', block: true },
-  { icon: 'link', label: 'Link', before: '[', after: '](https://)' },
+  { icon: "bold", label: "Bold", before: "**", after: "**" },
+  { icon: "italic", label: "Italic", before: "*", after: "*" },
+  { icon: "code", label: "Code", before: "`", after: "`" },
+  { icon: "quote", label: "Quote", before: "> ", after: "", block: true },
+  { icon: "list", label: "List", before: "- ", after: "", block: true },
+  { icon: "link", label: "Link", before: "[", after: "](https://)" },
 ];
 
 export default function Composer({
@@ -43,13 +50,19 @@ export default function Composer({
   quoting?: FeedItem | null;
   onClearQuote?: () => void;
 }) {
-  const [body, setBody] = useState('');
-  const [repo, setRepo] = useState('');
+  const [body, setBody] = useState("");
+  const [repo, setRepo] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [preview, setPreview] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [prompt] = useState(() => PROMPTS[Math.floor(Math.random() * PROMPTS.length)]);
+  useEffect(() => {
+    const known = cachedProfile();
+    if (known) setProfile(known);
+  }, []);
+  const [prompt] = useState(
+    () => PROMPTS[Math.floor(Math.random() * PROMPTS.length)],
+  );
   const area = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -77,7 +90,7 @@ export default function Composer({
   useEffect(() => {
     const el = area.current;
     if (!el || preview) return;
-    el.style.height = 'auto';
+    el.style.height = "auto";
     el.style.height = `${Math.min(el.scrollHeight, 460)}px`;
   }, [body, preview]);
 
@@ -86,10 +99,14 @@ export default function Composer({
   const left = LIMIT - body.length;
   const ratio = Math.min(1, body.length / LIMIT);
   const counterTone =
-    left < 0 ? 'var(--color-bad)' : left < 200 ? 'var(--color-warn)' : 'var(--color-line-strong)';
+    left < 0
+      ? "var(--color-bad)"
+      : left < 200
+        ? "var(--color-warn)"
+        : "var(--color-line-strong)";
   const canPost = body.trim().length > 0 && left >= 0 && !repoInvalid && !busy;
 
-  const placeholder = quoting ? 'Add your take…' : prompt;
+  const placeholder = quoting ? "Add your take…" : prompt;
 
   function apply(format: Format) {
     const el = area.current;
@@ -99,17 +116,26 @@ export default function Composer({
     const selected = body.slice(start, end);
 
     if (format.block) {
-      const lineStart = body.lastIndexOf('\n', start - 1) + 1;
-      const next = body.slice(0, lineStart) + format.before + body.slice(lineStart);
+      const lineStart = body.lastIndexOf("\n", start - 1) + 1;
+      const next =
+        body.slice(0, lineStart) + format.before + body.slice(lineStart);
       setBody(next);
       queueMicrotask(() => {
         el.focus();
-        el.setSelectionRange(start + format.before.length, end + format.before.length);
+        el.setSelectionRange(
+          start + format.before.length,
+          end + format.before.length,
+        );
       });
       return;
     }
 
-    const next = body.slice(0, start) + format.before + selected + format.after + body.slice(end);
+    const next =
+      body.slice(0, start) +
+      format.before +
+      selected +
+      format.after +
+      body.slice(end);
     setBody(next);
     queueMicrotask(() => {
       el.focus();
@@ -128,8 +154,8 @@ export default function Composer({
       setError(error);
       return;
     }
-    setBody('');
-    setRepo('');
+    setBody("");
+    setRepo("");
     setPreview(false);
     onClearQuote?.();
     try {
@@ -143,7 +169,7 @@ export default function Composer({
       <div className="flex gap-3.5 px-4 pt-4 sm:gap-4 sm:px-5">
         <Avatar
           src={profile ? shownAvatar(profile) : null}
-          name={profile ? shownName(profile) : '?'}
+          name={profile ? shownName(profile) : "?"}
           accent={profile ? accentColor(profile.accent) : undefined}
           size={38}
         />
@@ -154,7 +180,9 @@ export default function Composer({
               {body.trim() ? (
                 <RichText body={body} />
               ) : (
-                <p className="text-sm text-[var(--color-faint)]">Nothing to preview yet.</p>
+                <p className="text-sm text-[var(--color-faint)]">
+                  Nothing to preview yet.
+                </p>
               )}
             </div>
           ) : (
@@ -163,7 +191,7 @@ export default function Composer({
               value={body}
               onChange={(e) => setBody(e.target.value)}
               onKeyDown={(e) => {
-                if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+                if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
                   e.preventDefault();
                   void submit();
                 }
@@ -178,7 +206,7 @@ export default function Composer({
             <div className="mt-3 rounded-[var(--radius-control)] border border-[var(--color-line)] px-3.5 py-2.5">
               <div className="flex items-start justify-between gap-3">
                 <p className="text-xs text-[var(--color-faint)]">
-                  Quoting {quoting.author_login ?? 'someone'}
+                  Quoting {quoting.author_login ?? "someone"}
                 </p>
                 <button
                   type="button"
@@ -189,7 +217,9 @@ export default function Composer({
                   <Icon name="cross" size={13} />
                 </button>
               </div>
-              <p className="mt-1 line-clamp-3 text-sm text-[var(--color-muted)]">{quoting.body}</p>
+              <p className="mt-1 line-clamp-3 text-sm text-[var(--color-muted)]">
+                {quoting.body}
+              </p>
             </div>
           )}
 
@@ -199,7 +229,7 @@ export default function Composer({
               {parsed.owner}/{parsed.repo}
               <button
                 type="button"
-                onClick={() => setRepo('')}
+                onClick={() => setRepo("")}
                 aria-label="Remove the repository"
                 className="text-[var(--color-faint)] transition hover:text-[var(--color-bad)]"
               >
@@ -230,15 +260,15 @@ export default function Composer({
 
           <button
             type="button"
-            title={preview ? 'Keep writing' : 'Preview'}
-            aria-label={preview ? 'Keep writing' : 'Preview'}
+            title={preview ? "Keep writing" : "Preview"}
+            aria-label={preview ? "Keep writing" : "Preview"}
             aria-pressed={preview}
             onClick={() => setPreview((v) => !v)}
             className={`rounded-[var(--radius-control)] p-1.5 transition hover:bg-[rgba(163,145,224,0.08)] ${
-              preview ? 'text-[var(--color-link)]' : 'text-[var(--color-faint)]'
+              preview ? "text-[var(--color-link)]" : "text-[var(--color-faint)]"
             }`}
           >
-            <Icon name={preview ? 'pencil' : 'eye'} size={15} />
+            <Icon name={preview ? "pencil" : "eye"} size={15} />
           </button>
         </div>
 
@@ -254,9 +284,21 @@ export default function Composer({
 
         <div className="ml-auto flex items-center gap-3">
           {body.length > 0 && (
-            <span className="relative grid size-7 place-items-center" title={`${left} left`}>
-              <svg width="28" height="28" viewBox="0 0 28 28" className="-rotate-90">
-                <circle cx="14" cy="14" r="11" fill="none" stroke="var(--color-line)" strokeWidth="2.5" />
+            <span className="flex items-center gap-2" title={`${left} left`}>
+              <svg
+                width="28"
+                height="28"
+                viewBox="0 0 28 28"
+                className="-rotate-90 shrink-0"
+              >
+                <circle
+                  cx="14"
+                  cy="14"
+                  r="11"
+                  fill="none"
+                  stroke="var(--color-line)"
+                  strokeWidth="2.5"
+                />
                 <circle
                   cx="14"
                   cy="14"
@@ -270,24 +312,29 @@ export default function Composer({
               </svg>
               {left < 200 && (
                 <span
-                  className="absolute text-[9px] font-semibold tabular-nums"
+                  className="text-xs font-semibold tabular-nums"
                   style={{ color: counterTone }}
                 >
-                  {left}
+                  {left < 0 ? `${-left} over` : left}
                 </span>
               )}
             </span>
           )}
 
-          <button type="button" className="btn btn-primary" disabled={!canPost} onClick={() => void submit()}>
-            {busy ? 'Posting…' : 'Post'}
+          <button
+            type="button"
+            className="btn btn-primary"
+            disabled={!canPost}
+            onClick={() => void submit()}
+          >
+            {busy ? "Posting…" : "Post"}
           </button>
         </div>
       </div>
 
       {(repoInvalid || error) && (
         <p className="px-5 pb-3 text-xs text-[var(--color-bad)]">
-          {repoInvalid ? 'A repository is written as owner/repo.' : error}
+          {repoInvalid ? "A repository is written as owner/repo." : error}
         </p>
       )}
     </div>

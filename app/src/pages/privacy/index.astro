@@ -1,0 +1,104 @@
+---
+import Legal from '../../layouts/Legal.astro';
+---
+
+<Legal title="Privacy" eyebrow="Privacy" updated="3 September 2026">
+    <p><strong>Version 1.0 — effective 3 September 2026</strong></p>
+    <h2>Who is responsible</h2>
+    <p>Berat Gökdemir, an individual in Türkiye, operates EXC and is the data controller (KVKK: <em>veri sorumlusu</em>).</p>
+    <p>Contact for anything on this page: <strong>exc-analyzer@outlook.com</strong>. We answer every request within 30 days, free of charge. You do not need an EXC account to write to us.</p>
+    <h2>Object to being listed</h2>
+    <p><strong>If you are a GitHub user or repository owner who appears on this site and you did not put yourself here, you can have it removed. Email exc-analyzer@outlook.com with your GitHub login, or use <a href="/app/takedown/">the takedown page</a>. We remove it within 7 days. You do not have to give a reason, and you do not need an account.</strong></p>
+    <h2>If you never signed in but appear on this site</h2>
+    <p>EXC shows public GitHub data about repositories and their contributors. Some of that is personal data, and you did not give it to us — we read it from GitHub's public REST, GraphQL and search APIs.</p>
+    <p>What we may hold about you:</p>
+    <ul>
+    <li>your GitHub login, and the repository names you own or contribute to</li>
+    <li>repository metadata: stars, primary language, topics, last push date</li>
+    <li>results of scans other people ran on your repositories: a score out of 100, the individual checks that produced it, and the date of the scan</li>
+    </ul>
+    <p>What we do <strong>not</strong> hold about you: your email address, your avatar image file (avatars are loaded live from GitHub, we do not copy them), your real name, or anything from a private repository.</p>
+    <p>Why: to let developers compare the public security posture of open-source projects. Legal basis: legitimate interests, GDPR Art. 6(1)(f) / KVKK m.5/2-f. Our legitimate interest is making the public security signals of open-source projects comparable in one place.</p>
+    <p>How long: scan results are kept until the repository owner asks us to remove them, or until the result is 90 days old and nobody re-runs it &mdash; a nightly job deletes anything past that. A result we take down is erased entirely within 30 days. We do not keep a copy of GitHub's repository index — the Explore page queries GitHub live and stores nothing.</p>
+    <p>You can object at any time and we will honour it — see the box above. When we remove you we also add your GitHub login to a suppression list, so a later scan by someone else cannot put you back.</p>
+    <h2>If you sign in</h2>
+    <p>Sign-in is GitHub OAuth through Supabase Auth. Supabase performs the exchange with GitHub on its servers and issues a GitHub token to your browser. <strong>We never receive, log or store your GitHub token.</strong> All scan requests go straight from your browser to api.github.com.</p>
+    <p>We ask GitHub only for <code>read:user</code>. That is read-only access to public information. EXC cannot read your private repositories and cannot change anything on your behalf. Revoke at any time: https://github.com/settings/applications.</p>
+    <p>What we store when you sign in:</p>
+    <table><thead><tr><th>Field</th><th>Where it comes from</th></tr></thead><tbody><tr><td>GitHub numeric id, login, display name, avatar URL, account creation date</td><td>GitHub, at sign-in</td></tr><tr><td>Display name and bio (max 280 characters), if you change them</td><td>you</td></tr><tr><td>Accent colour, banner style, layout density</td><td>you</td></tr><tr><td>Privacy switches: private account, per-scan visibility</td><td>you</td></tr><tr><td>Reputation number</td><td>computed from your activity here</td></tr><tr><td>Posts, comments, follows, follow requests, upvotes, pins</td><td>you</td></tr><tr><td>Scan results you chose to save. Secret scans are never saved at all — the database refuses them</td><td>you</td></tr><tr><td>Items you bookmarked, and a record of who mentioned you</td><td>you</td></tr><tr><td>Abuse reports you file</td><td>you</td></tr></tbody></table>
+    <p>Legal basis: performance of the service you asked for — GDPR Art. 6(1)(b) / KVKK m.5/2-c. We do not ask for consent for this, because consent is not the right basis for it.</p>
+    <h2>Scans you run</h2>
+    <p>
+      <strong>A scan is only published when you have push access to the repository it
+      describes.</strong> If you scan a repository you do not work on, the result is shown to you
+      and then discarded — it is never written to our database, so there is nothing about that
+      repository or its owner for us to hold.
+    </p>
+    <p>Scans run in your browser on your own GitHub token and your own GitHub rate limit. Results of Secret scan, Deep secret scan and User analysis are never sent to our database, and never shared. That is enforced by the database, not only by the website.</p>
+    <p>Results of the other commands are saved to a public database and shown to everyone. Marking a scan private does not unpublish it. The result describes the repository rather than you, so it stays; what the setting controls is whether your name is attached to it. To have a result removed altogether, use <a href="/app/takedown/">the takedown page</a>.</p>
+    <p>We are still the data controller for what our code collects and for the results we publish, even though the code runs in your browser.</p>
+    <h2>Messages</h2>
+    <p>Two people who follow each other can write to each other privately. Those messages are stored in our database so they reach the other person and are still there next time. We do not read them, and moderators cannot open them.</p>
+    <p>There is one exception, and it only happens when you ask for it: if you report a message somebody sent you, <strong>that single message</strong> becomes visible to whoever is on moderation duty, along with who sent it and why you reported it. The rest of the conversation stays closed.</p>
+    <p>Either of you can take back a message you sent; the text is replaced and cannot be recovered. Deleting your account deletes every message you sent and received. If one of you stops following the other, the conversation closes to new messages and what was already said stays where it is.</p>
+    <p>These are not end-to-end encrypted. They are protected by access rules in the database, not by cryptography, so do not put anything here you would not want a database administrator to be able to read.</p>
+
+    <h2>Where the data is</h2>
+    <p>Our database and authentication run on <strong>Supabase</strong>. The website is hosted on <strong>Google Firebase Hosting</strong>. Both operate outside T&uuml;rkiye. That makes this a cross-border transfer under KVKK m.9 and a third-country transfer under GDPR Chapter V.</p>
+    <p>We rely on the standard contractual clauses adopted by the European Commission, which both providers incorporate into their data processing terms, together with the technical and organisational measures those terms require. Neither provider is authorised to use the data for its own purposes.</p>
+    <ul>
+      <li>Supabase &mdash; <a href="https://supabase.com/legal/dpa" target="_blank" rel="noopener noreferrer">Data Processing Addendum</a> and <a href="https://supabase.com/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a></li>
+      <li>Google (Firebase) &mdash; <a href="https://cloud.google.com/terms/data-processing-addendum" target="_blank" rel="noopener noreferrer">Cloud Data Processing Addendum</a> and <a href="https://firebase.google.com/support/privacy" target="_blank" rel="noopener noreferrer">Firebase Privacy and Security</a></li>
+      <li>GitHub &mdash; your browser talks to GitHub directly whenever you scan. That exchange is between you and GitHub under their <a href="https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement" target="_blank" rel="noopener noreferrer">Privacy Statement</a>; it does not pass through us.</li>
+    </ul>
+    <p>If you want a copy of the clauses that apply to your data, write to us and we will send you what our providers give us.</p>
+    <h2>Browser storage</h2>
+    <p>No cookie banner appears, because none of this is used for advertising or cross-site tracking. We still have to tell you what is stored:</p>
+    <table><thead><tr><th>Item</th><th>Purpose</th><th>Lifetime</th></tr></thead><tbody><tr><td>Supabase auth token</td><td>keeps you signed in</td><td>until you sign out; kept after you close the browser only while &ldquo;Keep me signed in&rdquo; is ticked on the scan page, otherwise it is dropped with the tab</td></tr><tr><td>GitHub access token (<code>exc.github_token</code>)</td><td>lets a scan run in your browser against your own GitHub account</td><td>kept while &ldquo;Keep me signed in&rdquo; is ticked, so a second tab can scan too; dropped with the tab when it is not. Cleared on sign out either way</td></tr><tr><td>Cached profile (<code>exc.profile</code>)</td><td>avoids a round trip on every page</td><td>until you sign out</td></tr><tr><td>Stay signed in (<code>exc.stay-signed-in</code>)</td><td>remembers whether you ticked &ldquo;Keep me signed in&rdquo;</td><td>until you change it</td></tr><tr><td>Layout density (<code>exc.density</code>)</td><td>your chosen layout</td><td>until you clear it</td></tr><tr><td>Post draft</td><td>so you do not lose a half-written post</td><td>until you post or discard</td></tr></tbody></table>
+    <p>We run no analytics, no advertising, no error-reporting service and no third-party trackers.</p>
+    <h2>Your rights</h2>
+    <p>Under GDPR you can ask for access, correction, erasure, restriction, portability, and you can object to processing based on legitimate interests. Under KVKK m.11 you can learn whether your data is processed, ask what was done with it, ask for correction or deletion, ask us to tell third parties about a correction, object to a result reached about you by purely automated analysis, and claim compensation for damage.</p>
+    <p>To use any of these, email exc-analyzer@outlook.com. One month under GDPR, 30 days under KVKK, free of charge.</p>
+    <p>If you signed in, you can also delete everything yourself: <strong>Settings → Delete my account</strong>. That removes your profile, posts, comments, follows, bookmarks, mentions and your GitHub sign-in, immediately and without asking us. Scan results you saved stay, because they describe a repository rather than you — but your name is detached from them and cannot be recovered. If you want those removed too, <a href="/app/takedown/">ask us</a> and we will delete them.</p>
+    <p>If you think we got it wrong, you can complain to your local data protection authority, or in Türkiye to the Kişisel Verileri Koruma Kurumu (kvkk.gov.tr).</p>
+    <h2>Automated analysis</h2>
+    <p>EXC scores repositories, not people. We do not publish an automated judgement about any individual. Where a command analyses a person's public activity, the result is shown only to the person who ran it and is never stored.</p>
+    <p>The scoring rules are hand-written and fixed. There is no trained or learned model anywhere in EXC.</p>
+    <h2 lang="tr">KVKK Aydınlatma Metni (Türkçe özet)</h2>
+    <p lang="tr">
+      Bu site İngilizce yayımlanmaktadır. Aşağıdaki özet, 6698 sayılı Kişisel Verilerin Korunması
+      Kanunu kapsamındaki aydınlatma yükümlülüğü için Türkçe olarak sunulmuştur. Bağlayıcı ve
+      ayrıntılı metin bu sayfanın İngilizce bölümleridir.
+    </p>
+    <p lang="tr">
+      <strong>Veri sorumlusu:</strong> Berat Gökdemir, Türkiye. İletişim:
+      <a href="mailto:exc-analyzer@outlook.com">exc-analyzer@outlook.com</a>
+    </p>
+    <p lang="tr">
+      <strong>İşlenen veriler:</strong> GitHub ile giriş yaparsanız GitHub kullanıcı numaranız,
+      kullanıcı adınız, görünen adınız, profil fotoğrafınızın adresi ve hesap açılış tarihiniz;
+      sitede yazdığınız gönderi ve yorumlar; takip, yer imi ve tercih kayıtlarınız. Giriş
+      yapmadıysanız yalnızca herkese açık GitHub verileri gösterilir.
+    </p>
+    <p lang="tr">
+      <strong>İşleme amacı ve hukuki sebep:</strong> Hesabınızı tanımlamak ve siteyi çalıştırmak.
+      Hukuki sebep, KVKK m.5/2-c uyarınca hizmetin sunulabilmesi için gerekli olmasıdır. Verileriniz
+      yurt dışında (Supabase, AB bölgesi) barındırılır.
+    </p>
+    <p lang="tr">
+      <strong>Haklarınız:</strong> KVKK m.11 uyarınca verilerinize erişme, düzeltme, silme ve
+      işlenmesine itiraz etme haklarına sahipsiniz. Yukarıdaki adrese yazmanız yeterlidir; 30 gün
+      içinde ücretsiz yanıt veririz. Hesabınızı dilediğiniz an <strong>Profil → Close your
+      account</strong> bölümünden kendiniz silebilirsiniz.
+    </p>
+    <p lang="tr">
+      <strong>Siteye hiç üye olmadıysanız:</strong> Herkese açık bir GitHub deposu ya da kullanıcı
+      adı burada görünüyorsa ve kaldırılmasını istiyorsanız, yukarıdaki adrese yazın. Gerekçe
+      belirtmenize gerek yok, 7 gün içinde kaldırırız.
+    </p>
+
+    <h2>Not GitHub</h2>
+    <p>EXC is an independent project, not affiliated with, endorsed by or sponsored by GitHub, Inc. EXC alone is responsible for the data it collects. EXC does not collect any personal data on GitHub's behalf.</p>
+    <h2>Changes</h2>
+    <p>The version and date at the top tell you which notice is in force. If we change something material we will say so on the site.</p>
+</Legal>

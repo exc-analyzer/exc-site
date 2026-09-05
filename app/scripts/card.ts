@@ -38,6 +38,7 @@ export interface CardData {
   headline: string;
   facts: CardFact[];
   url: string;
+  tagline?: string;
 }
 
 function escapeHtml(value: string): string {
@@ -148,7 +149,7 @@ export function cardHtml(data: CardData, logo: string): string {
     ${scoreBlock}
   </div>
   <div class="layer foot">
-    <span>Can you trust this repository?</span>
+    <span>${escapeHtml(data.tagline ?? 'Can you trust this repository?')}</span>
     <span class="url">${escapeHtml(data.url)}</span>
   </div>
 </body>

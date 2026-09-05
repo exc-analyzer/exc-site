@@ -1,7 +1,6 @@
 import { GitHubClient } from '../lib/github';
 export interface ContributorImpact {
   login: string;
-  avatarUrl: string | null;
   score: number;
   additions: number;
   deletions: number;
@@ -49,7 +48,6 @@ export async function contribImpact(
       const deletions = c.weeks.reduce((sum, w) => sum + (w.d ?? 0), 0);
       return {
         login: c.author!.login,
-        avatarUrl: c.author!.avatar_url ?? null,
         score: additions * 0.7 - deletions * 0.3,
         additions,
         deletions,

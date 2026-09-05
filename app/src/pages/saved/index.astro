@@ -5,12 +5,10 @@ import PageHeader from '../../components/console/PageHeader.astro';
 ---
 
 <Base title="EXC - Saved">
-  <div class="mx-auto max-w-[640px]">
-    <PageHeader
-      eyebrow="Saved"
-      title="Kept for later"
-      lead="Only you can see this. Nothing here is shared or counted anywhere."
-    />
-    <Saved client:load />
-  </div>
+  <PageHeader
+    eyebrow="Saved"
+    title="Kept for later"
+    lead="Only you can see this. Nothing here is shared or counted anywhere."
+  />
+  <Saved client:load />
 </Base>

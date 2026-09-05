@@ -1,0 +1,27 @@
+---
+import Legal from '../../layouts/Legal.astro';
+---
+
+<Legal title="Correction or removal" eyebrow="Takedown" updated="3 September 2026">
+    <p><strong>We act within 7 days. You do not need an EXC account. You do not have to explain why.</strong></p>
+    <p>Email <strong>exc-analyzer@outlook.com</strong> or use the form below.</p>
+    <h2>What we will remove, on request</h2>
+    <ul>
+    <li>Your GitHub login, from every scan result about a repository you own. If it appears anywhere else &mdash; in a post, in a comment, or inside a scan result about somebody else's repository &mdash; tell us where and we remove it by hand</li>
+    <li>Any scan result about a repository you own — the score, the findings, all of it</li>
+        <li>Your EXC account and everything attached to it, if you have one</li>
+    </ul>
+    <h2>What we need</h2>
+    <p>Your GitHub login, or the repository as <code>owner/repo</code>. That is all. If the request is about a repository, we check that you are the owner or an admin through GitHub's public API — we do not ask you to prove anything to us directly.</p>
+    <h2>What happens next</h2>
+    <p>1. We delete the rows. Every scan result about that repository.</p>
+    <p>2. We add your GitHub login to a suppression list. A later scan of a repository you own will refuse to save, so nobody can put it back. The list matches the account that owns the repository; anything else carrying your name is removed by hand when you point us at it.</p>
+    <p>3. We email you to confirm.</p>
+    <p>Removal is permanent unless you ask us to undo it.</p>
+    <h2>If a finding is wrong rather than unwanted</h2>
+    <p>Tell us which check is wrong and why. We re-run the scan. If the finding was wrong we remove it and publish a dated correction on the repository's page. While a result is disputed we mark it <strong>Disputed</strong> on the page, until we have re-checked it.</p>
+    <p>We would rather be corrected than be right.</p>
+    <h2>Everything else</h2>
+    <p>Data protection requests — access, correction, erasure, objection, portability, or an objection to an automated result about you — go to the same address: <strong>exc-analyzer@outlook.com</strong>. We answer within 30 days, free of charge. See <a href="/app/privacy/">Privacy</a>.</p>
+    <p>Abuse, harassment or illegal content in posts and comments: report it from the post itself if you have an account, or email the same address.</p>
+</Legal>

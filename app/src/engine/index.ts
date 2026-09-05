@@ -7,10 +7,8 @@ import { commitAnomaly, type CommitAnomalyResult } from './commitAnomaly';
 import { fileHistory, type FileHistoryResult } from './fileHistory';
 import { actionsAudit, type ActionsAuditResult } from './actionsAudit';
 import { userAnalysis, type UserAnalysisResult } from './userAnalysis';
-import { userAnomaly, type UserAnomalyResult } from './userAnomaly';
 import { scanSecrets, type ScanSecretsResult } from './scanSecrets';
 import { advancedSecrets, type AdvancedSecretsResult } from './advancedSecrets';
-import { dorkScan, DORK_PRESETS, type DorkScanResult } from './dorkScan';
 
 export type CommandId =
   | 'analysis'
@@ -21,10 +19,9 @@ export type CommandId =
   | 'actions-audit'
   | 'commit-anomaly'
   | 'user-analysis'
-  | 'user-anomaly'
   | 'scan-secrets'
   | 'advanced-secrets'
-  | 'dork-scan';
+
 
 export type CommandResult =
   | { id: 'analysis'; data: AnalysisResult }
@@ -35,10 +32,9 @@ export type CommandResult =
   | { id: 'actions-audit'; data: ActionsAuditResult }
   | { id: 'commit-anomaly'; data: CommitAnomalyResult }
   | { id: 'user-analysis'; data: UserAnalysisResult }
-  | { id: 'user-anomaly'; data: UserAnomalyResult }
   | { id: 'scan-secrets'; data: ScanSecretsResult }
   | { id: 'advanced-secrets'; data: AdvancedSecretsResult }
-  | { id: 'dork-scan'; data: DorkScanResult };
+
 
 export type CommandCategory = 'intel' | 'security' | 'anomaly' | 'sensitive';
 
@@ -159,10 +155,10 @@ export const COMMANDS: CommandDef[] = [
     id: 'user-analysis',
     name: 'User analysis',
     cli: 'exc user-a <username>',
-    summary: 'Profile summary, notable repositories and language mix.',
-    category: 'intel',
+    summary: 'Profile summary, notable repositories and language mix. Shown to you only, never published.',
+    category: 'sensitive',
     fields: [USER_FIELD],
-    sensitive: false,
+    sensitive: true,
   },
   {
     id: 'actions-audit',
@@ -175,9 +171,9 @@ export const COMMANDS: CommandDef[] = [
   },
   {
     id: 'commit-anomaly',
-    name: 'Commit anomaly',
+    name: 'Commit message review',
     cli: 'exc commit-anomaly <owner/repo>',
-    summary: 'Flags commit messages that do not look like ordinary work.',
+    summary: 'Reads recent commit messages and points out wording worth a second look.',
     category: 'anomaly',
     fields: [
       REPO_FIELD,
@@ -186,19 +182,10 @@ export const COMMANDS: CommandDef[] = [
     sensitive: false,
   },
   {
-    id: 'user-anomaly',
-    name: 'User anomaly',
-    cli: 'exc user-anomaly <username>',
-    summary: 'Scores unusual account behaviour. A signal to check, not an accusation.',
-    category: 'anomaly',
-    fields: [USER_FIELD],
-    sensitive: false,
-  },
-  {
     id: 'scan-secrets',
     name: 'Secret scan',
     cli: 'exc scan-secrets <owner/repo>',
-    summary: 'Looks for keys leaked in files added by recent commits.',
+    summary: 'Looks for keys leaked in recent commits of a repository you can push to.',
     category: 'sensitive',
     fields: [
       REPO_FIELD,
@@ -210,7 +197,7 @@ export const COMMANDS: CommandDef[] = [
     id: 'advanced-secrets',
     name: 'Deep secret scan',
     cli: 'exc advanced-secrets <owner/repo>',
-    summary: 'Sweeps the current file tree and the commit history together.',
+    summary: 'Sweeps the file tree and commit history of a repository you can push to.',
     category: 'sensitive',
     fields: [
       REPO_FIELD,
@@ -287,11 +274,6 @@ export async function runCommand(
       if (!username) throw new Error('A username is required.');
       return { id, data: await userAnalysis(gh, username) };
     }
-    case 'user-anomaly': {
-      const username = String(values.username ?? '').trim();
-      if (!username) throw new Error('A username is required.');
-      return { id, data: await userAnomaly(gh, username) };
-    }
     case 'scan-secrets': {
       const { owner, repo } = repoOf(values);
       return { id, data: await scanSecrets(gh, owner, repo, num(values, 'limit', 10)) };
@@ -299,19 +281,6 @@ export async function runCommand(
     case 'advanced-secrets': {
       const { owner, repo } = repoOf(values);
       return { id, data: await advancedSecrets(gh, owner, repo, num(values, 'limit', 20)) };
-    }
-    case 'dork-scan': {
-      const query = String(values.query ?? '').trim();
-      const preset = String(values.preset ?? '').trim();
-      return {
-        id,
-        data: await dorkScan(gh, {
-          queries: query ? [query] : [],
-          preset: preset ? (preset as keyof typeof DORK_PRESETS) : undefined,
-          limit: num(values, 'limit', 10),
-          verify: Boolean(values.verify),
-        }),
-      };
     }
   }
 }

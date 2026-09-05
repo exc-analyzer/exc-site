@@ -6,9 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EXC</title>
     <meta name="description"
-        content="A professional command-line tool for advanced GitHub repository intelligence, security auditing, and content analysis.">
+        content="Rate a repository before you build on it. EXC scores open-source projects on public GitHub metadata, in your browser or from the command line.">
     <meta name="keywords"
-        content="EXC, GitHub analyzer, repository intelligence, security audit, dork scan, open source analysis, CLI tool, Python security tool">
+        content="EXC, GitHub analyzer, repository security score, open source auditing, dependency review, CLI tool, Python security tool">
     <meta name="author" content="EXC">
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
     <meta name="theme-color" content="#0a0a0c">
@@ -17,7 +17,7 @@
     <meta property="og:type" content="website">
     <meta property="og:title" content="EXC">
     <meta property="og:description"
-        content="Advanced GitHub repository intelligence for security auditing, contributor analysis, and public-code scanning.">
+        content="Rate a repository before you build on it, see what everyone else found, and say what you found.">
     <meta property="og:url" content="https://exc-analyzer.web.app/" id="og-url-meta">
     <meta property="og:image" content="https://exc-analyzer.web.app/og/default.png?v=1">
     <meta property="og:image:width" content="1200">
@@ -36,7 +36,11 @@
             "applicationCategory": "DeveloperApplication",
             "operatingSystem": "Windows, Linux, macOS",
             "url": "/",
-            "description": "Advanced GitHub repository intelligence for security auditing, contributor analysis, and public-code scanning.",
+            "description": "Rate a repository before you build on it. EXC scores open-source projects on public GitHub metadata, in your browser or from the command line.",
+            "author": {
+                "@type": "Person",
+                "name": "Berat Gökdemir"
+            },
             "sameAs": [
                 "https://github.com/exc-analyzer/exc",
                 "https://www.instagram.com/exc.analyzer/",
@@ -61,7 +65,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/lucide@1.40.0" integrity="sha384-s4mVkuit0eGTZzd14daHDlafvQQpJM6xaSzp3M68bLqBd672unncFLVRpNFcUTm5" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <style>
         :root {
             /* Color Palette - Deep Dark & Vibrant Accents */
@@ -327,11 +331,11 @@
 
         /* --- Hero Section --- */
         .hero {
-            padding: 80px 0;
+            padding: 32px 0 124px;
             text-align: center;
             position: relative;
             /* Vertical Centering */
-            min-height: 80vh;
+            min-height: calc(100vh - var(--header-height));
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -357,55 +361,26 @@
         }
 
         .hero h1 {
-            font-size: clamp(3rem, 5vw, 4.5rem);
-            font-weight: 800;
-            line-height: 1.1;
+            font-size: clamp(2.5rem, 4.4vw, 3.75rem);
+            font-weight: 700;
+            line-height: 1.12;
             margin-bottom: 24px;
-            letter-spacing: -0.02em;
+            letter-spacing: -0.021em;
+            max-width: 15ch;
+            margin-inline: auto;
         }
 
         .hero p {
             font-size: 1.25rem;
             color: var(--text-muted);
-            max-width: 700px;
-            margin: 0 auto 40px;
+            max-width: 640px;
+            margin: 0 auto 36px;
         }
 
         .hero-actions {
             display: flex;
             justify-content: center;
             gap: 16px;
-        }
-
-        .product-hunt-embed {
-            margin-top: 24px;
-            display: inline-flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 10px;
-            text-decoration: none;
-            color: var(--text-muted);
-        }
-
-        .product-hunt-embed span {
-            font-size: 0.82rem;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            font-weight: 700;
-        }
-
-        .product-hunt-embed img {
-            display: block;
-            width: 250px;
-            max-width: 100%;
-            height: auto;
-            transition: transform 0.2s ease, filter 0.2s ease;
-            filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.28));
-        }
-
-        .product-hunt-embed:hover img {
-            transform: translateY(-2px);
-            filter: drop-shadow(0 12px 30px rgba(0, 0, 0, 0.34));
         }
 
 
@@ -1097,9 +1072,26 @@
             gap: 24px;
         }
 
+        .btn-lg {
+            padding: 15px 34px;
+            font-size: 1.05rem;
+        }
+
+        .brand-icon {
+            width: 18px;
+            height: 18px;
+            flex-shrink: 0;
+        }
+
         .social-links {
             display: flex;
             gap: 20px;
+        }
+
+        .social-links .brand-icon,
+        .social-links svg {
+            width: 22px;
+            height: 22px;
         }
 
         .social-links a {
@@ -1343,10 +1335,6 @@
                 width: 100%;
                 padding: 0 24px;
                 gap: 12px;
-            }
-
-            .product-hunt-embed {
-                margin-top: 18px;
             }
 
             .hero-actions .btn {
@@ -1640,8 +1628,9 @@
             </a>
             <nav>
                 <ul>
-                    <li><a href="#features">Features</a></li>
                     <li><a href="/app/">App</a></li>
+                    <li><a href="#features">Features</a></li>
+                    <li><a href="#app">Sign in</a></li>
                     <li><a href="#install">Installation</a></li>
                     <li><a href="#quickstart">Quick Start</a></li>
                     <li><a href="#readme-card">README</a></li>
@@ -1659,8 +1648,9 @@
         </button>
         <nav>
             <ul>
-                <li><a href="#features" onclick="toggleMobileMenu()">Features</a></li>
                 <li><a href="/app/" onclick="toggleMobileMenu()">App</a></li>
+                <li><a href="#features" onclick="toggleMobileMenu()">Features</a></li>
+                <li><a href="#app" onclick="toggleMobileMenu()">Sign in</a></li>
                 <li><a href="#install" onclick="toggleMobileMenu()">Installation</a></li>
                 <li><a href="#quickstart" onclick="toggleMobileMenu()">Quick Start</a></li>
                 <li><a href="#readme-card" onclick="toggleMobileMenu()">README</a></li>
@@ -1671,32 +1661,23 @@
     <!-- Hero -->
     <section class="hero container reveal">
         <h1>
-            <span class="gradient-text">EXC</span> Analyzer
+            Know what you are <span class="gradient-text">depending on</span>
         </h1>
         <p>
-            Rate a repository before you depend on it, and see what everyone else found.
-            Runs in your browser on your own GitHub account, or from the command line.
+            Rate a repository before you build on it, see what everyone else found, and say what
+            you found.
         </p>
         <div class="hero-actions">
-            <a href="/app/" class="btn btn-primary">
-                Open the app
-                <i data-lucide="arrow-right" size="18"></i>
+            <a href="/app/?signin=1" class="btn btn-primary btn-lg">
+                <svg class="brand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5a4.3 4.3 0 0 0-1.2-3 4 4 0 0 0-.1-3S17.5 3 15 4.7a13 13 0 0 0-6 0C6.5 3 5.3 3 5.3 3a4 4 0 0 0-.1 3A4.3 4.3 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.4.5-.7 1.2-.8 2V22"/><path d="M9 19c-4.3 1.4-4.3-2.5-6-3"/></svg>
+                Sign in with GitHub
             </a>
-            <a href="/app/scan/" class="btn btn-outline">
-                <i data-lucide="search" size="18"></i>
-                Scan a repository
-            </a>
-            <a href="https://github.com/exc-analyzer/exc" target="_blank" class="btn btn-outline">
-                <i data-lucide="github" size="18"></i>
-                View on GitHub
-                <i data-lucide="external-link" size="14" style="margin-left: 2px; opacity: 0.6;"></i>
+            <a href="/app/explore/" class="btn btn-outline btn-lg">
+                <i data-lucide="compass" size="18"></i>
+                Look around first
             </a>
         </div>
 
-        <a class="product-hunt-embed" href="https://www.producthunt.com/products/exc-analyzer?embed=true&amp;utm_source=badge-featured&amp;utm_medium=badge&amp;utm_campaign=badge-exc-analyzer" target="_blank" rel="noopener noreferrer" aria-label="View EXC on Product Hunt">
-            <span>Featured on Product Hunt</span>
-            <img alt="EXC - Advanced GitHub repository auditing and secret scanning CLI | Product Hunt" width="250" height="54" src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1165134&amp;theme=dark&amp;t=1780764890258">
-        </a>
 
         <!-- Scroll Indicator -->
         <div class="scroll-indicator">
@@ -1710,39 +1691,40 @@
     <!-- Features -->
     <section id="features" class="container features">
         <div class="section-header reveal">
-            <h2>Powerful Capabilities</h2>
-            <p>Everything you need to audit and analyze open source codebases.</p>
+            <h2>What it does</h2>
+            <p>Every check reads public GitHub metadata through the documented API. Nothing here reads your code.</p>
         </div>
 
         <div class="grid">
             <div class="card reveal">
-                <div class="card-icon"><i data-lucide="search"></i></div>
-                <h3>Intelligence Gathering</h3>
-                <p>Deep-dive into repository metadata, contributor impact, and historical anomalies to understand the
-                    pulse of any project.</p>
-            </div>
-            <div class="card reveal">
                 <div class="card-icon"><i data-lucide="shield-check"></i></div>
-                <h3>Security Auditing</h3>
-                <p>Score repository security posture, audit GitHub Actions workflows, and scan for hardcoded secrets in
-                    commits and files.</p>
+                <h3>Security Score</h3>
+                <p>A repository starts at 100 and loses points for a missing license, no issue tracker, no security
+                    policy, and a few more. Checks that cannot be read cost nothing.</p>
             </div>
             <div class="card reveal">
-                <div class="card-icon"><i data-lucide="radar"></i></div>
-                <h3>Dork Scanning</h3>
-                <p>Powerfully search public code using GitHub dorks to find sensitive exposures before attackers do.</p>
+                <div class="card-icon"><i data-lucide="search"></i></div>
+                <h3>Repository Analysis</h3>
+                <p>Metadata, release cadence, contributor spread, workflow permissions. Enough to judge whether a
+                    project is maintained before you depend on it.</p>
             </div>
             <div class="card reveal">
-                <div class="card-icon"><i data-lucide="user-check"></i></div>
-                <h3>User Profiling</h3>
-                <p>Analyze user activity patterns, potential anomalies, and contributions to identify key maintainers
-                    and suspicious actors.</p>
+                <div class="card-icon"><i data-lucide="key-round"></i></div>
+                <h3>Secret Scanning</h3>
+                <p>Finds keys left in recent commits, restricted to repositories you can push to. Your own code, your
+                    own leaks, yours to rotate.</p>
+            </div>
+            <div class="card reveal">
+                <div class="card-icon"><i data-lucide="messages-square"></i></div>
+                <h3>Shared Findings</h3>
+                <p>Publish a scan of a repository you maintain, dispute one you disagree with, and talk it over.
+                    Every published score carries the date it was computed.</p>
             </div>
             <div class="card reveal">
                 <div class="card-icon"><i data-lucide="activity"></i></div>
                 <h3>Smart Rate-Limiting</h3>
-                <p>Provides seamless analytical continuity by leveraging automated quota management with built-in pause
-                    and retry logic.</p>
+                <p>Runs on your own GitHub quota, with automated pause and retry so a long audit does not die halfway
+                    through.</p>
             </div>
             <div class="card reveal">
                 <div class="card-icon"><i data-lucide="globe"></i></div>
@@ -1750,6 +1732,42 @@
                 <p>Infrastructure open to community support and ready for global expansion.</p>
             </div>
         </div>
+    </section>
+
+    <!-- The app -->
+    <section id="app" class="container features">
+        <div class="section-header reveal">
+            <h2>Use it in your browser</h2>
+            <p>No install, no server of ours in the middle. Sign in with GitHub and scan from the page you are on.</p>
+        </div>
+
+        <div class="grid">
+            <div class="card reveal">
+                <div class="card-icon"><i data-lucide="log-in"></i></div>
+                <h3>Signing in</h3>
+                <p>One button, GitHub handles it. The first time you sign in, your account here is created — there is
+                    no separate form to fill in and no password for us to hold.</p>
+            </div>
+            <div class="card reveal">
+                <div class="card-icon"><i data-lucide="lock"></i></div>
+                <h3>What we ask for</h3>
+                <p>Read-only access to your public profile. EXC cannot write to your repositories, open issues, or
+                    push code. You can revoke it from GitHub settings at any time.</p>
+            </div>
+            <div class="card reveal">
+                <div class="card-icon"><i data-lucide="monitor"></i></div>
+                <h3>Where the work happens</h3>
+                <p>Scans run in your browser against GitHub's API on your own rate limit. Your code never reaches us,
+                    and we never receive your token.</p>
+            </div>
+        </div>
+
+        <p class="reveal" style="text-align: center; margin-top: 36px; font-size: 0.85rem; color: var(--text-muted); max-width: 620px; margin-left: auto; margin-right: auto; line-height: 1.7;">
+            Reading and scanning need no account. An account is what lets you publish a result, post, and follow.
+            Publishing a scan of a repository is limited to repositories you can push to. By signing in you accept the
+            <a href="/app/terms/" style="color: var(--text-main);">Terms of Use</a> and the
+            <a href="/app/privacy/" style="color: var(--text-main);">Privacy Notice</a>.
+        </p>
     </section>
 
     <!-- Installation -->
@@ -1835,9 +1853,9 @@
                     </div>
                     <div class="guide-video-wrap">
                         <button type="button" class="guide-video-facade" data-yt="AXwwRkfK3KQ"
-                            data-title="exc login" aria-label="exc login videosunu oynat">
+                            data-title="exc login" aria-label="Play the exc login walkthrough">
                             <img class="guide-video-poster" src="images/tutorial/login-step.svg"
-                                 alt="exc login komutunun terminal ciktisi" width="1280" height="720"
+                                 alt="Terminal output of the exc login command" width="1280" height="720"
                                  loading="lazy" decoding="async">
                             <span class="guide-video-play guide-video-card" aria-hidden="true"><i data-lucide="play"></i></span>
                         </button>
@@ -1886,9 +1904,9 @@
                     </div>
                     <div class="guide-video-wrap">
                         <button type="button" class="guide-video-facade" data-yt="qAHGc_bK1Lc"
-                            data-title="exc analysis torvalds/linux" aria-label="exc analysis torvalds/linux videosunu oynat">
+                            data-title="exc analysis torvalds/linux" aria-label="Play the exc analysis walkthrough">
                             <img class="guide-video-poster" src="images/tutorial/analysis-step.svg"
-                                 alt="exc analysis torvalds/linux komutunun terminal ciktisi" width="1280" height="720"
+                                 alt="Terminal output of the exc analysis command" width="1280" height="720"
                                  loading="lazy" decoding="async">
                             <span class="guide-video-play guide-video-card" aria-hidden="true"><i data-lucide="play"></i></span>
                         </button>
@@ -1960,57 +1978,6 @@
                 </div>
             </article>
 
-            <article class="guide-card reveal">
-                <div class="guide-body">
-                    <h3><span class="step-number">3</span> Dork Scan</h3>
-                                        <p>This command runs a targeted public-code scan and returns matched repository paths with direct GitHub links.</p>
-                                        <div class="guide-command-row">
-                                                <code class="terminal-cmd terminal-cmd-fit">exc dork-scan brgkdm</code>
-                                                <button class="guide-copy-btn" onclick="copyCommand(this, 'exc dork-scan brgkdm')" title="Copy command" aria-label="Copy exc dork-scan command">
-                                                        <i data-lucide="copy" size="16"></i>
-                                                </button>
-                                        </div>
-                                        <div class="guide-video-wrap">
-                                            <button type="button" class="guide-video-facade" data-yt="zvfncV2owow"
-                                                data-title="exc dork-scan brgkdm" aria-label="exc dork-scan brgkdm videosunu oynat">
-                                                <img class="guide-video-poster" src="images/tutorial/dork-step.svg"
-                                                     alt="exc dork-scan brgkdm komutunun terminal ciktisi" width="1280" height="720"
-                                                     loading="lazy" decoding="async">
-                                                <span class="guide-video-play guide-video-card" aria-hidden="true"><i data-lucide="play"></i></span>
-                                            </button>
-                                        </div>
-
-                                        <p class="guide-output-label">1) Scan starts</p>
-                                        <pre class="guide-output"><span class="term-cyan">[INFO] Searching GitHub for: brgkdm</span>
-<span class="term-white">Searching GitHub ... |</span></pre>
-                                        <p>This stage confirms the query target and shows that the scanner has started communicating with GitHub. The trailing spinner-like symbol indicates active progress while results are being collected.</p>
-
-                                        <p class="guide-output-label">2) Matched results list</p>
-                                        <pre class="guide-output"><span class="term-cyan">[INFO] Searching GitHub for: brgkdm</span>
-
-<span class="term-white">[+] brgkdm/DayZen-good-first-issue | README.md</span>
-    <span class="term-tip">-&gt; https://github.com/brgkdm/DayZen-good-first-issue/blob/5b4f3323d7c21e974053871ab3e280e790ec9c8e/README.md</span>
-
-<span class="term-white">[+] exc-analyzer/exc | pyproject.toml</span>
-    <span class="term-tip">-&gt; https://github.com/exc-analyzer/exc/blob/09e8af4183ac3dfd192598cc8e62f238b3032a2d/pyproject.toml</span>
-
-<span class="term-white">[+] sarpaltinok/Hisse-Senedi-Analizi-Projesi | README_EN.md</span>
-    <span class="term-tip">-&gt; https://github.com/sarpaltinok/Hisse-Senedi-Analizi-Projesi/blob/9e1d552e0b20dd3e4a1268db67e17e4e121f4d4c/README_EN.md</span>
-
-<span class="term-white">[+] brgkdm/special-bank | Docs/usage.md</span>
-    <span class="term-tip">-&gt; https://github.com/brgkdm/special-bank/blob/ca7b14aafc020dd24988efa60d656622cc7a8f51/Docs/usage.md</span>
-
-<span class="term-white">[+] szabgab/pydigger-data-1 | data/pypi/ex/exc-analyzer.json</span>
-    <span class="term-tip">-&gt; https://github.com/szabgab/pydigger-data-1/blob/1f76d45dccf65d94edf-b8fc596157ec738c9efb/data/pypi/ex/exc-analyzer.json</span></pre>
-                                        <p>Each hit contains three key elements: repository identifier, matched file path, and a direct immutable blob URL. This makes verification straightforward and allows fast triage of where and why the query matched.</p>
-
-                                        <p class="guide-output-label">3) Final summary and warning</p>
-                                        <pre class="guide-output"><span class="term-cyan">[INFO] Total shown: 10</span>
-<span class="term-tip">[WARNING] Use responsibly. You are legally and ethically responsible for the results of this scan.</span></pre>
-                                        <p>The summary line shows how many matches were printed to the console. The warning line is a compliance reminder: always validate findings, respect platform policies, and only use results within legal and ethical boundaries.</p>
-                </div>
-            </article>
-
             <article class="guide-card reveal" id="readme-card">
                 <div class="guide-body">
                     <h3>Open Full README</h3>
@@ -2032,21 +1999,29 @@
         <div class="container footer-content">
             <div style="text-align: left;">
                 <a href="#" class="logo" style="margin-bottom: 12px; display: inline-flex;">EXC</a>
-                <p style="color: var(--text-muted); font-size: 0.9rem;">Advanced GitHub Repository Intelligence Tool.
+                <p style="color: var(--text-muted); font-size: 0.9rem;">Rate a repository before you build on it.</p>
+                <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 12px;">
+                    <a href="/app/terms/" style="color: var(--text-muted);">Terms</a>
+                    <span style="opacity: 0.4; padding: 0 6px;">&middot;</span>
+                    <a href="/app/privacy/" style="color: var(--text-muted);">Privacy</a>
+                    <span style="opacity: 0.4; padding: 0 6px;">&middot;</span>
+                    <a href="/app/methodology/" style="color: var(--text-muted);">How the score works</a>
+                    <span style="opacity: 0.4; padding: 0 6px;">&middot;</span>
+                    <a href="/app/takedown/" style="color: var(--text-muted);">Correction or removal</a>
                 </p>
-                <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 4px;">&copy; 2026 EXC. All
-                    rights reserved.</p>
+                <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 12px; line-height: 1.7; max-width: 460px;">
+                    Operated by Berat G&ouml;kdemir. EXC is an independent project and is not affiliated with, endorsed
+                    by, or sponsored by GitHub, Inc. GitHub is a trademark of GitHub, Inc.
+                </p>
+                <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 12px;">&copy; 2026 EXC.</p>
             </div>
 
             <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 12px;">
                 <div class="social-links">
                     <a href="mailto:exc-analyzer@outlook.com" title="Email"><i data-lucide="mail"></i></a>
-                    <a href="https://github.com/exc-analyzer/exc" target="_blank" title="GitHub"><i
-                            data-lucide="github"></i></a>
-                    <a href="https://www.instagram.com/exc.analyzer/" target="_blank" title="Instagram"><i
-                            data-lucide="instagram"></i></a>
-                    <a href="https://www.youtube.com/@exc-analyzer" target="_blank" title="YouTube"><i
-                            data-lucide="youtube"></i></a>
+                    <a href="https://github.com/exc-analyzer/exc" target="_blank" title="GitHub"><svg class="brand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5a4.3 4.3 0 0 0-1.2-3 4 4 0 0 0-.1-3S17.5 3 15 4.7a13 13 0 0 0-6 0C6.5 3 5.3 3 5.3 3a4 4 0 0 0-.1 3A4.3 4.3 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.4.5-.7 1.2-.8 2V22"/><path d="M9 19c-4.3 1.4-4.3-2.5-6-3"/></svg></a>
+                    <a href="https://www.instagram.com/exc.analyzer/" target="_blank" title="Instagram"><svg class="brand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg></a>
+                    <a href="https://www.youtube.com/@exc-analyzer" target="_blank" title="YouTube"><svg class="brand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17"/><path d="m10 15 5-3-5-3z"/></svg></a>
                 </div>
                 <p style="font-size: 0.85rem; color: var(--text-muted);">
                     Created by <a href="https://berat-gokdemir.web.app/" target="_blank"

@@ -2,15 +2,22 @@
 import '../styles/global.css';
 import FollowingLink from '../components/follow/FollowingLink.tsx';
 import HeaderAuth from '../components/HeaderAuth.tsx';
+import FirstRun from '../components/FirstRun.tsx';
+import AutoSignIn from '../components/AutoSignIn.tsx';
+import MailWatch from '../components/messages/MailWatch.tsx';
 
 interface Props {
   title: string;
   description?: string;
+  width?: 'column' | 'wide';
+  noindex?: boolean;
 }
 
 const {
   title,
   description = 'Analyse GitHub repositories, measure how well they are defended, and share what you find.',
+  width = 'column',
+  noindex = false,
 } = Astro.props;
 
 const path = Astro.url.pathname;
@@ -19,16 +26,43 @@ const ICONS: Record<string, string[]> = {
     'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20Z',
     'm16.24 7.76-2.12 6.36-6.36 2.12 2.12-6.36 6.36-2.12Z',
   ],
+  house: [
+    'M3 10.6 12 3l9 7.6',
+    'M5 9.6V20a1 1 0 0 0 1 1h3.5v-5.5h5V21H18a1 1 0 0 0 1-1V9.6',
+  ],
+  trophy: [
+    'M8 21h8',
+    'M12 17v4',
+    'M7 4h10v5a5 5 0 0 1-10 0Z',
+    'M7 6H4.5A1.5 1.5 0 0 0 3 7.5C3 9.4 4.6 11 6.5 11H7',
+    'M17 6h2.5A1.5 1.5 0 0 1 21 7.5c0 1.9-1.6 3.5-3.5 3.5H17',
+  ],
   search: ['M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16Z', 'm21 21-4.35-4.35'],
+  scan: [
+    'M3 7.5V5a2 2 0 0 1 2-2h2.5',
+    'M16.5 3H19a2 2 0 0 1 2 2v2.5',
+    'M21 16.5V19a2 2 0 0 1-2 2h-2.5',
+    'M7.5 21H5a2 2 0 0 1-2-2v-2.5',
+    'M3 12h18',
+  ],
+  compare: [
+    'M4 5.5A1.5 1.5 0 0 1 5.5 4h3A1.5 1.5 0 0 1 10 5.5v13A1.5 1.5 0 0 1 8.5 20h-3A1.5 1.5 0 0 1 4 18.5Z',
+    'M14 5.5A1.5 1.5 0 0 1 15.5 4h3A1.5 1.5 0 0 1 20 5.5v9a1.5 1.5 0 0 1-1.5 1.5h-3A1.5 1.5 0 0 1 14 14.5Z',
+  ],
   bookmark: ['M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2Z'],
+  reply: [
+    'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z',
+  ],
   shield: ['M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1Z'],
 };
 
 const NAV = [
-  { href: '/app/', label: 'Home', icon: 'compass', active: path === '/app/' || path === '/app' },
-  { href: '/app/explore/', label: 'Explore', icon: 'shield', active: path.startsWith('/app/explore') },
-  { href: '/app/scan/', label: 'Scan', icon: 'search', active: path.startsWith('/app/scan') },
+  { href: '/app/', label: 'Home', icon: 'house', active: path === '/app/' || path === '/app' },
+  { href: '/app/explore/', label: 'Explore', icon: 'search', active: path.startsWith('/app/explore') },
+  { href: '/app/scan/', label: 'Scan', icon: 'scan', active: path.startsWith('/app/scan') },
+  { href: '/app/compare/', label: 'Compare', icon: 'compare', active: path.startsWith('/app/compare') },
   { href: '/app/saved/', label: 'Saved', icon: 'bookmark', active: path.startsWith('/app/saved') },
+  { href: '/app/messages/', label: 'Messages', icon: 'reply', active: path.startsWith('/app/messages') },
 ];
 ---
 
@@ -40,6 +74,7 @@ const NAV = [
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="icon" href="/favicon.png" />
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
 
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="EXC" />
@@ -56,16 +91,29 @@ const NAV = [
       href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap"
       rel="stylesheet"
     />
+    <script is:inline>
+      try {
+        document.documentElement.dataset.density =
+          localStorage.getItem('exc.density') === 'compact' ? 'compact' : 'comfortable';
+        var z = Number(localStorage.getItem('exc.zoom'));
+        if ([90, 100, 110, 125, 150].indexOf(z) !== -1 && z !== 100) {
+          document.documentElement.style.setProperty('--exc-zoom', String(z / 100));
+        }
+        if (localStorage.getItem('exc.profile')) {
+          document.documentElement.dataset.signedIn = '1';
+        }
+      } catch (e) {}
+    </script>
   </head>
 
-  <body class="min-h-screen">
+  <body class="body-fill">
     <div class="relative z-10 mx-auto flex w-full max-w-[1180px]">
       <aside
-        class="sticky top-0 hidden h-screen w-[232px] shrink-0 flex-col border-r border-[var(--color-line)] px-4 py-6 lg:flex"
+        class="side-rail sticky top-0 hidden w-[232px] shrink-0 flex-col border-r border-[var(--color-line)] px-4 py-6 lg:flex"
       >
         <a href="/" class="mb-8 flex items-center gap-2.5 px-3">
-          <img src="/app/logo.png" alt="" width="26" height="26" class="size-[26px]" />
-          <span class="text-sm font-semibold tracking-tight">EXC</span>
+          <img src="/app/logo.png" alt="" width="34" height="34" class="size-[34px]" />
+          <span class="text-lg font-semibold tracking-tight">EXC</span>
         </a>
 
         <nav class="flex flex-col gap-1">
@@ -88,17 +136,101 @@ const NAV = [
                   </svg>
                   {item.label}
                 </span>
+                {item.href === '/app/messages/' && <span data-mail-badge class="nav-badge" hidden />}
               </a>
             ))
           }
-          <FollowingLink client:idle />
+          <a id="social-preview" href="/app/following/" class="nav-item" hidden>
+            <span class="flex items-center gap-2.5">
+              <svg
+                width="17"
+                height="17"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.75"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+              </svg>
+              Social
+            </span>
+          </a>
+          <FollowingLink client:load />
         </nav>
 
-        <div class="mt-auto space-y-4 px-3">
-          <HeaderAuth client:idle />
-          <p class="text-2xs leading-relaxed text-[var(--color-faint)]">
-            Scans run in your browser, on your own GitHub account. Your code never reaches us.
-          </p>
+        <div class="mt-6 space-y-3 border-t border-[var(--color-line)] px-3 pt-6">
+          <div id="account-preview" hidden>
+            <span class="flex w-full items-center gap-2.5 rounded-[var(--radius-control)] px-2 py-1.5">
+              <img
+                alt=""
+                width="28"
+                height="28"
+                class="size-7 rounded-full border-2 bg-[var(--color-raised)] object-cover"
+              />
+              <span
+                data-account-name
+                class="min-w-0 flex-1 truncate text-sm text-[var(--color-text)]"></span>
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.75"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="text-[var(--color-faint)]"
+                aria-hidden="true"
+              >
+                <path d="m9 18 6-6-6-6"></path>
+              </svg>
+            </span>
+          </div>
+          <script is:inline>
+            try {
+              var stored = localStorage.getItem('exc.profile');
+              if (stored) {
+                var who = JSON.parse(stored);
+                var slot = document.getElementById('account-preview');
+                var picture = slot.querySelector('img');
+                var label = slot.querySelector('[data-account-name]');
+                var accents = {
+                  indigo: '#6366f1',
+                  violet: '#8b5cf6',
+                  fuchsia: '#d946ef',
+                  pink: '#ec4899',
+                  sky: '#38bdf8',
+                  cyan: '#22d3ee',
+                  teal: '#2dd4bf',
+                  emerald: '#34d399',
+                  slate: '#94a3b8',
+                };
+                picture.src = who.gh_avatar_url || '';
+                picture.style.borderColor = accents[who.accent] || '#6366f1';
+                label.textContent =
+                  who.name_source === 'custom' && who.display_name
+                    ? who.display_name
+                    : who.gh_name || who.gh_login;
+                slot.hidden = false;
+
+                var social = document.getElementById('social-preview');
+                if (social) {
+                  if (location.pathname.indexOf('/app/following') === 0) {
+                    social.className = 'nav-item nav-item-active';
+                  }
+                  social.hidden = false;
+                }
+              }
+            } catch (e) {}
+          </script>
+          <HeaderAuth client:load />
+        </div>
+
+        <div class="mt-auto px-3 pt-6">
           <a
             href="https://github.com/exc-analyzer/exc"
             class="inline-flex items-center gap-2 text-2xs text-[var(--color-faint)] transition hover:text-[var(--color-muted)]"
@@ -109,19 +241,27 @@ const NAV = [
             </svg>
             Source on GitHub
           </a>
+          <p class="mt-3 text-2xs text-[var(--color-faint)]">
+            <a href="/app/terms/" class="hover:text-[var(--color-muted)]">Terms</a>
+            <span class="px-1 opacity-50">·</span>
+            <a href="/app/privacy/" class="hover:text-[var(--color-muted)]">Privacy</a>
+            <span class="px-1 opacity-50">·</span>
+            <a href="/app/takedown/" class="hover:text-[var(--color-muted)]">Contact</a>
+          </p>
         </div>
       </aside>
 
       <div class="min-w-0 flex-1">
         <header
+          id="mobile-bar"
           class="sticky top-0 z-30 border-b border-[var(--color-line)] bg-[rgba(10,9,18,0.82)] backdrop-blur-xl lg:hidden"
         >
           <div class="flex h-14 items-center justify-between gap-3 px-4">
             <a href="/" class="flex items-center gap-2">
-              <img src="/app/logo.png" alt="" width="24" height="24" class="size-6" />
-              <span class="text-sm font-semibold">EXC</span>
+              <img src="/app/logo.png" alt="" width="30" height="30" class="size-[30px]" />
+              <span class="text-base font-semibold tracking-tight">EXC</span>
             </a>
-            <HeaderAuth client:idle />
+            <HeaderAuth placement="bar" client:load />
           </div>
           <nav class="flex gap-1 overflow-x-auto px-3 pb-2">
             {
@@ -141,23 +281,38 @@ const NAV = [
                     {ICONS[item.icon].map((d) => <path d={d} />)}
                   </svg>
                   {item.label}
+                  {item.href === '/app/messages/' && <span data-mail-badge class="nav-badge" hidden />}
                 </a>
               ))
             }
-            <FollowingLink client:idle />
+            <FollowingLink client:load />
           </nav>
         </header>
 
-        <main class="px-4 py-8 sm:px-8 sm:py-10">
-          <slot />
+        <main
+          class:list={[
+            'px-4 py-8 sm:px-8 sm:py-10',
+            width === 'column' && 'page-inset',
+          ]}
+        >
+          <div class:list={[width === 'wide' ? 'page-wide' : 'page']}>
+            <slot />
+          </div>
         </main>
 
         <footer class="border-t border-[var(--color-line)] px-4 py-6 sm:px-8 lg:hidden">
           <p class="text-2xs text-[var(--color-faint)]">
-            Scans run in your browser, on your own GitHub account.
+            <a href="/app/terms/" class="hover:text-[var(--color-muted)]">Terms</a>
+            <span class="px-1 opacity-50">·</span>
+            <a href="/app/privacy/" class="hover:text-[var(--color-muted)]">Privacy</a>
+            <span class="px-1 opacity-50">·</span>
+            <a href="/app/takedown/" class="hover:text-[var(--color-muted)]">Contact</a>
           </p>
         </footer>
       </div>
     </div>
+    <AutoSignIn client:load />
+    <FirstRun client:load />
+    <MailWatch client:idle />
   </body>
 </html>

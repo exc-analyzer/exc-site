@@ -1,18 +1,14 @@
 ---
 import Base from '../../layouts/Base.astro';
-import Explore from '../../components/explore/Explore.tsx';
+import Discover from '../../components/explore/Discover.tsx';
 import PageHeader from '../../components/console/PageHeader.astro';
 ---
 
 <Base title="EXC - Explore repositories">
-  <div class="mx-auto max-w-[640px]">
-    <PageHeader
-      eyebrow="Explore"
-      title="Which repositories are worth your attention"
-      lead="Built from what everyone here has scanned. No shaming lists: the point is what is holding up and what is getting better."
-    >
-      <a slot="actions" href="/app/scan/" class="btn btn-ghost">Add one</a>
-    </PageHeader>
-    <Explore client:load />
-  </div>
+  <PageHeader
+    eyebrow="Explore"
+    title="Find something worth checking"
+    lead="One search for the whole place: the people here, what they have written, and every repository on GitHub. Pick one and scan it. If it is one you maintain, the result gets a page of its own and a badge for the README."
+  />
+  <Discover client:load />
 </Base>

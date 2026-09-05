@@ -19,8 +19,7 @@ export function shannonEntropy(text: string): number {
   return entropy;
 }
 export function maskSecret(value: string): string {
-  if (value.length <= 8) return '•'.repeat(value.length);
-  return `${value.slice(0, 4)}${'•'.repeat(Math.min(12, value.length - 8))}${value.slice(-4)}`;
+  return '•'.repeat(Math.min(16, Math.max(8, value.length)));
 }
 export function relativeTime(iso: string | null | undefined): string {
   if (!iso) return '—';
@@ -29,12 +28,34 @@ export function relativeTime(iso: string | null | undefined): string {
   const days = Math.floor((Date.now() - then) / 86_400_000);
   if (days < 1) return 'today';
   if (days < 30) return `${days} day${days === 1 ? '' : 's'} ago`;
-  if (days < 365) return `${Math.floor(days / 30)} month${Math.floor(days / 30) === 1 ? '' : 's'} ago`;
-  return `${Math.floor(days / 365)} year${Math.floor(days / 365) === 1 ? '' : 's'} ago`;
+  if (days < 365) {
+    const months = Math.max(1, Math.round(days / 30.44));
+    return `${months} month${months === 1 ? '' : 's'} ago`;
+  }
+  const years = Math.max(1, Math.round(days / 365.25));
+  return `${years} year${years === 1 ? '' : 's'} ago`;
 }
 export function formatDate(iso: string | null | undefined): string {
   if (!iso) return '—';
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '—';
   return d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+}
+
+export async function requirePushAccess(
+  gh: { raw: <T>(path: string) => Promise<{ data: T | null }> },
+  owner: string,
+  repo: string,
+  what: string,
+): Promise<void> {
+  const answer = await gh.raw<{ permissions?: { push?: boolean; admin?: boolean } }>(
+    `/repos/${owner}/${repo}`,
+  );
+  const mine =
+    answer.data?.permissions?.admin === true || answer.data?.permissions?.push === true;
+  if (!mine) {
+    throw new Error(
+      `${what} only runs on repositories you can push to. Looking for secrets in code you do not work on is not something this tool does.`,
+    );
+  }
 }

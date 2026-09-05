@@ -5,16 +5,14 @@ import Inbox from '../../components/follow/Inbox.tsx';
 import PageHeader from '../../components/console/PageHeader.astro';
 ---
 
-<Base title="EXC - Following">
-  <div class="mx-auto max-w-[680px]">
-    <PageHeader
-      eyebrow="Following"
-      title="What moved while you were away"
-      lead="Replies and mentions addressed to you, and every repository you follow with whatever has happened to it since you last looked."
-    />
-    <div class="space-y-8">
-      <Inbox client:load />
-      <FollowingList client:load />
-    </div>
+<Base title="EXC - Social">
+  <PageHeader
+    eyebrow="Social"
+    title="What moved while you were away"
+    lead="Replies and mentions addressed to you, and every repository you follow with whatever has happened to it since you last looked."
+  />
+  <div class="space-y-8">
+    <div><Inbox client:load /></div>
+    <div><FollowingList client:load /></div>
   </div>
 </Base>

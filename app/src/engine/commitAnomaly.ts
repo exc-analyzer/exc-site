@@ -10,7 +10,6 @@ export interface CommitSignal {
 export interface RiskyCommit {
   sha: string;
   message: string;
-  author: string;
   date: string;
   url: string;
   signals: CommitSignal[];
@@ -109,7 +108,6 @@ export async function commitAnomaly(
     risky.push({
       sha: c.sha.slice(0, 7),
       message: subject,
-      author: c.commit.author?.name ?? 'unknown',
       date: c.commit.author?.date ?? '',
       url: c.html_url,
       signals,

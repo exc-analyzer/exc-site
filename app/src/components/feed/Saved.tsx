@@ -1,9 +1,13 @@
-import { useEffect, useState } from 'react';
-import { currentUserId, loadMyLikes, type FeedItem as Item } from '../../lib/feed';
-import { loadMyBookmarks, loadSaved } from '../../lib/social';
-import { supabase } from '../../lib/supabase';
-import { Blank, FeedSkeleton } from '../console/Chrome';
-import FeedItem from './FeedItem';
+import { useEffect, useState } from "react";
+import {
+  currentUserId,
+  loadMyLikes,
+  type FeedItem as Item,
+} from "../../lib/feed";
+import { loadMyBookmarks, loadSaved } from "../../lib/social";
+import { supabase } from "../../lib/supabase";
+import { Blank, FeedSkeleton } from "../console/Chrome";
+import FeedItem from "./FeedItem";
 
 export default function Saved() {
   const [items, setItems] = useState<Item[] | null>(null);
@@ -14,7 +18,10 @@ export default function Saved() {
 
   async function load() {
     const rows = await loadSaved();
-    const [mine, kept] = await Promise.all([loadMyLikes(rows), loadMyBookmarks(rows)]);
+    const [mine, kept] = await Promise.all([
+      loadMyLikes(rows),
+      loadMyBookmarks(rows),
+    ]);
     setLikes(mine);
     setSaved(kept);
     setItems(rows);

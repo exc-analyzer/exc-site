@@ -19,6 +19,8 @@ interface Report {
   summary: Record<string, unknown>;
   scan_count: number;
   updated_at: string;
+  disputed_at?: string | null;
+  disputed_note?: string | null;
 }
 const KIND_NAMES: Record<string, string> = {
   analysis: 'Repository analysis',
@@ -29,8 +31,28 @@ const KIND_NAMES: Record<string, string> = {
   'actions-audit': 'Actions audit',
   'commit-anomaly': 'Commit anomaly',
   'user-analysis': 'User analysis',
-  'user-anomaly': 'User anomaly',
 };
+interface MemberRow {
+  id: string;
+  gh_login: string;
+  accent: string;
+  bio: string | null;
+  created_at: string;
+  shown_name: string;
+  post_count: number;
+  scan_count: number;
+  comment_count: number;
+  follower_count: number;
+}
+
+interface PinRow {
+  owner_id: string;
+  owner: string;
+  repo: string;
+  note: string | null;
+  position: number;
+}
+
 interface FeedRow {
   kind: string;
   id: string;
@@ -50,9 +72,39 @@ async function fetchFeed(): Promise<FeedRow[]> {
   return (await res.json()) as FeedRow[];
 }
 
+async function fetchMembers(): Promise<MemberRow[]> {
+  const url = new URL('/rest/v1/member_profile', SUPABASE_URL);
+  url.searchParams.set(
+    'select',
+    'id,gh_login,accent,bio,created_at,shown_name,post_count,scan_count,comment_count,follower_count',
+  );
+  url.searchParams.set('private_account', 'is.false');
+  url.searchParams.set('limit', '500');
+  const res = await fetch(url, {
+    headers: { apikey: SUPABASE_KEY!, Authorization: `Bearer ${SUPABASE_KEY}` },
+  });
+  if (!res.ok) return [];
+  return (await res.json()) as MemberRow[];
+}
+
+async function fetchPins(): Promise<PinRow[]> {
+  const url = new URL('/rest/v1/pinned_repos', SUPABASE_URL);
+  url.searchParams.set('select', 'owner_id,owner,repo,note,position');
+  url.searchParams.set('order', 'position.asc');
+  url.searchParams.set('limit', '1500');
+  const res = await fetch(url, {
+    headers: { apikey: SUPABASE_KEY!, Authorization: `Bearer ${SUPABASE_KEY}` },
+  });
+  if (!res.ok) return [];
+  return (await res.json()) as PinRow[];
+}
+
 async function fetchReports(): Promise<Report[]> {
-  const url = new URL('/rest/v1/reports', SUPABASE_URL);
-  url.searchParams.set('select', 'id,owner,repo,kind,score,summary,scan_count,updated_at');
+  const url = new URL('/rest/v1/report_card', SUPABASE_URL);
+  url.searchParams.set(
+    'select',
+    'id,owner,repo,kind,score,summary,scan_count,updated_at,disputed_at,disputed_note',
+  );
   url.searchParams.set('order', 'updated_at.desc');
   url.searchParams.set('limit', String(MAX_PAGES));
   const res = await fetch(url, {
@@ -61,7 +113,14 @@ async function fetchReports(): Promise<Report[]> {
   if (!res.ok) {
     throw new Error(`Supabase ${res.status}: ${await res.text()}`);
   }
-  return (await res.json()) as Report[];
+  const rows = (await res.json()) as Report[];
+  const clean = rows.filter((r) => nameIsSafe(r.owner, r.repo));
+  if (clean.length !== rows.length) {
+    console.warn(
+      `Skipped ${rows.length - clean.length} report(s) whose owner or repository name is not a plain GitHub name.`,
+    );
+  }
+  return clean;
 }
 function escapeHtml(value: string): string {
   return value
@@ -93,8 +152,6 @@ function describe(report: Report): string {
       return `Community standards for ${target}: the state of LICENSE, SECURITY.md, CONTRIBUTING and README.`;
     case 'actions-audit':
       return `Supply-chain and script-injection risks in the GitHub Actions workflows of ${target}.`;
-    case 'user-anomaly':
-      return `Behaviour analysis for the ${target} account. Risk score: ${report.score}/100.`;
     default:
       return `${KIND_NAMES[report.kind] ?? report.kind} report for ${target}.`;
   }
@@ -134,12 +191,12 @@ function buildPage(shell: string, report: Report): string {
   const head = [
     `<title>${escapeHtml(title)}</title>`,
     `<meta name="description" content="${escapeHtml(description)}">`,
-    `<link rel="canonical" href="${canonical}">`,
+    `<link rel="canonical" href="${escapeHtml(canonical)}">`,
     `<meta property="og:type" content="article">`,
     `<meta property="og:title" content="${escapeHtml(title)}">`,
     `<meta property="og:description" content="${escapeHtml(description)}">`,
-    `<meta property="og:url" content="${canonical}">`,
-    `<meta property="og:image" content="${cardSrc(report.owner, report.repo, report.updated_at.slice(0, 10))}">`,
+    `<meta property="og:url" content="${escapeHtml(canonical)}">`,
+    `<meta property="og:image" content="${escapeHtml(cardSrc(report.owner, report.repo, report.updated_at.slice(0, 10)))}">`,
     `<meta property="og:image:width" content="1200">`,
     `<meta property="og:image:height" content="630">`,
     `<meta name="twitter:card" content="summary_large_image">`,
@@ -154,6 +211,14 @@ function buildPage(shell: string, report: Report): string {
       <h1>${escapeHtml(target)} — ${escapeHtml(kindName)}</h1>
       <p>${escapeHtml(description)}</p>
       ${summaryHtml(report)}
+      ${
+        report.disputed_at
+          ? `<p><strong>Disputed.</strong> ${escapeHtml(
+              report.disputed_note ??
+                'Somebody has told us this result is wrong. It is being looked at.',
+            )}</p>`
+          : ''
+      }
       <p>Last updated ${report.updated_at.slice(0, 10)} · scanned ${report.scan_count} times</p>
     </div>`;
 
@@ -200,16 +265,10 @@ function cardFor(target: Target): CardData {
   const security = target.reports.find((r) => r.kind === 'security-score');
   const score = security?.score ?? null;
 
-  let headline: string;
-  if (score === null) {
-    headline = `${target.reports.length} report${target.reports.length === 1 ? '' : 's'} on record`;
-  } else if (score >= 90) {
-    headline = 'Well defended';
-  } else if (score >= 75) {
-    headline = 'The basics are there, a few gaps remain';
-  } else {
-    headline = 'Several important things are missing';
-  }
+  const headline =
+    score === null
+      ? `${target.reports.length} report${target.reports.length === 1 ? '' : 's'} on record`
+      : `${score}/100 on the public checks`;
 
   const facts: CardFact[] = [];
   if (security) {
@@ -260,7 +319,7 @@ function hubSummaryHtml(target: Target): string {
   const items = target.reports.map((report) => {
     const name = KIND_NAMES[report.kind] ?? report.kind;
     const score = report.score !== null ? ` — ${report.score}/100` : '';
-    return `<li><a href="${reportUrl(report)}">${escapeHtml(name)}</a>${score} · updated ${report.updated_at.slice(0, 10)}</li>`;
+    return `<li><a href="${escapeHtml(reportUrl(report))}">${escapeHtml(name)}</a>${score} · updated ${escapeHtml(report.updated_at.slice(0, 10))}</li>`;
   });
   return `<ul>${items.join('')}</ul>`;
 }
@@ -273,12 +332,12 @@ function buildHub(shell: string, target: Target): string {
   const head = [
     `<title>${escapeHtml(title)}</title>`,
     `<meta name="description" content="${escapeHtml(description)}">`,
-    `<link rel="canonical" href="${canonical}">`,
+    `<link rel="canonical" href="${escapeHtml(canonical)}">`,
     `<meta property="og:type" content="website">`,
     `<meta property="og:title" content="${escapeHtml(title)}">`,
     `<meta property="og:description" content="${escapeHtml(description)}">`,
-    `<meta property="og:url" content="${canonical}">`,
-    `<meta property="og:image" content="${cardSrc(target.owner, target.repo, cardVersion(target.reports))}">`,
+    `<meta property="og:url" content="${escapeHtml(canonical)}">`,
+    `<meta property="og:image" content="${escapeHtml(cardSrc(target.owner, target.repo, cardVersion(target.reports)))}">`,
     `<meta property="og:image:width" content="1200">`,
     `<meta property="og:image:height" content="630">`,
     `<meta name="twitter:card" content="summary_large_image">`,
@@ -298,8 +357,100 @@ function buildHub(shell: string, target: Target): string {
     .replace(/(<body[^>]*>)/, `$1${readable}`);
 }
 
+function memberUrl(login: string): string {
+  return `/app/people/${login}/`;
+}
+
+function memberCardPath(login: string): string {
+  return `/og/p/${login}.png`;
+}
+
+function memberDescription(member: MemberRow, pins: PinRow[]): string {
+  const bio = member.bio?.trim();
+  if (bio) return bio.length > 180 ? `${bio.slice(0, 177)}…` : bio;
+  const looks = pins.length > 0 ? ` Looks after ${pins.map((p) => `${p.owner}/${p.repo}`).join(', ')}.` : '';
+  return `${member.shown_name} on EXC: ${member.scan_count} scan${member.scan_count === 1 ? '' : 's'}, ${member.post_count} post${member.post_count === 1 ? '' : 's'} and ${member.comment_count} repl${member.comment_count === 1 ? 'y' : 'ies'}.${looks}`;
+}
+
+function memberCard(member: MemberRow, pins: PinRow[]): CardData {
+  const facts: CardFact[] = pins.slice(0, 2).map((pin) => ({ text: `${pin.owner}/${pin.repo}` }));
+  if (facts.length < 3) {
+    facts.push({ text: `${member.scan_count} scan${member.scan_count === 1 ? '' : 's'}` });
+  }
+  if (facts.length < 3) {
+    facts.push({ text: `${member.post_count} post${member.post_count === 1 ? '' : 's'}` });
+  }
+  return {
+    label: `@${member.gh_login}`,
+    score: null,
+    headline: member.shown_name,
+    facts: facts.slice(0, 3),
+    url: `${SITE.replace(/^https?:\/\//, '')}${memberUrl(member.gh_login)}`.replace(/\/$/, ''),
+    tagline: 'Who is looking at what',
+  };
+}
+
+function buildMember(shell: string, member: MemberRow, pins: PinRow[]): string {
+  const title = `${member.shown_name} (@${member.gh_login}) · EXC`;
+  const description = memberDescription(member, pins);
+  const canonical = `${SITE}${memberUrl(member.gh_login)}`;
+  const head = [
+    `<title>${escapeHtml(title)}</title>`,
+    `<meta name="description" content="${escapeHtml(description)}">`,
+    `<link rel="canonical" href="${escapeHtml(canonical)}">`,
+    `<meta property="og:type" content="profile">`,
+    `<meta property="og:title" content="${escapeHtml(title)}">`,
+    `<meta property="og:description" content="${escapeHtml(description)}">`,
+    `<meta property="og:url" content="${escapeHtml(canonical)}">`,
+    `<meta property="og:image" content="${escapeHtml(`${SITE}${memberCardPath(member.gh_login)}?v=${member.created_at.slice(0, 10)}`)}">`,
+    `<meta property="og:image:width" content="1200">`,
+    `<meta property="og:image:height" content="630">`,
+    `<meta name="twitter:card" content="summary_large_image">`,
+  ].join('\n    ');
+
+  const pinList =
+    pins.length > 0
+      ? `<ul>${pins
+          .map(
+            (pin) =>
+              `<li><a href="/app/r/${pin.owner}/${pin.repo}/">${escapeHtml(`${pin.owner}/${pin.repo}`)}</a>${
+                pin.note ? ` — ${escapeHtml(pin.note)}` : ''
+              }</li>`,
+          )
+          .join('')}</ul>`
+      : '';
+
+  const readable = `
+    <div id="exc-prerendered">
+      <h1>${escapeHtml(member.shown_name)}</h1>
+      <p>${escapeHtml(description)}</p>
+      ${pinList}
+      <p><a href="https://github.com/${escapeHtml(member.gh_login)}">@${escapeHtml(member.gh_login)} on GitHub</a></p>
+    </div>`;
+
+  return shell
+    .replace(/<title>[\s\S]*?<\/title>/, '')
+    .replace(/<meta\s+name="description"[^>]*>/, '')
+    .replace(/\s*<meta\s+(?:property="og:|name="twitter:)[^>]*>/g, '')
+    .replace('</head>', `    ${head}\n  </head>`)
+    .replace(/(<body[^>]*>)/, `$1${readable}`);
+}
+
+const OWNER_SHAPE = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$/;
+const REPO_SHAPE = /^[A-Za-z0-9._-]{1,100}$/;
+
+function nameIsSafe(owner: string, repo: string): boolean {
+  if (!OWNER_SHAPE.test(owner)) return false;
+  if (repo !== '' && !REPO_SHAPE.test(repo)) return false;
+  return repo !== '.' && repo !== '..';
+}
+
 async function writeFile(relativePath: string, content: string): Promise<void> {
-  const full = path.join(PUBLIC_DIR, relativePath);
+  const full = path.resolve(PUBLIC_DIR, relativePath);
+  const root = path.resolve(PUBLIC_DIR);
+  if (full !== root && !full.startsWith(root + path.sep)) {
+    throw new Error(`Refused to write outside the public directory: ${relativePath}`);
+  }
   await fs.mkdir(path.dirname(full), { recursive: true });
   await fs.writeFile(full, content, 'utf8');
 }
@@ -308,6 +459,13 @@ async function main(): Promise<void> {
   console.log(`Fetched ${reports.length} reports.`);
 
   const shell = await fs.readFile(path.join(PUBLIC_DIR, 'app/r/index.html'), 'utf8');
+
+  await fs.rm(path.join(PUBLIC_DIR, 'badge'), { recursive: true, force: true });
+  await fs.rm(path.join(PUBLIC_DIR, 'app/r'), { recursive: true, force: true });
+  await fs.rm(path.join(PUBLIC_DIR, 'og/r'), { recursive: true, force: true });
+  await fs.rm(path.join(PUBLIC_DIR, 'og/p'), { recursive: true, force: true });
+  await fs.rm(path.join(PUBLIC_DIR, 'og/u'), { recursive: true, force: true });
+  await writeFile('app/r/index.html', shell);
   let badges = 0;
   let pages = 0;
   const urls: { loc: string; lastmod: string }[] = [];
@@ -344,10 +502,36 @@ async function main(): Promise<void> {
       .at(-1)!;
     urls.unshift({ loc: `${SITE}${url}`, lastmod });
   }
+  const members = await fetchMembers();
+  const pinRows = await fetchPins();
+  const pinsByOwner = new Map<string, PinRow[]>();
+  for (const pin of pinRows) {
+    const list = pinsByOwner.get(pin.owner_id) ?? [];
+    list.push(pin);
+    pinsByOwner.set(pin.owner_id, list);
+  }
+
+  const peopleShell = await fs.readFile(path.join(PUBLIC_DIR, 'app/people/index.html'), 'utf8');
+  for (const member of members) {
+    const theirPins = pinsByOwner.get(member.id) ?? [];
+    const url = memberUrl(member.gh_login);
+    await writeFile(
+      `${url.replace(/^\//, '').replace(/\/$/, '')}/index.html`,
+      buildMember(peopleShell, member, theirPins),
+    );
+    pages += 1;
+  }
+
   const cards = targets.map((target) => ({
     data: cardFor(target),
     outPath: cardPath(target.owner, target.repo).replace(/^\//, ''),
   }));
+  for (const member of members) {
+    cards.push({
+      data: memberCard(member, pinsByOwner.get(member.id) ?? []),
+      outPath: memberCardPath(member.gh_login).replace(/^\//, ''),
+    });
+  }
   cards.push({
     data: {
       label: 'EXC',
@@ -363,13 +547,23 @@ async function main(): Promise<void> {
 
   const feedRows = await fetchFeed();
   const posts = feedRows.filter((row) => row.kind === 'post');
-  const people = [...new Set(feedRows.map((row) => row.author_login).filter(Boolean))] as string[];
+  const lastSeen = new Map<string, string>();
+  for (const row of feedRows) {
+    if (!row.author_login) continue;
+    const seen = lastSeen.get(row.author_login);
+    const day = row.happened_at.slice(0, 10);
+    if (!seen || day > seen) lastSeen.set(row.author_login, day);
+  }
+  const people = members.map((member) => member.gh_login);
 
   for (const post of posts) {
     urls.push({ loc: `${SITE}/app/p/${post.id}/`, lastmod: post.happened_at.slice(0, 10) });
   }
-  for (const login of people) {
-    urls.push({ loc: `${SITE}/app/people/${login}/`, lastmod: new Date().toISOString().slice(0, 10) });
+  for (const member of members) {
+    urls.push({
+      loc: `${SITE}${memberUrl(member.gh_login)}`,
+      lastmod: lastSeen.get(member.gh_login) ?? member.created_at.slice(0, 10),
+    });
   }
   urls.unshift({ loc: `${SITE}/app/explore/`, lastmod: new Date().toISOString().slice(0, 10) });
 

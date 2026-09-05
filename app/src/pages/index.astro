@@ -2,13 +2,15 @@
 import Base from '../layouts/Base.astro';
 import Feed from '../components/feed/Feed.tsx';
 import PageHeader from '../components/console/PageHeader.astro';
+import SendFeedback from '../components/feedback/SendFeedback.tsx';
 ---
 
 <Base title="EXC - What people are finding">
-  <div class="mx-auto max-w-[620px]">
-    <PageHeader eyebrow="Home" title="What people are finding">
-      <a slot="actions" href="/app/scan/" class="btn btn-primary">Scan a repository</a>
-    </PageHeader>
-    <Feed client:load />
-  </div>
+  <PageHeader eyebrow="Home" title="What people are finding">
+    <Fragment slot="actions">
+      <SendFeedback client:idle />
+      <a href="/app/scan/" class="btn btn-primary">Scan a repository</a>
+    </Fragment>
+  </PageHeader>
+  <Feed client:load />
 </Base>

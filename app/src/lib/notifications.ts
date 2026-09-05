@@ -1,5 +1,5 @@
-import { supabase } from './supabase';
-import type { CommandId } from '../engine';
+import { supabase } from "./supabase";
+import type { CommandId } from "../engine";
 
 export interface Reply {
   id: string;
@@ -10,14 +10,14 @@ export interface Reply {
   from_avatar: string | null;
   post_id: string | null;
   report_id: string | null;
-  on_what: 'post' | 'report' | 'comment';
+  on_what: "post" | "report" | "comment";
   report_owner: string | null;
   report_repo: string | null;
   report_kind: CommandId | null;
 }
 
 const COLUMNS =
-  'id, body, created_at, from_id, from_login, from_avatar, post_id, report_id, on_what, report_owner, report_repo, report_kind';
+  "id, body, created_at, from_id, from_login, from_avatar, post_id, report_id, on_what, report_owner, report_repo, report_kind";
 
 async function me(): Promise<string | null> {
   if (!supabase) return null;
@@ -31,14 +31,14 @@ export async function loadMyReplies(limit = 30): Promise<Reply[]> {
   if (!userId) return [];
 
   const { data, error } = await supabase
-    .from('my_replies')
+    .from("my_replies")
     .select(COLUMNS)
-    .eq('to_id', userId)
-    .neq('from_id', userId)
-    .order('created_at', { ascending: false })
+    .eq("to_id", userId)
+    .neq("from_id", userId)
+    .order("created_at", { ascending: false })
     .limit(limit);
   if (error) {
-    console.warn('Could not load replies:', error.message);
+    console.warn("Could not load replies:", error.message);
     return [];
   }
   return (data as unknown as Reply[]) ?? [];
@@ -49,9 +49,9 @@ export async function lastSeenAt(): Promise<string | null> {
   const userId = await me();
   if (!userId) return null;
   const { data, error } = await supabase
-    .from('profiles')
-    .select('notifications_seen_at')
-    .eq('id', userId)
+    .from("profiles")
+    .select("notifications_seen_at")
+    .eq("id", userId)
     .maybeSingle();
   if (error || !data) return null;
   return (data as { notifications_seen_at: string }).notifications_seen_at;
@@ -62,14 +62,14 @@ export function unseen(replies: Reply[], since: string | null): number {
   return replies.filter((r) => r.created_at > since).length;
 }
 
-export async function markSeen(): Promise<void> {
+export async function markSeen(upTo?: string): Promise<void> {
   if (!supabase) return;
   const userId = await me();
   if (!userId) return;
   await supabase
-    .from('profiles')
-    .update({ notifications_seen_at: new Date().toISOString() })
-    .eq('id', userId);
+    .from("profiles")
+    .update({ notifications_seen_at: upTo ?? new Date().toISOString() })
+    .eq("id", userId);
 }
 
 export interface Mention {
@@ -89,20 +89,20 @@ export interface Mention {
 }
 
 const MENTION_COLUMNS =
-  'id, created_at, from_id, from_login, from_avatar, post_id, comment_id, body, report_id, comment_post_id, report_owner, report_repo, report_kind';
+  "id, created_at, from_id, from_login, from_avatar, post_id, comment_id, body, report_id, comment_post_id, report_owner, report_repo, report_kind";
 
 export async function loadMyMentions(limit = 30): Promise<Mention[]> {
   if (!supabase) return [];
   const userId = await me();
   if (!userId) return [];
   const { data, error } = await supabase
-    .from('my_mentions')
+    .from("my_mentions")
     .select(MENTION_COLUMNS)
-    .eq('to_id', userId)
-    .order('created_at', { ascending: false })
+    .eq("to_id", userId)
+    .order("created_at", { ascending: false })
     .limit(limit);
   if (error) {
-    console.warn('Could not load mentions:', error.message);
+    console.warn("Could not load mentions:", error.message);
     return [];
   }
   return (data as unknown as Mention[]) ?? [];
@@ -116,12 +116,55 @@ export function mentionHref(mention: Mention): string {
       ? `/app/r/${mention.report_owner}/${mention.report_repo}/${mention.report_kind}/`
       : `/app/u/${mention.report_owner}/${mention.report_kind}/`;
   }
-  return '/app/';
+  return "/app/";
 }
 
-export function unseenMentions(mentions: Mention[], since: string | null): number {
+export function unseenMentions(
+  mentions: Mention[],
+  since: string | null,
+): number {
   if (!since) return 0;
   return mentions.filter((m) => m.created_at > since).length;
+}
+
+export async function markSeenForTarget(target: {
+  kind: "post" | "report";
+  id: string;
+}): Promise<boolean> {
+  const [replies, mentions, seen] = await Promise.all([
+    loadMyReplies(),
+    loadMyMentions(),
+    lastSeenAt(),
+  ]);
+
+  const fresh = (at: string) => !seen || at > seen;
+
+  const mine = [
+    ...replies
+      .filter(
+        (r) =>
+          fresh(r.created_at) &&
+          (target.kind === "post"
+            ? r.post_id === target.id
+            : r.report_id === target.id),
+      )
+      .map((r) => r.created_at),
+    ...mentions
+      .filter(
+        (m) =>
+          fresh(m.created_at) &&
+          (target.kind === "post"
+            ? m.post_id === target.id || m.comment_post_id === target.id
+            : m.report_id === target.id),
+      )
+      .map((m) => m.created_at),
+  ];
+
+  if (mine.length === 0) return false;
+
+  const newest = mine.reduce((a, b) => (a > b ? a : b));
+  await markSeen(newest);
+  return true;
 }
 
 export function replyHref(reply: Reply): string {
@@ -131,5 +174,5 @@ export function replyHref(reply: Reply): string {
       ? `/app/r/${reply.report_owner}/${reply.report_repo}/${reply.report_kind}/`
       : `/app/u/${reply.report_owner}/${reply.report_kind}/`;
   }
-  return '/app/';
+  return "/app/";
 }

@@ -12,7 +12,7 @@ export interface SecurityScoreResult {
   owner: string;
   repo: string;
   score: number;
-  verdict: 'excellent' | 'good' | 'weak';
+  checksPassed: number;
   criteria: Criterion[];
   evaluatedCount: number;
   unknownCount: number;
@@ -20,6 +20,7 @@ export interface SecurityScoreResult {
 }
 
 interface RepoInfo {
+  full_name?: string;
   license: { spdx_id?: string | null; name?: string | null } | null;
   has_issues: boolean;
   has_wiki: boolean;
@@ -50,13 +51,23 @@ function licenseLabel(license: RepoInfo['license']): string {
   if (license.name && license.name !== 'Other') return license.name;
   return 'Present, but GitHub could not identify it';
 }
+export type ScoreStep = (label: string, done: number, total: number) => void;
+
+const STEP_COUNT = 5;
+
 export async function securityScore(
   gh: GitHubClient,
   owner: string,
   repo: string,
+  onStep?: ScoreStep,
 ): Promise<SecurityScoreResult> {
+  const step = (label: string, done: number) =>
+    onStep?.(label, done, STEP_COUNT);
+
+  step('Reading the repository', 0);
   const info = await gh.get<RepoInfo>(`/repos/${owner}/${repo}`);
   const isAdmin = info.permissions?.admin === true;
+  const [realOwner, realRepo] = (info.full_name ?? `${owner}/${repo}`).split("/");
   const criteria: Criterion[] = [];
   criteria.push({
     id: 'license',
@@ -81,36 +92,27 @@ export async function securityScore(
   criteria.push({
     id: 'wiki',
     label: 'Wiki',
-    weight: 5,
-    status: info.has_wiki ? 'pass' : 'fail',
-    detail: info.has_wiki ? 'Open' : 'Disabled',
-    fix: info.has_wiki
-      ? undefined
-      : 'Enable the wiki, or keep the documentation in the README instead.',
+    weight: 0,
+    status: 'unknown',
+    detail: info.has_wiki ? 'Open' : 'Disabled (not scored)',
   });
   criteria.push({
     id: 'projects',
     label: 'Projects',
-    weight: 5,
-    status: info.has_projects ? 'pass' : 'fail',
-    detail: info.has_projects ? 'Open' : 'Disabled',
-    fix: info.has_projects
-      ? undefined
-      : 'With Projects enabled, outsiders can follow where the work is heading.',
+    weight: 0,
+    status: 'unknown',
+    detail: info.has_projects ? 'Open' : 'Disabled (not scored)',
   });
   const open = info.open_issues_count ?? 0;
   criteria.push({
     id: 'open_issues',
     label: 'Open issues',
-    weight: open > 50 ? 10 : 5,
-    status: open > 10 ? 'fail' : 'pass',
-    detail: String(open),
-    fix:
-      open > 10
-        ? 'Triage the backlog — a security report may be sitting unread among them.'
-        : undefined,
+    weight: 0,
+    status: 'unknown',
+    detail: `${open} (not scored)`,
   });
 
+  step('Looking for a security policy', 1);
   const hasSecurity = await fileExists(gh, owner, repo, [
     'SECURITY.md',
     '.github/SECURITY.md',
@@ -127,6 +129,7 @@ export async function securityScore(
         ? 'Add SECURITY.md so someone who finds a vulnerability knows how to reach you privately.'
         : undefined,
   });
+  step('Checking branch protection', 2);
   const prot = await gh.raw(
     `/repos/${owner}/${repo}/branches/${info.default_branch}/protection`,
   );
@@ -153,6 +156,7 @@ export async function securityScore(
         ? 'Protect the default branch: block force pushes and merges without review.'
         : undefined,
   });
+  step('Looking for a dependency bot', 4);
   const hasDependabot = await fileExists(gh, owner, repo, [
     '.github/dependabot.yml',
     '.github/dependabot.yaml',
@@ -168,6 +172,7 @@ export async function securityScore(
         ? 'Add .github/dependabot.yml so dependency updates arrive as pull requests instead of piling up.'
         : undefined,
   });
+  step('Asking about code scanning', 3);
   const scan = await gh.raw<unknown[]>(`/repos/${owner}/${repo}/code-scanning/alerts`);
   let scanStatus: CriterionStatus;
   let scanDetail: string;
@@ -194,11 +199,12 @@ export async function securityScore(
     .filter((c) => c.status === 'fail')
     .reduce((sum, c) => sum + c.weight, 0);
   const score = Math.max(0, 100 - lost);
+  step('Adding it up', STEP_COUNT);
   return {
-    owner,
-    repo,
+    owner: realOwner,
+    repo: realRepo,
     score,
-    verdict: score >= 90 ? 'excellent' : score >= 75 ? 'good' : 'weak',
+    checksPassed: criteria.filter((c) => c.status === 'pass').length,
     criteria,
     evaluatedCount: criteria.filter((c) => c.status !== 'unknown').length,
     unknownCount: criteria.filter((c) => c.status === 'unknown').length,

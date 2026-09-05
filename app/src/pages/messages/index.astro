@@ -1,0 +1,23 @@
+---
+import Base from '../../layouts/Base.astro';
+import Messages from '../../components/messages/Messages.tsx';
+import PageHeader from '../../components/console/PageHeader.astro';
+---
+
+<Base title="EXC - Messages" noindex width="wide">
+  <div id="messages-intro">
+    <PageHeader
+      eyebrow="Messages"
+      title="Between people who follow each other"
+      lead="Only somebody you follow, who follows you back, can write to you. Nobody else can see what you write here, moderators included, unless one of you reports a message."
+    />
+  </div>
+  <Messages client:load />
+</Base>
+
+<script is:inline>
+  if (new URLSearchParams(location.search).get('with')) {
+    const el = document.getElementById('messages-intro');
+    if (el) el.hidden = true;
+  }
+</script>

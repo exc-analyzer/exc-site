@@ -1,5 +1,6 @@
 import { GitHubClient } from '../lib/github';
 import { findSecrets, isSuspectPath, mapWithLimit, type SecretMatch } from './secretPatterns';
+import { requirePushAccess } from './shared';
 export interface DeepFinding {
   type: string;
   masked: string;
@@ -37,6 +38,8 @@ export async function advancedSecrets(
   repo: string,
   commitLimit = 20,
 ): Promise<AdvancedSecretsResult> {
+  await requirePushAccess(gh, owner, repo, 'Deep secret scan');
+
   const findings: DeepFinding[] = [];
   let filesScanned = 0;
   const treeRes = await gh.raw<TreeResponse>(`/repos/${owner}/${repo}/git/trees/HEAD`, {

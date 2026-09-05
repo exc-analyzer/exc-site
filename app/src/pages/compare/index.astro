@@ -1,0 +1,14 @@
+---
+import Base from '../../layouts/Base.astro';
+import Compare from '../../components/compare/Compare.tsx';
+import PageHeader from '../../components/console/PageHeader.astro';
+---
+
+<Base title="EXC - Compare two repositories" width="wide">
+  <PageHeader
+    eyebrow="Compare"
+    title="Which one would you rather depend on?"
+    lead="Two repositories, the same checks, side by side. Both run in your browser against public GitHub data. Nothing is published and nothing is stored."
+  />
+  <Compare client:load />
+</Base>

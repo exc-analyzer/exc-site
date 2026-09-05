@@ -1,37 +1,43 @@
-import type { ReactNode } from 'react';
-import Icon from '../Icon';
+import type { ReactNode } from "react";
+import Icon from "../Icon";
 
-export type Tone = 'good' | 'warn' | 'bad' | 'muted' | 'info';
+export type Tone = "good" | "warn" | "bad" | "muted" | "info";
 
 const TONE_VAR: Record<Tone, string> = {
-  good: 'var(--color-good)',
-  warn: 'var(--color-warn)',
-  bad: 'var(--color-bad)',
-  muted: 'var(--color-muted)',
-  info: 'var(--color-info)',
+  good: "var(--color-good)",
+  warn: "var(--color-warn)",
+  bad: "var(--color-bad)",
+  muted: "var(--color-muted)",
+  info: "var(--color-info)",
 };
 
 const TONE_TEXT: Record<Tone, string> = {
-  good: 'text-[var(--color-good)]',
-  warn: 'text-[var(--color-warn)]',
-  bad: 'text-[var(--color-bad)]',
-  muted: 'text-[var(--color-muted)]',
-  info: 'text-[var(--color-info)]',
+  good: "text-[var(--color-good)]",
+  warn: "text-[var(--color-warn)]",
+  bad: "text-[var(--color-bad)]",
+  muted: "text-[var(--color-muted)]",
+  info: "text-[var(--color-info)]",
 };
 
 const TONE_CHIP: Record<Tone, string> = {
-  good: 'border-[color-mix(in_srgb,var(--color-good)_38%,transparent)] bg-[color-mix(in_srgb,var(--color-good)_12%,transparent)] text-[var(--color-good)]',
-  warn: 'border-[color-mix(in_srgb,var(--color-warn)_38%,transparent)] bg-[color-mix(in_srgb,var(--color-warn)_12%,transparent)] text-[var(--color-warn)]',
-  bad: 'border-[color-mix(in_srgb,var(--color-bad)_38%,transparent)] bg-[color-mix(in_srgb,var(--color-bad)_12%,transparent)] text-[var(--color-bad)]',
-  muted: 'border-[var(--color-line)] bg-transparent text-[var(--color-muted)]',
-  info: 'border-[color-mix(in_srgb,var(--color-info)_38%,transparent)] bg-[color-mix(in_srgb,var(--color-info)_12%,transparent)] text-[var(--color-info)]',
+  good: "border-[color-mix(in_srgb,var(--color-good)_38%,transparent)] bg-[color-mix(in_srgb,var(--color-good)_12%,transparent)] text-[var(--color-good)]",
+  warn: "border-[color-mix(in_srgb,var(--color-warn)_38%,transparent)] bg-[color-mix(in_srgb,var(--color-warn)_12%,transparent)] text-[var(--color-warn)]",
+  bad: "border-[color-mix(in_srgb,var(--color-bad)_38%,transparent)] bg-[color-mix(in_srgb,var(--color-bad)_12%,transparent)] text-[var(--color-bad)]",
+  muted: "border-[var(--color-line)] bg-transparent text-[var(--color-muted)]",
+  info: "border-[color-mix(in_srgb,var(--color-info)_38%,transparent)] bg-[color-mix(in_srgb,var(--color-info)_12%,transparent)] text-[var(--color-info)]",
 };
 
 export function toneText(tone: Tone): string {
   return TONE_TEXT[tone];
 }
 
-export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
+export function Card({
+  children,
+  className = "",
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
   return (
     <section
       className={`rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-surface)] ${className}`}
@@ -53,8 +59,12 @@ export function CardHead({
   return (
     <header className="flex flex-wrap items-start justify-between gap-4 border-b border-[var(--color-line)] px-6 py-4">
       <div className="min-w-0">
-        <h2 className="truncate font-mono text-sm text-[var(--color-text)]">{title}</h2>
-        {subtitle && <p className="mt-1 text-xs text-[var(--color-muted)]">{subtitle}</p>}
+        <h2 className="truncate font-mono text-sm text-[var(--color-text)]">
+          {title}
+        </h2>
+        {subtitle && (
+          <p className="mt-1 text-xs text-[var(--color-muted)]">{subtitle}</p>
+        )}
       </div>
       {right}
     </header>
@@ -65,7 +75,11 @@ export function SectionTitle({ children }: { children: ReactNode }) {
   return <h3 className="eyebrow mb-4">{children}</h3>;
 }
 
-export function Stats({ items }: { items: { label: string; value: ReactNode }[] }) {
+export function Stats({
+  items,
+}: {
+  items: { label: string; value: ReactNode }[];
+}) {
   return (
     <dl className="grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-4">
       {items.map((item) => (
@@ -82,11 +96,18 @@ export function Stats({ items }: { items: { label: string; value: ReactNode }[] 
   );
 }
 
-export function KeyValues({ items }: { items: { label: string; value: ReactNode }[] }) {
+export function KeyValues({
+  items,
+}: {
+  items: { label: string; value: ReactNode }[];
+}) {
   return (
     <dl className="divide-y divide-[var(--color-line)]">
       {items.map((item) => (
-        <div key={item.label} className="flex items-baseline justify-between gap-4 py-2.5 text-sm">
+        <div
+          key={item.label}
+          className="flex items-baseline justify-between gap-4 py-2.5 text-sm"
+        >
           <dt className="shrink-0 text-[var(--color-muted)]">{item.label}</dt>
           <dd className="min-w-0 truncate text-right">{item.value}</dd>
         </div>
@@ -114,10 +135,14 @@ export function ScoreRing({
   tone: Tone;
   size?: number;
 }) {
-  const stroke = 7;
+  const stroke = Math.max(3, Math.round(size * 0.075));
   const radius = (size - stroke) / 2;
   const circumference = 2 * Math.PI * radius;
   const filled = (Math.max(0, Math.min(100, value)) / 100) * circumference;
+  const label = Math.round(Math.max(0, Math.min(100, value)));
+  const fontSize = Math.round(
+    (size - stroke * 2) / (String(label).length > 2 ? 2.5 : 2.05),
+  );
 
   return (
     <div className="relative shrink-0" style={{ width: size, height: size }}>
@@ -142,22 +167,43 @@ export function ScoreRing({
         />
       </svg>
       <div className="absolute inset-0 grid place-items-center">
-        <span className={`text-3xl font-bold tabular-nums ${TONE_TEXT[tone]}`}>{value}</span>
+        <span
+          className={`font-bold leading-none tabular-nums ${TONE_TEXT[tone]}`}
+          style={{ fontSize }}
+        >
+          {label}
+        </span>
       </div>
     </div>
   );
 }
 
-export function Score({ value, tone, caption }: { value: number; tone: Tone; caption: string }) {
+export function Score({
+  value,
+  tone,
+  caption,
+}: {
+  value: number;
+  tone: Tone;
+  caption: string;
+}) {
   return (
     <div className="flex shrink-0 items-center gap-3">
       <ScoreRing value={value} tone={tone} size={64} />
-      <span className="text-2xs uppercase tracking-wider text-[var(--color-faint)]">{caption}</span>
+      <span className="text-2xs uppercase tracking-wider text-[var(--color-faint)]">
+        {caption}
+      </span>
     </div>
   );
 }
 
-export function Bar({ percent, tone = 'info' }: { percent: number; tone?: Tone }) {
+export function Bar({
+  percent,
+  tone = "info",
+}: {
+  percent: number;
+  tone?: Tone;
+}) {
   const width = Math.max(0, Math.min(100, percent));
   return (
     <div className="h-1.5 w-full overflow-hidden rounded-full bg-[var(--color-line)]">
@@ -169,7 +215,13 @@ export function Bar({ percent, tone = 'info' }: { percent: number; tone?: Tone }
   );
 }
 
-export function Table({ head, children }: { head: string[]; children: ReactNode }) {
+export function Table({
+  head,
+  children,
+}: {
+  head: string[];
+  children: ReactNode;
+}) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full min-w-[520px] text-left text-sm">
@@ -185,7 +237,9 @@ export function Table({ head, children }: { head: string[]; children: ReactNode 
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-[var(--color-line)]">{children}</tbody>
+        <tbody className="divide-y divide-[var(--color-line)]">
+          {children}
+        </tbody>
       </table>
     </div>
   );
@@ -199,7 +253,13 @@ export function Empty({ children }: { children: ReactNode }) {
   );
 }
 
-export function ExternalLink({ href, children }: { href: string; children: ReactNode }) {
+export function ExternalLink({
+  href,
+  children,
+}: {
+  href: string;
+  children: ReactNode;
+}) {
   return (
     <a
       href={href}
@@ -214,11 +274,11 @@ export function ExternalLink({ href, children }: { href: string; children: React
 }
 
 const TONE_LABEL: Record<Tone, string> = {
-  good: 'In good shape',
-  warn: 'Worth attention',
-  bad: 'Needs work',
-  muted: 'Not enough to judge',
-  info: 'For information',
+  good: "In good shape",
+  warn: "Worth attention",
+  bad: "Needs work",
+  muted: "Not enough to judge",
+  info: "For information",
 };
 
 export function Verdict({
@@ -235,8 +295,8 @@ export function Verdict({
   return (
     <section className="relative overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-surface)]">
       <div className="rule-brand" />
-      <div className="flex flex-wrap items-center justify-between gap-x-10 gap-y-6 px-6 py-6 sm:px-8 sm:py-7">
-        <div className="min-w-0 max-w-2xl flex-1">
+      <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-6 px-6 py-6 sm:px-8 sm:py-7">
+        <div className="min-w-[15rem] max-w-2xl flex-1 basis-[20rem]">
           <p
             className="text-2xs font-semibold uppercase tracking-[0.11em]"
             style={{ color: TONE_VAR[tone] }}
@@ -247,11 +307,11 @@ export function Verdict({
           <p className="mt-2.5 text-sm text-[var(--color-muted)]">{summary}</p>
         </div>
         {score && (
-          <div className="flex items-center gap-4">
+          <div className="flex shrink-0 items-center gap-4">
             <ScoreRing value={score.value} tone={tone} />
-            <div className="text-2xs uppercase tracking-wider text-[var(--color-faint)]">
+            <div className="min-w-0 text-2xs uppercase tracking-wider text-[var(--color-faint)]">
               <span className="block">out of 100</span>
-              <span className="mt-1 block font-mono normal-case tracking-normal text-[var(--color-muted)]">
+              <span className="mt-1 block max-w-[22ch] font-mono normal-case tracking-normal text-[var(--color-muted)] [overflow-wrap:anywhere]">
                 {score.caption}
               </span>
             </div>
@@ -282,7 +342,9 @@ export function ActionList({
             >
               {i + 1}
             </span>
-            <span className="min-w-0 flex-1 text-[var(--color-text)]">{item.text}</span>
+            <span className="min-w-0 flex-1 text-[var(--color-text)]">
+              {item.text}
+            </span>
             {item.weight !== undefined && (
               <span className="shrink-0 text-xs tabular-nums text-[var(--color-good)]">
                 +{item.weight}
@@ -295,7 +357,13 @@ export function ActionList({
   );
 }
 
-export function Details({ summary, children }: { summary: string; children: ReactNode }) {
+export function Details({
+  summary,
+  children,
+}: {
+  summary: string;
+  children: ReactNode;
+}) {
   return (
     <details className="group">
       <summary className="inline-flex cursor-pointer list-none items-center gap-2 text-xs font-medium text-[var(--color-muted)] transition hover:text-[var(--color-text)]">
@@ -314,7 +382,10 @@ export function GoodList({ items }: { items: string[] }) {
   return (
     <ul className="flex flex-wrap gap-x-5 gap-y-2">
       {items.map((t) => (
-        <li key={t} className="flex items-center gap-2 text-xs text-[var(--color-muted)]">
+        <li
+          key={t}
+          className="flex items-center gap-2 text-xs text-[var(--color-muted)]"
+        >
           <Icon name="check" size={14} className="text-[var(--color-good)]" />
           {t}
         </li>

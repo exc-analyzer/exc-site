@@ -1,16 +1,28 @@
-import { useEffect, useState } from 'react';
-import { COMMANDS, getCommand, type CommandId } from '../../engine';
-import { loadTargetReports, type StoredReport } from '../../lib/reports';
-import { currentUserId, loadMyLikes, loadRepoFeed, type FeedItem } from '../../lib/feed';
-import { loadMyBookmarks } from '../../lib/social';
-import { supabase } from '../../lib/supabase';
-import FeedItemView from '../feed/FeedItem';
-import { loadRepoComments, type RepoComment } from '../../lib/comments';
-import { Card, Empty, ExternalLink, SectionTitle, Verdict, toneText } from '../console/ui';
-import type { Tone } from '../console/ui';
-import { relativeTime } from '../../engine/shared';
-import BadgeSnippet from './BadgeSnippet';
-import FollowButton from './FollowButton';
+import { useEffect, useState } from "react";
+import { COMMANDS, getCommand, type CommandId } from "../../engine";
+import { loadTargetReports, type StoredReport } from "../../lib/reports";
+import {
+  currentUserId,
+  loadMyLikes,
+  loadRepoFeed,
+  type FeedItem,
+} from "../../lib/feed";
+import { loadMyBookmarks } from "../../lib/social";
+import { supabase } from "../../lib/supabase";
+import FeedItemView from "../feed/FeedItem";
+import { loadRepoComments, type RepoComment } from "../../lib/comments";
+import {
+  Card,
+  Empty,
+  ExternalLink,
+  SectionTitle,
+  Verdict,
+  toneText,
+} from "../console/ui";
+import type { Tone } from "../console/ui";
+import { relativeTime } from "../../engine/shared";
+import BadgeSnippet from "./BadgeSnippet";
+import FollowButton from "./FollowButton";
 
 interface Line {
   tone: Tone;
@@ -21,102 +33,119 @@ interface Line {
 function describe(report: StoredReport): Line {
   const s = report.summary as Record<string, unknown>;
   switch (report.kind) {
-    case 'security-score': {
+    case "security-score": {
       const score = report.score ?? 0;
       const failing = Array.isArray(s.criteria)
-        ? (s.criteria as { status: string }[]).filter((c) => c.status === 'fail').length
+        ? (s.criteria as { status: string }[]).filter(
+            (c) => c.status === "fail",
+          ).length
         : 0;
       return {
-        tone: score >= 90 ? 'good' : score >= 75 ? 'warn' : 'bad',
+        tone: score >= 90 ? "good" : score >= 75 ? "warn" : "bad",
         headline: `${score}/100`,
-        detail: failing === 0 ? 'Everything checked is met' : `${failing} criteria not met`,
+        detail:
+          failing === 0
+            ? "Everything checked is met"
+            : `${failing} criteria not met`,
       };
     }
-    case 'content-audit': {
+    case "content-audit": {
       const present = Number(s.presentCount ?? 0);
       const total = Number(s.totalCount ?? 0);
       return {
-        tone: present === total ? 'good' : present >= total - 1 ? 'warn' : 'bad',
+        tone:
+          present === total ? "good" : present >= total - 1 ? "warn" : "bad",
         headline: `${present}/${total} files`,
-        detail: present === total ? 'Every standard file is there' : 'Standard files are missing',
+        detail:
+          present === total
+            ? "Every standard file is there"
+            : "Standard files are missing",
       };
     }
-    case 'actions-audit': {
-      const workflows = Array.isArray(s.workflows) ? (s.workflows as { severity: string }[]) : [];
+    case "actions-audit": {
+      const workflows = Array.isArray(s.workflows)
+        ? (s.workflows as { severity: string }[])
+        : [];
       const serious = workflows.filter(
-        (w) => w.severity === 'critical' || w.severity === 'risky',
+        (w) => w.severity === "critical" || w.severity === "risky",
       ).length;
       if (!s.hasWorkflows) {
-        return { tone: 'muted', headline: 'No workflows', detail: 'Nothing to audit' };
+        return {
+          tone: "muted",
+          headline: "No workflows",
+          detail: "Nothing to audit",
+        };
       }
       return {
-        tone: serious > 0 ? 'bad' : 'good',
-        headline: serious > 0 ? `${serious} at risk` : 'Clean',
-        detail: `${workflows.length} workflow${workflows.length === 1 ? '' : 's'} examined`,
+        tone: serious > 0 ? "bad" : "good",
+        headline: serious > 0 ? `${serious} at risk` : "Clean",
+        detail: `${workflows.length} workflow${workflows.length === 1 ? "" : "s"} examined`,
       };
     }
-    case 'commit-anomaly': {
+    case "commit-anomaly": {
       const flagged = Array.isArray(s.risky) ? s.risky.length : 0;
       return {
-        tone: flagged === 0 ? 'good' : 'warn',
-        headline: flagged === 0 ? 'Nothing flagged' : `${flagged} flagged`,
+        tone: flagged === 0 ? "good" : "warn",
+        headline: flagged === 0 ? "Nothing flagged" : `${flagged} flagged`,
         detail: `${Number(s.scannedCount ?? 0)} commits scanned`,
       };
     }
-    case 'contrib-impact': {
+    case "contrib-impact": {
       const people = Array.isArray(s.contributors) ? s.contributors.length : 0;
       return {
-        tone: people <= 1 ? 'warn' : 'good',
-        headline: people === 0 ? 'No data' : `${people} ${people === 1 ? 'person' : 'people'}`,
-        detail: people <= 1 ? 'The work sits on one person' : 'The work is shared',
+        tone: people <= 1 ? "warn" : "good",
+        headline:
+          people === 0
+            ? "No data"
+            : `${people} ${people === 1 ? "person" : "people"}`,
+        detail:
+          people <= 1 ? "The work sits on one person" : "The work is shared",
       };
     }
-    case 'analysis': {
+    case "analysis": {
       const stars = Number(s.stars ?? 0);
       return {
-        tone: 'info',
-        headline: `${stars.toLocaleString('en-US')} stars`,
+        tone: "info",
+        headline: `${stars.toLocaleString("en-US")} stars`,
         detail: `Last updated ${relativeTime(String(s.updatedAt ?? report.updated_at))}`,
       };
     }
-    case 'file-history': {
+    case "file-history": {
       const commits = Array.isArray(s.commits) ? s.commits.length : 0;
       return {
-        tone: 'info',
-        headline: `${commits} commit${commits === 1 ? '' : 's'}`,
-        detail: String(s.path ?? ''),
+        tone: "info",
+        headline: `${commits} commit${commits === 1 ? "" : "s"}`,
+        detail: String(s.path ?? ""),
       };
     }
-    case 'user-anomaly': {
-      const score = report.score ?? 0;
-      return {
-        tone: score < 30 ? 'good' : score < 60 ? 'warn' : 'bad',
-        headline: `${score}/100 risk`,
-        detail: score < 30 ? 'Behaves ordinarily' : 'Worth a look',
-      };
-    }
-    case 'user-analysis': {
+    case "user-analysis": {
       const repos = Number(s.publicRepos ?? 0);
       return {
-        tone: 'info',
-        headline: `${repos} repositor${repos === 1 ? 'y' : 'ies'}`,
+        tone: "info",
+        headline: `${repos} repositor${repos === 1 ? "y" : "ies"}`,
         detail: `${Number(s.followers ?? 0)} followers`,
       };
     }
     default:
-      return { tone: 'muted', headline: 'Scanned', detail: '' };
+      return { tone: "muted", headline: "Scanned", detail: "" };
   }
 }
 
 const TONE_RING: Record<string, string> = {
-  good: 'border-emerald-800/60',
-  warn: 'border-amber-800/60',
-  bad: 'border-red-900/60',
-  info: 'border-[var(--color-line)]',
-  muted: 'border-[var(--color-line)]',
+  good: "border-emerald-800/60",
+  warn: "border-amber-800/60",
+  bad: "border-red-900/60",
+  info: "border-[var(--color-line)]",
+  muted: "border-[var(--color-line)]",
 };
 
-export default function RepoHub({ owner, repo }: { owner: string; repo: string }) {
+export default function RepoHub({
+  owner,
+  repo,
+}: {
+  owner: string;
+  repo: string;
+}) {
   const [reports, setReports] = useState<StoredReport[] | null>(null);
   const [discussion, setDiscussion] = useState<RepoComment[]>([]);
   const [posts, setPosts] = useState<FeedItem[]>([]);
@@ -126,7 +155,7 @@ export default function RepoHub({ owner, repo }: { owner: string; repo: string }
   const [signedIn, setSignedIn] = useState(false);
 
   useEffect(() => {
-    document.getElementById('exc-prerendered')?.remove();
+    document.getElementById("exc-prerendered")?.remove();
     void (async () => {
       if (supabase) {
         const { data } = await supabase.auth.getSession();
@@ -138,8 +167,11 @@ export default function RepoHub({ owner, repo }: { owner: string; repo: string }
         loadRepoComments(owner, repo),
         loadRepoFeed(owner, repo),
       ]);
-      const written = stream.filter((item) => item.kind === 'post');
-      const [mine, kept] = await Promise.all([loadMyLikes(written), loadMyBookmarks(written)]);
+      const written = stream.filter((item) => item.kind === "post");
+      const [mine, kept] = await Promise.all([
+        loadMyLikes(written),
+        loadMyBookmarks(written),
+      ]);
       setReports(found);
       setDiscussion(comments);
       setPosts(written);
@@ -149,9 +181,11 @@ export default function RepoHub({ owner, repo }: { owner: string; repo: string }
   }, [owner, repo]);
 
   const label = repo ? `${owner}/${repo}` : owner;
-  const githubUrl = repo ? `https://github.com/${owner}/${repo}` : `https://github.com/${owner}`;
+  const githubUrl = repo
+    ? `https://github.com/${owner}/${repo}`
+    : `https://github.com/${owner}`;
   const relevant = COMMANDS.filter((c) =>
-    repo ? !c.id.startsWith('user-') : c.id.startsWith('user-'),
+    repo ? !c.id.startsWith("user-") : c.id.startsWith("user-"),
   ).filter((c) => !c.sensitive);
 
   const scanHref = repo
@@ -166,7 +200,7 @@ export default function RepoHub({ owner, repo }: { owner: string; repo: string }
   const byKind = new Map((reports ?? []).map((r) => [r.kind, r]));
   const done = relevant.filter((c) => byKind.has(c.id));
   const todo = relevant.filter((c) => !byKind.has(c.id));
-  const security = byKind.get('security-score');
+  const security = byKind.get("security-score");
   const scanned = reports?.length ?? 0;
 
   return (
@@ -174,7 +208,7 @@ export default function RepoHub({ owner, repo }: { owner: string; repo: string }
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div className="min-w-0">
           <p className="text-xs uppercase tracking-wider text-[var(--color-muted)]">
-            {repo ? 'Repository' : 'Account'}
+            {repo ? "Repository" : "Account"}
           </p>
           <h1 className="mt-1 font-mono text-2xl tracking-tight">{label}</h1>
         </div>
@@ -191,8 +225,8 @@ export default function RepoHub({ owner, repo }: { owner: string; repo: string }
           <div className="px-6 py-10 text-center">
             <p className="text-base">Nobody has scanned this yet</p>
             <p className="mx-auto mt-2 max-w-md text-sm text-[var(--color-muted)]">
-              Run the first scan and this page becomes the place where everything known about{' '}
-              {label} is gathered.
+              Run the first scan and this page becomes the place where
+              everything known about {label} is gathered.
             </p>
             <a href={scanHref} className="btn btn-primary mt-5">
               Scan it
@@ -214,7 +248,8 @@ export default function RepoHub({ owner, repo }: { owner: string; repo: string }
                 <div className="min-w-0">
                   <p className="text-sm">No security score yet</p>
                   <p className="mt-0.5 text-xs text-[var(--color-muted)]">
-                    That is the one that answers whether this repository can be trusted.
+                    That is the one that answers whether this repository can be
+                    trusted.
                   </p>
                 </div>
                 <a
@@ -247,15 +282,21 @@ export default function RepoHub({ owner, repo }: { owner: string; repo: string }
                       className={`surface-hover block h-full rounded-[var(--radius-card)] border bg-[var(--color-surface)] p-5 ${TONE_RING[line.tone]}`}
                     >
                       <div className="flex items-baseline justify-between gap-3">
-                        <span className="text-sm font-medium">{command.name}</span>
+                        <span className="text-sm font-medium">
+                          {command.name}
+                        </span>
                         <span className="shrink-0 text-2xs uppercase tracking-wider text-[var(--color-faint)]">
                           {relativeTime(report.updated_at)}
                         </span>
                       </div>
-                      <p className={`mt-2.5 text-xl tabular-nums ${toneText(line.tone)}`}>
+                      <p
+                        className={`mt-2.5 text-xl tabular-nums ${toneText(line.tone)}`}
+                      >
                         {line.headline}
                       </p>
-                      <p className="mt-1 text-xs text-[var(--color-muted)]">{line.detail}</p>
+                      <p className="mt-1 text-xs text-[var(--color-muted)]">
+                        {line.detail}
+                      </p>
                     </a>
                   </li>
                 );
@@ -264,7 +305,9 @@ export default function RepoHub({ owner, repo }: { owner: string; repo: string }
 
             {todo.length > 0 && (
               <div className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-2 rounded-[var(--radius-control)] border border-dashed border-[var(--color-line)] px-4 py-3">
-                <span className="text-xs text-[var(--color-faint)]">Nobody has run yet:</span>
+                <span className="text-xs text-[var(--color-faint)]">
+                  Nobody has run yet:
+                </span>
                 {todo.map((command) => (
                   <a
                     key={command.id}
@@ -337,12 +380,15 @@ export default function RepoHub({ owner, repo }: { owner: string; repo: string }
               <div className="flex items-baseline justify-between gap-4">
                 <SectionTitle>Discussion</SectionTitle>
                 <span className="text-xs text-[var(--color-muted)]">
-                  {discussion.length === 0 ? 'nothing yet' : `${discussion.length} recent`}
+                  {discussion.length === 0
+                    ? "nothing yet"
+                    : `${discussion.length} recent`}
                 </span>
               </div>
               {discussion.length === 0 ? (
                 <Empty>
-                  No one has said anything about {label} yet. Open a report and start it off.
+                  No one has said anything about {label} yet. Open a report and
+                  start it off.
                 </Empty>
               ) : (
                 <ul className="space-y-4">
@@ -352,9 +398,12 @@ export default function RepoHub({ owner, repo }: { owner: string; repo: string }
                       ? repo
                         ? `/app/r/${owner}/${repo}/${kind}/`
                         : `/app/u/${owner}/${kind}/`
-                      : '#';
+                      : "#";
                     return (
-                      <li key={c.id} className="border-l-2 border-[var(--color-line)] pl-4">
+                      <li
+                        key={c.id}
+                        className="border-l-2 border-[var(--color-line)] pl-4"
+                      >
                         <div className="flex flex-wrap items-baseline gap-x-2 text-xs text-[var(--color-muted)]">
                           {c.author?.avatar_url && (
                             <img
@@ -366,12 +415,15 @@ export default function RepoHub({ owner, repo }: { owner: string; repo: string }
                             />
                           )}
                           <span className="text-[var(--color-text)]">
-                            {c.author?.gh_login ?? 'someone'}
+                            {c.author?.gh_login ?? "someone"}
                           </span>
                           {kind && (
                             <>
                               <span>on</span>
-                              <a href={href} className="text-sky-400 hover:underline">
+                              <a
+                                href={href}
+                                className="text-sky-400 hover:underline"
+                              >
                                 {getCommand(kind).name}
                               </a>
                             </>
@@ -389,7 +441,8 @@ export default function RepoHub({ owner, repo }: { owner: string; repo: string }
 
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--color-line)] bg-[var(--color-surface)] px-5 py-4">
             <p className="text-sm text-[var(--color-muted)]">
-              Scans run in your browser. Re-running one updates this page for everybody.
+              Scans run in your browser. Re-running one updates this page for
+              everybody.
             </p>
             <a href={scanHref} className="btn btn-ghost shrink-0">
               Scan {label}
@@ -403,19 +456,17 @@ export default function RepoHub({ owner, repo }: { owner: string; repo: string }
 
 function verdictHeadline(report: StoredReport): string {
   const score = report.score ?? 0;
-  if (score >= 90) return 'This repository is well defended';
-  if (score >= 75) return 'The basics are there, a few gaps remain';
-  return 'Several important things are missing';
+  return `${score}/100 on the public checks`;
 }
 
 function verdictSummary(report: StoredReport): string {
-  const who = report.profiles?.gh_login;
+  const who = report.scanner_login;
   const parts = [
-    `Scanned ${relativeTime(report.updated_at)}${who ? ` by ${who}` : ''}.`,
-    `Run ${report.scan_count} time${report.scan_count === 1 ? '' : 's'} in total.`,
-    'Open the security score for what to fix first.',
+    `Scanned ${relativeTime(report.updated_at)}${who ? ` by ${who}` : ""}.`,
+    `Run ${report.scan_count} time${report.scan_count === 1 ? "" : "s"} in total.`,
+    "Open the security score for what to fix first.",
   ];
-  return parts.join(' ');
+  return parts.join(" ");
 }
 
 export { describe as describeReport };

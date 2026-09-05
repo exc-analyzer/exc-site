@@ -1,32 +1,34 @@
-import { useState } from 'react';
-import { reportAbuse, type AbuseTarget } from '../lib/abuse';
+import { useState } from "react";
+import { reportAbuse, type AbuseTarget } from "../lib/abuse";
 
 export type { AbuseTarget };
 export default function ReportButton({
   targetType,
   targetId,
-  label = 'Report',
+  label = "Report",
 }: {
   targetType: AbuseTarget;
   targetId: string;
   label?: string;
 }) {
   const [open, setOpen] = useState(false);
-  const [reason, setReason] = useState('');
-  const [state, setState] = useState<'idle' | 'sending' | 'done' | 'error'>('idle');
+  const [reason, setReason] = useState("");
+  const [state, setState] = useState<"idle" | "sending" | "done" | "error">(
+    "idle",
+  );
   const [message, setMessage] = useState<string | null>(null);
   async function send() {
-    setState('sending');
+    setState("sending");
     const problem = await reportAbuse(targetType, targetId, reason);
     if (problem) {
-      setState('error');
+      setState("error");
       setMessage(problem);
       return;
     }
-    setState('done');
-    setMessage('Report received. Thank you.');
+    setState("done");
+    setMessage("Report received. Thank you.");
   }
-  if (state === 'done') {
+  if (state === "done") {
     return <span className="text-xs text-[var(--color-good)]">{message}</span>;
   }
 
@@ -44,7 +46,7 @@ export default function ReportButton({
   return (
     <div className="mt-2 w-full space-y-2 rounded-[var(--radius-control)] border border-[var(--color-line)] p-3">
       <label className="label" htmlFor={`reason-${targetId}`}>
-        Neyi bildiriyorsun?
+        What are you reporting?
       </label>
       <input
         id={`reason-${targetId}`}
@@ -58,15 +60,21 @@ export default function ReportButton({
         <button
           type="button"
           onClick={() => void send()}
-          disabled={reason.trim().length < 3 || state === 'sending'}
+          disabled={reason.trim().length < 3 || state === "sending"}
           className="btn btn-ghost"
         >
-          {state === 'sending' ? 'Sending…' : 'Send'}
+          {state === "sending" ? "Sending…" : "Send"}
         </button>
-        <button type="button" onClick={() => setOpen(false)} className="btn btn-quiet">
+        <button
+          type="button"
+          onClick={() => setOpen(false)}
+          className="btn btn-quiet"
+        >
           Cancel
         </button>
-        {message && <span className="text-xs text-[var(--color-bad)]">{message}</span>}
+        {message && (
+          <span className="text-xs text-[var(--color-bad)]">{message}</span>
+        )}
       </div>
     </div>
   );

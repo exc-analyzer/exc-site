@@ -1,0 +1,116 @@
+---
+import Legal from '../../layouts/Legal.astro';
+---
+
+<Legal title="How the score works" eyebrow="Methodology" updated="3 September 2026">
+  <p>
+    Every security score on this site comes from the checks below. They are hand-written rules,
+    not a trained model, and nothing about a person is scored. If you think a result is wrong,
+    <a href="/app/takedown/">tell us</a> — the observations are checkable, which is the point of
+    publishing them.
+  </p>
+
+  <h2>What the score is</h2>
+  <p>
+    A repository starts at 100. Each check that fails subtracts its weight. Checks that cannot be
+    read subtract nothing and are marked <strong>unknown</strong>. So the number is
+    <strong>100 minus what we could see going wrong</strong> — not a measure of how safe a project
+    is.
+  </p>
+  <p>
+    <strong>The weighting is our judgement.</strong> We chose these numbers because they seemed
+    proportionate; someone else would choose differently, and we may change them. A score computed
+    today may not be reproducible after a change. Every score carries the date it was computed.
+  </p>
+
+  <h2>The checks</h2>
+  <table>
+    <thead>
+      <tr><th>Check</th><th>What it reads</th><th>Weight</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>License</td>
+        <td><code>GET /repos/{'{'}owner{'}'}/{'{'}repo{'}'}</code> → <code>license</code></td>
+        <td>10</td>
+      </tr>
+      <tr>
+        <td>Issue tracker</td>
+        <td>Same call → <code>has_issues</code></td>
+        <td>10</td>
+      </tr>
+      <tr>
+        <td>Security policy</td>
+        <td>
+          Presence of <code>SECURITY.md</code>, <code>.github/SECURITY.md</code> or
+          <code>docs/SECURITY.md</code>
+        </td>
+        <td>10</td>
+      </tr>
+      <tr>
+        <td>Branch protection</td>
+        <td>
+          <code>GET /repos/.../branches/{'{'}default{'}'}/protection</code>. Only repository admins
+          can read this, so for most repositories it comes back <strong>unknown</strong> and costs
+          nothing.
+        </td>
+        <td>10</td>
+      </tr>
+      <tr>
+        <td>Code scanning alerts</td>
+        <td>
+          <code>GET /repos/.../code-scanning/alerts</code>. Not set up is not a failure and is not
+          scored.
+        </td>
+        <td>10</td>
+      </tr>
+      <tr>
+        <td>Dependabot config</td>
+        <td>Presence of <code>.github/dependabot.yml</code></td>
+        <td>5</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>What is shown but never scored</h2>
+  <p>
+    These appear in the result because they are useful context, and they subtract nothing. They
+    used to count and no longer do — a project that keeps its wiki closed or carries a long issue
+    backlog is not less secure for it.
+  </p>
+  <ul>
+    <li><strong>Wiki</strong> — open or disabled</li>
+    <li><strong>Projects</strong> — open or disabled</li>
+    <li><strong>Open issues</strong> — the count</li>
+  </ul>
+
+  <h2>What the score does not do</h2>
+  <ul>
+    <li>
+      It does not read your code. No file contents are analysed by the security score — only
+      repository metadata and the presence of a few well-known files.
+    </li>
+    <li>
+      It finds nothing about vulnerabilities, dependencies, or whether a project has ever been
+      compromised.
+    </li>
+    <li>
+      It cannot distinguish a project that does not need something from one that neglected it. A
+      single-author script with no branch protection is not doing anything wrong.
+    </li>
+    <li>
+      Two repositories can reach the same score for entirely different reasons. Read the criteria,
+      not the number.
+    </li>
+  </ul>
+
+  <h2>Where the numbers come from</h2>
+  <p>
+    Every check runs in your browser against GitHub's documented REST API. Signed in, it uses your
+    own GitHub token and your own rate limit of 5,000 requests an hour. Signed out, it uses
+    GitHub's anonymous limit of 60 requests an hour, which everyone on your network shares.
+    Nothing is proxied through a server, and we never receive your token. We do not read
+    github.com web pages.
+  </p>
+
+</Legal>
