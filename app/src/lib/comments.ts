@@ -25,8 +25,10 @@ export interface Comment {
     verified: boolean;
   } | null;
 }
-export async function loadComments(target: CommentTarget): Promise<Comment[]> {
-  if (!supabase) return [];
+export async function loadComments(
+  target: CommentTarget,
+): Promise<Comment[] | null> {
+  if (!supabase) return null;
   const column = target.kind === "post" ? "post_id" : "report_id";
   const { data, error } = await supabase
     .from("comments")
@@ -35,7 +37,7 @@ export async function loadComments(target: CommentTarget): Promise<Comment[]> {
     .order("created_at", { ascending: true });
   if (error) {
     failed("the comments", error);
-    return [];
+    return null;
   }
   return (data as Comment[]) ?? [];
 }

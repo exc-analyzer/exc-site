@@ -161,6 +161,7 @@ export default function Messages() {
   const drafts = useRef<Record<string, string>>({});
   const [stalled, setStalled] = useState<null | "thread" | "list">(null);
   const [armed, setArmed] = useState<string | null>(null);
+  const [busyBlock, setBusyBlock] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const [allowed, setAllowed] = useState(true);
@@ -402,8 +403,15 @@ export default function Messages() {
   useEffect(() => {
     if (!picker) return;
     const shut = () => setPicker(null);
+    const away = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setPicker(null);
+    };
     window.addEventListener("click", shut);
-    return () => window.removeEventListener("click", shut);
+    window.addEventListener("keydown", away);
+    return () => {
+      window.removeEventListener("click", shut);
+      window.removeEventListener("keydown", away);
+    };
   }, [picker]);
 
   useEffect(() => {
@@ -462,8 +470,15 @@ export default function Messages() {
       setConfirm(null);
       setDressing(false);
     };
+    const away = (e: KeyboardEvent) => {
+      if (e.key === "Escape") shut();
+    };
     window.addEventListener("click", shut);
-    return () => window.removeEventListener("click", shut);
+    window.addEventListener("keydown", away);
+    return () => {
+      window.removeEventListener("click", shut);
+      window.removeEventListener("keydown", away);
+    };
   }, [menu]);
 
   useEffect(() => {
@@ -2005,15 +2020,23 @@ export default function Messages() {
                   <button
                     type="button"
                     className="shrink-0 text-2xs text-[var(--color-link)] hover:underline"
+                    disabled={busyBlock === b.other_id}
                     onClick={() => {
-                      void unblockPerson(b.other_id).then(async () => {
-                        const [blocks, mutuals] = await Promise.all([
-                          loadBlocks(),
-                          loadMutualPeople(),
-                        ]);
-                        setBlockedList(blocks);
-                        setPeople(mutuals);
-                      });
+                      setBusyBlock(b.other_id);
+                      void unblockPerson(b.other_id)
+                        .then(async (trouble) => {
+                          if (trouble) {
+                            say(trouble);
+                            return;
+                          }
+                          const [blocks, mutuals] = await Promise.all([
+                            loadBlocks(),
+                            loadMutualPeople(),
+                          ]);
+                          setBlockedList(blocks);
+                          setPeople(mutuals);
+                        })
+                        .finally(() => setBusyBlock(null));
                     }}
                   >
                     Unblock

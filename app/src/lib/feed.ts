@@ -43,8 +43,8 @@ export async function loadFeed(
   before?: string,
   filter: FeedFilter = "all",
   search = "",
-): Promise<FeedItem[]> {
-  if (!supabase) return [];
+): Promise<FeedItem[] | null> {
+  if (!supabase) return null;
   let query = supabase
     .from("feed")
     .select(COLUMNS)
@@ -72,7 +72,7 @@ export async function loadFeed(
   const { data, error } = await query;
   if (error) {
     failed("the feed", error);
-    return [];
+    return null;
   }
   return (data as unknown as FeedItem[]) ?? [];
 }

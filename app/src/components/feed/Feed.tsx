@@ -28,8 +28,14 @@ export default function Feed() {
   const [more, setMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [filter, setFilter] = useState<FeedFilter>("all");
+  const [stalled, setStalled] = useState(false);
 
-  async function absorb(rows: Item[], append: boolean) {
+  async function absorb(rows: Item[] | null, append: boolean) {
+    if (rows === null) {
+      setStalled(true);
+      return;
+    }
+    setStalled(false);
     const [mine, kept] = await Promise.all([
       loadMyLikes(rows),
       loadMyBookmarks(rows),
@@ -142,7 +148,18 @@ export default function Feed() {
       {items === null ? (
         <FeedSkeleton />
       ) : items.length === 0 ? (
-        filter === "following" ? (
+        stalled ? (
+          <Blank
+            icon="cross"
+            title="Could not load the feed"
+            lead="The connection may have dropped."
+            action={
+              <button type="button" className="btn btn-quiet" onClick={refresh}>
+                Try again
+              </button>
+            }
+          />
+        ) : filter === "following" ? (
           <Blank
             icon="users"
             title="Nobody you follow has posted yet"

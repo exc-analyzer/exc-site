@@ -93,6 +93,8 @@ export default function MemberPage() {
   const [iFollow, setIFollow] = useState(false);
   const [blocked, setBlocked] = useState(false);
   const [askBlock, setAskBlock] = useState(false);
+  const [blockNote, setBlockNote] = useState<string | null>(null);
+  const [blocking2, setBlocking2] = useState(false);
   const [mutual, setMutual] = useState(false);
   const [tab, setTab] = useState<Tab>("posts");
   const [replies, setReplies] = useState<MemberReply[] | null>(null);
@@ -284,11 +286,23 @@ export default function MemberPage() {
                       ? "btn-ghost"
                       : "btn-quiet hover:text-[var(--color-bad)]"
                   }`}
+                  disabled={blocking2}
                   onClick={() => {
                     if (blocked) {
-                      void unblockPerson(member.id).then(() => void load());
+                      setBlockNote(null);
+                      setBlocking2(true);
+                      void unblockPerson(member.id)
+                        .then((trouble) => {
+                          if (trouble) {
+                            setBlockNote(trouble);
+                            return;
+                          }
+                          void load();
+                        })
+                        .finally(() => setBlocking2(false));
                       return;
                     }
+                    setBlockNote(null);
                     setAskBlock(true);
                   }}
                 >
@@ -298,6 +312,10 @@ export default function MemberPage() {
               )}
             </div>
           </div>
+
+          {blockNote && (
+            <p className="mt-3 text-xs text-[var(--color-bad)]">{blockNote}</p>
+          )}
 
           {askBlock && (
             <div className="surface mt-4 border-[var(--color-line-strong)] p-4">
@@ -318,9 +336,20 @@ export default function MemberPage() {
                 <button
                   type="button"
                   className="btn btn-sm bg-[var(--color-bad)] text-white"
+                  disabled={blocking2}
                   onClick={() => {
                     setAskBlock(false);
-                    void blockPerson(member.id).then(() => void load());
+                    setBlockNote(null);
+                    setBlocking2(true);
+                    void blockPerson(member.id)
+                      .then((trouble) => {
+                        if (trouble) {
+                          setBlockNote(trouble);
+                          return;
+                        }
+                        void load();
+                      })
+                      .finally(() => setBlocking2(false));
                   }}
                 >
                   Block

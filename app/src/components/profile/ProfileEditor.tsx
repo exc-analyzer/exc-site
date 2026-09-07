@@ -97,6 +97,7 @@ export default function ProfileEditor() {
     return () => window.removeEventListener("exc:status", heard);
   }, []);
   const [closeError, setCloseError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const flashTimer = useRef<number | null>(null);
 
   useEffect(() => {
@@ -127,6 +128,17 @@ export default function ProfileEditor() {
       profile.accent_two !== original.accent_two ||
       profile.avatar_shape !== original.avatar_shape ||
       profile.status !== original.status);
+
+
+  useEffect(() => {
+    if (!dirty) return;
+    const stop = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", stop);
+    return () => window.removeEventListener("beforeunload", stop);
+  }, [dirty]);
 
   function showFlash(kind: "saved" | "discarded") {
     setFlash(kind);
@@ -757,15 +769,23 @@ export default function ProfileEditor() {
                 <button
                   type="button"
                   className="btn btn-ghost btn-sm text-[var(--color-bad)]"
+                  disabled={deleting}
                   onClick={() => {
                     setCloseError(null);
-                    void deleteMyAccount().then((trouble) => {
-                      if (trouble) setCloseError(trouble);
-                      else window.location.href = "/";
-                    });
+                    setDeleting(true);
+                    void deleteMyAccount()
+                      .then((trouble) => {
+                        if (trouble) {
+                          setCloseError(trouble);
+                          setDeleting(false);
+                          return;
+                        }
+                        window.location.href = "/";
+                      })
+                      .catch(() => setDeleting(false));
                   }}
                 >
-                  Delete my account
+                  {deleting ? "Deleting…" : "Delete my account"}
                 </button>
                 <button
                   type="button"
@@ -1006,12 +1026,17 @@ export function PinSection({
   }
 
   async function move(index: number, by: -1 | 1) {
+    const before = [...pins];
     const next = [...pins];
     const target = index + by;
     if (target < 0 || target >= next.length) return;
     [next[index], next[target]] = [next[target], next[index]];
     onPins(next);
-    await reorderPins(profile.id, next);
+    const trouble = await reorderPins(profile.id, next);
+    if (trouble) {
+      onPins(before);
+      setProblem(trouble);
+    }
   }
 
   return (

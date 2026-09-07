@@ -54,6 +54,7 @@ export default function ItemMenu({
   const [scansPublic, setScansPublic] = useState(true);
   const [moderator, setModerator] = useState(false);
   const [takingDown, setTakingDown] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (!signedIn || mine) return;
@@ -183,12 +184,17 @@ export default function ItemMenu({
             type="button"
             className="menu-item w-full text-left"
             onClick={() => {
-              void navigator.clipboard.writeText(`${SITE_URL}${href}`);
-              setOpen(false);
+              void navigator.clipboard
+                .writeText(`${SITE_URL}${href}`)
+                .then(() => {
+                  setCopied(true);
+                  window.setTimeout(() => setOpen(false), 900);
+                })
+                .catch(() => setNote("Could not copy the link."));
             }}
           >
-            <Icon name="copy" size={15} />
-            Copy link
+            <Icon name={copied ? "check" : "copy"} size={15} />
+            {copied ? "Copied" : "Copy link"}
           </button>
 
           {mine && item.kind === "post" && editable && (

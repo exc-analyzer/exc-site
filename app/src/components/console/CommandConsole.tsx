@@ -90,8 +90,12 @@ export default function CommandConsole() {
   const locked = Boolean(command.requiresAuth) && !hasToken;
 
   function select(id: CommandId) {
+    const next = defaultsFor(getCommand(id).fields);
+    for (const field of ["repo", "username", "owner"]) {
+      if (field in next && values[field]) next[field] = values[field];
+    }
     setActiveId(id);
-    setValues(defaultsFor(getCommand(id).fields));
+    setValues(next);
     setState({ kind: "idle" });
   }
 
@@ -449,10 +453,13 @@ function Permalink({ href }: { href: string }) {
       <button
         type="button"
         onClick={() => {
-          void navigator.clipboard.writeText(full).then(() => {
-            setCopied(true);
-            setTimeout(() => setCopied(false), 1600);
-          });
+          void navigator.clipboard
+            .writeText(full)
+            .then(() => {
+              setCopied(true);
+              setTimeout(() => setCopied(false), 1600);
+            })
+            .catch(() => undefined);
         }}
         className="btn btn-ghost btn-sm shrink-0"
       >

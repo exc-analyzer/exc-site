@@ -79,11 +79,19 @@ export default function SendFeedback() {
           onClick={(e) => {
             if (e.target === e.currentTarget) setOpen(false);
           }}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") setOpen(false);
+          }}
         >
-          <div className="surface w-full max-w-md p-5 text-left sm:p-6">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="feedback-heading"
+            className="surface w-full max-w-md p-5 text-left sm:p-6"
+          >
             {sent ? (
               <>
-                <h2 className="text-base font-semibold">That reached us</h2>
+                <h2 id="feedback-heading" className="text-base font-semibold">That reached us</h2>
                 <p className="mt-2 text-sm leading-relaxed text-[var(--color-muted)]">
                   It is in the moderation queue now. We read everything, though we
                   cannot promise a reply to each one.
@@ -100,7 +108,7 @@ export default function SendFeedback() {
               </>
             ) : (
               <>
-                <h2 className="text-base font-semibold">Send feedback</h2>
+                <h2 id="feedback-heading" className="text-base font-semibold">Send feedback</h2>
                 <p className="mt-1.5 text-xs leading-relaxed text-[var(--color-muted)]">
                   A request, a complaint, or anything that is not working. It goes
                   straight to whoever is on moderation duty. To report one specific post
@@ -126,6 +134,7 @@ export default function SendFeedback() {
                 </p>
 
                 <textarea
+                  autoFocus
                   className="mt-3 h-32 w-full resize-none rounded-[var(--radius-control)] border border-[var(--color-line)] bg-transparent px-3 py-2.5 text-sm outline-none focus:border-[var(--color-line-active)] placeholder:text-[var(--color-faint)]"
                   value={body}
                   maxLength={2000}

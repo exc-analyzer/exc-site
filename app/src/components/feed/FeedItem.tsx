@@ -232,6 +232,9 @@ export default function FeedItem({
                 onClick={() => {
                   setEditing(false);
                   setDraft(item.body ?? "");
+                  setDraftRepo(
+                    item.owner && item.repo ? `${item.owner}/${item.repo}` : "",
+                  );
                   setError(null);
                 }}
               >
@@ -363,13 +366,16 @@ export default function FeedItem({
           <button
             type="button"
             className={ACTION}
+            aria-label={copied ? "Link copied" : "Copy link"}
+            title="Copy link"
             onClick={() => {
               void navigator.clipboard
                 .writeText(`${SITE_URL}${href}`)
                 .then(() => {
                   setCopied(true);
                   setTimeout(() => setCopied(false), 1600);
-                });
+                })
+                .catch(() => setError("Could not copy the link."));
             }}
           >
             <Icon name={copied ? "check" : "share"} size={15} />

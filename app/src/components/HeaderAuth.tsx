@@ -35,6 +35,7 @@ export default function HeaderAuth({
   const [picking, setPicking] = useState(false);
   const [dropUp, setDropUp] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [statusNote, setStatusNote] = useState<string | null>(null);
 
   useEffect(() => {
     const known = cachedProfile();
@@ -119,12 +120,16 @@ export default function HeaderAuth({
     );
   }
 
-  async function pickStatus(next: StatusId | null) {
+    async function pickStatus(next: StatusId | null) {
     if (!profile) return;
     setSaving(true);
     const { error } = await saveMyProfile({ status: next });
     setSaving(false);
-    if (error) return;
+    if (error) {
+      setStatusNote(error);
+      return;
+    }
+    setStatusNote(null);
     const updated = { ...profile, status: next };
     setProfile(updated);
     rememberProfile(updated);
@@ -234,6 +239,11 @@ export default function HeaderAuth({
                     Clear it
                   </button>
                 )}
+          {statusNote && (
+            <p className="px-3 py-2 text-2xs text-[var(--color-bad)]">
+              {statusNote}
+            </p>
+          )}
         </div>
       )}
 

@@ -172,9 +172,9 @@ export async function removePin(
 export async function reorderPins(
   ownerId: string,
   pins: PinnedRepo[],
-): Promise<void> {
-  if (!supabase) return;
-  await Promise.all(
+): Promise<string | null> {
+  if (!supabase) return "No connection.";
+  const done = await Promise.all(
     pins.map((pin, index) =>
       supabase!
         .from("pinned_repos")
@@ -184,4 +184,8 @@ export async function reorderPins(
         .eq("repo", pin.repo),
     ),
   );
+  const stumbled = done.find((one) => one.error);
+  if (!stumbled?.error) return null;
+  failed("the pinned repositories", stumbled.error);
+  return friendlyDbError(stumbled.error);
 }

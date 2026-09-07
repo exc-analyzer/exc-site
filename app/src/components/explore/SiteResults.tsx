@@ -43,7 +43,7 @@ export default function SiteResults({ query }: { query: string }) {
     });
     void (async () => {
       const rows = await loadFeed(PAGE, undefined, "all", query);
-      if (!alive) return;
+      if (!alive || rows === null) return;
       const [mine, kept] = await Promise.all([
         loadMyLikes(rows),
         loadMyBookmarks(rows),
@@ -61,7 +61,7 @@ export default function SiteResults({ query }: { query: string }) {
   function refresh() {
     void (async () => {
       const rows = await loadFeed(PAGE, undefined, "all", query);
-      setItems(rows);
+      if (rows) setItems(rows);
     })();
   }
 

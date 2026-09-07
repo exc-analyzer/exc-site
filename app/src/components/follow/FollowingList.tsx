@@ -59,7 +59,7 @@ export default function FollowingList() {
   const [rows, setRows] = useState<FollowActivity[] | null>(null);
   const [people, setPeople] = useState<Member[] | null>(null);
   const [signedIn, setSignedIn] = useState<boolean | null>(null);
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState<string | null>(null);
   const [tab, setTab] = useState<"repos" | "people">("repos");
   const [requests, setRequests] = useState<FollowRequest[]>([]);
   const [settled, setSettled] = useState<
@@ -286,9 +286,9 @@ export default function FollowingList() {
                 <button
                   type="button"
                   className="btn btn-ghost btn-sm shrink-0"
-                  disabled={busy}
+                  disabled={busy === person.from_id}
                   onClick={() => {
-                    setBusy(true);
+                    setBusy(person.from_id);
                     void followPerson(person.from_id)
                       .then(async (trouble) => {
                         if (!trouble) {
@@ -313,7 +313,7 @@ export default function FollowingList() {
                           ),
                         );
                       })
-                      .finally(() => setBusy(false));
+                      .finally(() => setBusy(null));
                   }}
                 >
                   Follow back
@@ -345,11 +345,20 @@ export default function FollowingList() {
                 <button
                   type="button"
                   className="btn btn-primary btn-sm"
-                  disabled={busy}
+                  disabled={busy === request.from_id}
                   onClick={() => {
-                    setBusy(true);
+                    setBusy(request.from_id);
                     void acceptFollowRequest(request.from_id)
-                      .then(async () => {
+                      .then(async (trouble) => {
+                        if (trouble) {
+                          setSettled((rows) => [
+                            { person: request, state: "accepted", note: trouble },
+                            ...rows.filter(
+                              (r) => r.person.from_id !== request.from_id,
+                            ),
+                          ]);
+                          return;
+                        }
                         const already = await isFollowingPerson(request.from_id);
                         setSettled((rows) => [
                           {
@@ -364,7 +373,7 @@ export default function FollowingList() {
                         await refreshRequests();
                         await refreshPeople();
                       })
-                      .finally(() => setBusy(false));
+                      .finally(() => setBusy(null));
                   }}
                 >
                   Accept
@@ -372,12 +381,23 @@ export default function FollowingList() {
                 <button
                   type="button"
                   className="btn btn-quiet btn-sm"
-                  disabled={busy}
+                  disabled={busy === request.from_id}
                   onClick={() => {
-                    setBusy(true);
+                    setBusy(request.from_id);
                     void declineFollowRequest(request.from_id)
-                      .then(refreshRequests)
-                      .finally(() => setBusy(false));
+                      .then(async (trouble) => {
+                        if (trouble) {
+                          setSettled((rows) => [
+                            { person: request, state: "accepted", note: trouble },
+                            ...rows.filter(
+                              (r) => r.person.from_id !== request.from_id,
+                            ),
+                          ]);
+                          return;
+                        }
+                        await refreshRequests();
+                      })
+                      .finally(() => setBusy(null));
                   }}
                 >
                   Decline
@@ -470,12 +490,12 @@ export default function FollowingList() {
                 <button
                   type="button"
                   className="btn btn-quiet btn-sm shrink-0"
-                  disabled={busy}
+                  disabled={busy === person.id}
                   onClick={() => {
-                    setBusy(true);
+                    setBusy(person.id);
                     void unfollowPerson(person.id)
                       .then(refreshPeople)
-                      .finally(() => setBusy(false));
+                      .finally(() => setBusy(null));
                   }}
                 >
                   Unfollow
@@ -502,12 +522,12 @@ export default function FollowingList() {
               <button
                 type="button"
                 className="btn btn-quiet"
-                disabled={busy}
+                disabled={busy === "seen"}
                 onClick={() => {
-                  setBusy(true);
+                  setBusy("seen");
                   void markAllSeen()
                     .then(refresh)
-                    .finally(() => setBusy(false));
+                    .finally(() => setBusy(null));
                 }}
               >
                 Mark all as read
@@ -557,12 +577,12 @@ export default function FollowingList() {
                       <button
                         type="button"
                         className="btn btn-quiet shrink-0"
-                        disabled={busy}
+                        disabled={busy === `${row.owner}/${row.repo}`}
                         onClick={() => {
-                          setBusy(true);
+                          setBusy(`${row.owner}/${row.repo}`);
                           void unfollow(row.owner, row.repo)
                             .then(refresh)
-                            .finally(() => setBusy(false));
+                            .finally(() => setBusy(null));
                         }}
                       >
                         Unfollow

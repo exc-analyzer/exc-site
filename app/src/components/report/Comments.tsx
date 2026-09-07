@@ -53,6 +53,7 @@ export default function Comments({
   }
   async function refresh() {
     const list = await loadComments(target);
+    if (!list) return;
     setComments(list);
     setMyVotes(await loadMyVotes(list.map((c) => c.id)));
   }
