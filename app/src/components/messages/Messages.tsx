@@ -158,6 +158,9 @@ export default function Messages() {
   );
   const [thread, setThread] = useState<Message[] | null>(null);
   const [draft, setDraft] = useState("");
+  const drafts = useRef<Record<string, string>>({});
+  const [stalled, setStalled] = useState<null | "thread" | "list">(null);
+  const [armed, setArmed] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const [allowed, setAllowed] = useState(true);
@@ -258,9 +261,10 @@ export default function Messages() {
       ]);
       if (!alive) return;
       setThread(rows);
+      setStalled(rows === null ? "thread" : null);
       setAllowed(may);
       await markRead(openWith);
-      setList(await loadConversations());
+      await refreshList();
       window.dispatchEvent(new Event("exc:mail"));
     })();
     return () => {
@@ -355,7 +359,7 @@ export default function Messages() {
           if (rows && threadShape(rows) !== shapeRef.current) setThread(rows);
           await markRead(who);
         }
-        setList(await loadConversations());
+        await refreshList();
         window.dispatchEvent(new Event("exc:mail"));
       })();
     };
@@ -469,6 +473,8 @@ export default function Messages() {
     setDressing(false);
     setSince(null);
     setReplyTo(null);
+    setDraft(drafts.current[openWith] ?? "");
+    setArmed(null);
     void amIBlocking(openWith).then(setBlocking);
     void friendsSince(openWith).then(setSince);
   }, [openWith]);
@@ -490,7 +496,7 @@ export default function Messages() {
         if (!rows || threadShape(rows) === shapeRef.current) return;
         setThread(rows);
         await markRead(openWith);
-        setList(await loadConversations());
+        await refreshList();
         window.dispatchEvent(new Event("exc:mail"));
       })();
     }, 15000);
@@ -807,6 +813,28 @@ export default function Messages() {
     });
   }
 
+  async function refreshThread(): Promise<void> {
+    if (!openWith) return;
+    const rows = await loadThread(openWith);
+    if (rows) setThread(rows);
+  }
+
+  async function refreshList(): Promise<void> {
+    const rows = await loadConversations();
+    if (rows) {
+      setList(rows);
+      setStalled((was) => (was === "list" ? null : was));
+      return;
+    }
+    if (list === null) setStalled("list");
+  }
+
+  function tryAgain(): void {
+    setStalled(null);
+    void refreshList();
+    void refreshThread();
+  }
+
   async function undoMessage(id: string): Promise<void> {
     const trouble = await takeBack(id);
     if (trouble) {
@@ -815,8 +843,8 @@ export default function Messages() {
     }
     say("Taken back");
     if (!openWith) return;
-    setThread(await loadThread(openWith));
-    setList(await loadConversations());
+    await refreshThread();
+    await refreshList();
     window.dispatchEvent(new Event("exc:mail"));
   }
 
@@ -859,6 +887,7 @@ export default function Messages() {
       return;
     }
     setDraft("");
+    delete drafts.current[openWith];
     setReplyTo(null);
     setTyping(false);
     lane.current?.hush();
@@ -868,8 +897,8 @@ export default function Messages() {
     }
     pinnedRef.current = true;
     setPinned(true);
-    setThread(await loadThread(openWith));
-    setList(await loadConversations());
+    await refreshThread();
+    await refreshList();
   }
 
   async function tapReaction(id: string, emoji: string): Promise<void> {
@@ -896,7 +925,7 @@ export default function Messages() {
     setConfirm(null);
     setOpenWith(null);
     setThread(null);
-    setList(await loadConversations());
+    await refreshList();
     window.dispatchEvent(new Event("exc:mail"));
     window.history.replaceState(null, "", window.location.pathname);
   }
@@ -920,7 +949,7 @@ export default function Messages() {
     setBlocking(true);
     setOpenWith(null);
     setThread(null);
-    setList(await loadConversations());
+    await refreshList();
     setPeople(await loadMutualPeople());
     window.dispatchEvent(new Event("exc:mail"));
     window.history.replaceState(null, "", window.location.pathname);
@@ -1202,7 +1231,11 @@ export default function Messages() {
           >
             <div className="flex min-h-full flex-col justify-end" ref={stack}>
             {thread === null ? (
-              <FeedSkeleton rows={3} />
+              stalled === "thread" ? (
+                <Stalled what="this conversation" onRetry={tryAgain} />
+              ) : (
+                <FeedSkeleton rows={3} />
+              )
             ) : (
               <>
               {partner && (
@@ -1304,25 +1337,17 @@ export default function Messages() {
                       </span>
 
                       {mine && !m.deleted_at && (
-                        <span className="msg-act flex shrink-0 items-center gap-0.5 rounded-full border border-[var(--color-line)] bg-[var(--color-surface)] p-0.5 shadow-sm">
-                          <button
-                            type="button"
-                            className="grid size-7 shrink-0 place-items-center rounded-full text-[var(--color-faint)] transition hover:bg-[rgba(242,85,90,0.12)] hover:text-[var(--color-bad)]"
-                            title="Take it back"
-                            aria-label="Take this message back"
-                            onClick={(ev) => {
-                              ev.stopPropagation();
-                              void undoMessage(m.id);
-                            }}
-                          >
-                            <Icon name="trash" size={13} />
-                          </button>
+                        <span
+                          className="msg-act flex shrink-0 items-center gap-0.5 rounded-full border border-[var(--color-line)] bg-[var(--color-surface)] p-0.5 shadow-sm"
+                          onMouseLeave={() => setArmed(null)}
+                        >
                           <button
                             type="button"
                             className="grid size-7 shrink-0 place-items-center rounded-full text-[var(--color-faint)] transition hover:bg-[rgba(163,145,224,0.12)] hover:text-[var(--color-text)]"
                             aria-label="React"
                             onClick={(ev) => {
                               ev.stopPropagation();
+                              setArmed(null);
                               openPicker(m.id, ev.currentTarget);
                             }}
                           >
@@ -1334,11 +1359,45 @@ export default function Messages() {
                             aria-label="Reply"
                             onClick={(ev) => {
                               ev.stopPropagation();
+                              setArmed(null);
                               setReplyTo(m);
                               composer.current?.focus();
                             }}
                           >
                             <Icon name="reply" size={13} />
+                          </button>
+                          <button
+                            type="button"
+                            className={`grid shrink-0 place-items-center rounded-full transition ${
+                              armed === m.id
+                                ? "h-7 gap-1 bg-[rgba(242,85,90,0.16)] px-2.5 text-2xs font-medium text-[var(--color-bad)]"
+                                : "size-7 text-[var(--color-faint)] hover:bg-[rgba(242,85,90,0.12)] hover:text-[var(--color-bad)]"
+                            }`}
+                            title={
+                              armed === m.id
+                                ? "Press again and it is gone"
+                                : "Take it back"
+                            }
+                            aria-label={
+                              armed === m.id
+                                ? "Press again to take this message back"
+                                : "Take this message back"
+                            }
+                            onClick={(ev) => {
+                              ev.stopPropagation();
+                              if (armed === m.id) {
+                                setArmed(null);
+                                void undoMessage(m.id);
+                                return;
+                              }
+                              setArmed(m.id);
+                            }}
+                          >
+                            {armed === m.id ? (
+                              <span className="whitespace-nowrap">Sure?</span>
+                            ) : (
+                              <Icon name="trash" size={13} />
+                            )}
                           </button>
                         </span>
                       )}
@@ -1638,6 +1697,7 @@ export default function Messages() {
               onBlur={() => setFocused(false)}
               onChange={(e) => {
                 setDraft(e.target.value);
+                if (openWith) drafts.current[openWith] = e.target.value;
                 grow();
                 lane.current?.poke();
               }}
@@ -1826,7 +1886,13 @@ export default function Messages() {
     );
   }
 
-  if (list === null) return <FeedSkeleton rows={3} />;
+  if (list === null) {
+    return stalled === "list" ? (
+      <Stalled what="your conversations" onRetry={tryAgain} />
+    ) : (
+      <FeedSkeleton rows={3} />
+    );
+  }
 
   if (list.length === 0 && people.length === 0) {
     return (
@@ -1959,5 +2025,24 @@ export default function Messages() {
         </li>
       )}
     </ul>
+  );
+}
+
+function Stalled({
+  what,
+  onRetry,
+}: {
+  what: string;
+  onRetry: () => void;
+}) {
+  return (
+    <div className="flex flex-col items-center gap-3 px-6 py-10 text-center">
+      <p className="text-sm text-[var(--color-muted)]">
+        Could not load {what}. The connection may have dropped.
+      </p>
+      <button type="button" className="btn btn-quiet btn-sm" onClick={onRetry}>
+        Try again
+      </button>
+    </div>
   );
 }

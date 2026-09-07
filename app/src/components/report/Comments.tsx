@@ -38,13 +38,18 @@ export default function Comments({
   const [myLogin, setMyLogin] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [replyTo, setReplyTo] = useState<string | null>(null);
-  const [replyPrefill, setReplyPrefill] = useState("");
+  const [replyBody, setReplyBody] = useState<Record<string, string>>({});
   const [openThreads, setOpenThreads] = useState<Set<string>>(new Set());
 
   function askReply(rootId: string, mention?: string) {
-    const already = replyTo === rootId && replyPrefill === (mention ? `@${mention} ` : "");
-    setReplyTo(already ? null : rootId);
-    setReplyPrefill(mention ? `@${mention} ` : "");
+    const start = mention ? `@${mention} ` : "";
+    if (replyTo === rootId) {
+      if ((replyBody[rootId] ?? "").trim()) return;
+      setReplyTo(null);
+      return;
+    }
+    setReplyTo(rootId);
+    setReplyBody((was) => ({ ...was, [rootId]: was[rootId] ?? start }));
   }
   async function refresh() {
     const list = await loadComments(target);
@@ -187,14 +192,21 @@ export default function Comments({
                 {replyTo === c.id && me && (
                   <div className="mt-4 border-l border-[var(--color-line)] pl-5">
                     <Composer
-                      key={`${c.id}:${replyPrefill}`}
+                      key={c.id}
                       target={target}
                       parentId={c.id}
-                      prefill={replyPrefill}
                       placeholder="Your reply…"
+                      value={replyBody[c.id] ?? ""}
+                      onChange={(next) =>
+                        setReplyBody((was) => ({ ...was, [c.id]: next }))
+                      }
                       onPosted={() => {
                         setReplyTo(null);
-                        setReplyPrefill("");
+                        setReplyBody((was) => {
+                          const next = { ...was };
+                          delete next[c.id];
+                          return next;
+                        });
                         void refresh();
                       }}
                     />
@@ -526,15 +538,24 @@ function Composer({
   parentId,
   placeholder,
   prefill = "",
+  value,
+  onChange,
   onPosted,
 }: {
   target: CommentTarget;
   parentId: string | null;
   placeholder: string;
   prefill?: string;
+  value?: string;
+  onChange?: (next: string) => void;
   onPosted: () => void;
 }) {
-  const [body, setBody] = useState(prefill);
+  const [own, setOwn] = useState(prefill);
+  const body = value ?? own;
+  const setBody = (next: string) => {
+    if (onChange) onChange(next);
+    else setOwn(next);
+  };
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   async function submit() {
