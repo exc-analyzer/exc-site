@@ -17,7 +17,8 @@
     "prerender": "node --run _prerender:bundle && node .prerender.mjs",
     "_prerender:bundle": "esbuild scripts/prerender.ts --bundle --platform=node --format=esm --target=node22 --external:puppeteer-core --outfile=.prerender.mjs --log-level=warning",
     "_rls:bundle": "esbuild scripts/check-rls.ts --bundle --platform=node --format=esm --target=node22 --outfile=.rls.mjs --log-level=warning",
-    "check:rls": "node --run _rls:bundle && node .rls.mjs"
+    "check:rls": "node --run _rls:bundle && node .rls.mjs",
+    "check:isolation": "node ../supabase/run.mjs ../supabase/isolation_checks.sql"
   },
   "keywords": [],
   "author": "",
