@@ -5,6 +5,7 @@ import HeaderAuth from '../components/HeaderAuth.tsx';
 import FirstRun from '../components/FirstRun.tsx';
 import AutoSignIn from '../components/AutoSignIn.tsx';
 import MailWatch from '../components/messages/MailWatch.tsx';
+import TroubleBar from '../components/Trouble.tsx';
 
 interface Props {
   title: string;
@@ -314,5 +315,6 @@ const NAV = [
     <AutoSignIn client:load />
     <FirstRun client:load />
     <MailWatch client:idle />
+    <TroubleBar client:idle />
   </body>
 </html>

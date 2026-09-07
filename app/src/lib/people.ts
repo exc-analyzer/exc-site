@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { failed } from "./trouble";
 import { friendlyDbError } from "./dbError";
 import type { FeedItem } from "./feed";
 import type {
@@ -46,7 +47,7 @@ export async function loadMember(login: string): Promise<Member | null> {
     .eq("gh_login", login)
     .maybeSingle();
   if (error) {
-    console.warn("Could not load the member:", error.message);
+    failed("this member", error);
     return null;
   }
   return (data as unknown as Member | null) ?? null;
@@ -70,7 +71,7 @@ export async function searchMembers(
     .order("post_count", { ascending: false })
     .limit(limit);
   if (error) {
-    console.warn("Could not search people:", error.message);
+    failed("the people search", error);
     return [];
   }
   return (data as unknown as Member[]) ?? [];
@@ -90,7 +91,7 @@ export async function loadMemberFeed(
     .order("happened_at", { ascending: false })
     .limit(limit);
   if (error) {
-    console.warn("Could not load their activity:", error.message);
+    failed("their activity", error);
     return [];
   }
   return (data as unknown as FeedItem[]) ?? [];
@@ -118,7 +119,7 @@ export async function loadMemberReplies(
     lim: limit,
   });
   if (error) {
-    console.warn("Could not load their replies:", error.message);
+    failed("their replies", error);
     return [];
   }
   return (data as unknown as MemberReply[]) ?? [];
@@ -130,7 +131,10 @@ async function membersByIds(ids: string[]): Promise<Member[]> {
     .from("member_profile")
     .select(MEMBER_COLUMNS)
     .in("id", ids);
-  if (error) return [];
+  if (error) {
+    failed("these people", error);
+    return [];
+  }
   return (data as unknown as Member[]) ?? [];
 }
 
@@ -144,7 +148,10 @@ export async function loadFollowers(
     .select("follower_id")
     .eq("followee_id", memberId)
     .limit(limit);
-  if (error) return [];
+  if (error) {
+    failed("the followers", error);
+    return [];
+  }
   return membersByIds(
     (data as { follower_id: string }[]).map((row) => row.follower_id),
   );
@@ -160,7 +167,10 @@ export async function loadFollowing(
     .select("followee_id")
     .eq("follower_id", memberId)
     .limit(limit);
-  if (error) return [];
+  if (error) {
+    failed("who they follow", error);
+    return [];
+  }
   return membersByIds(
     (data as { followee_id: string }[]).map((row) => row.followee_id),
   );

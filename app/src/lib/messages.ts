@@ -1,4 +1,5 @@
 import type { RealtimeChannel } from "@supabase/supabase-js";
+import { failed } from "./trouble";
 import { supabase } from "./supabase";
 import { friendlyDbError } from "./dbError";
 import type { AccentId, AvatarShape } from "./profile";
@@ -82,7 +83,10 @@ export type ChatTheme = (typeof CHAT_THEMES)[number]["id"];
 export async function loadConversations(): Promise<Conversation[] | null> {
   if (!supabase) return null;
   const { data, error } = await supabase.rpc("my_conversations");
-  if (error) return null;
+  if (error) {
+    failed("your conversations", error);
+    return null;
+  }
   return (data as unknown as Conversation[]) ?? [];
 }
 
@@ -105,7 +109,10 @@ export async function loadThread(
     )
     .order("created_at", { ascending: false })
     .limit(limit);
-  if (error) return null;
+  if (error) {
+    failed("this conversation", error);
+    return null;
+  }
   return ((data as unknown as Message[]) ?? []).reverse();
 }
 
@@ -157,7 +164,10 @@ export async function reportMessage(
 export async function loadMutualPeople(): Promise<Person[]> {
   if (!supabase) return [];
   const { data, error } = await supabase.rpc("mutual_people");
-  if (error) return [];
+  if (error) {
+    failed("the reactions", error);
+    return [];
+  }
   return (data as unknown as Person[]) ?? [];
 }
 
@@ -184,7 +194,10 @@ export async function unblockPerson(otherId: string): Promise<string | null> {
 export async function loadBlocks(): Promise<Blocked[]> {
   if (!supabase) return [];
   const { data, error } = await supabase.rpc("my_blocks");
-  if (error) return [];
+  if (error) {
+    failed("your blocked list", error);
+    return [];
+  }
   return (data as unknown as Blocked[]) ?? [];
 }
 
@@ -205,7 +218,10 @@ export async function loadReactions(ids: string[]): Promise<Reaction[]> {
     .from("message_reactions")
     .select("message_id, user_id, emoji")
     .in("message_id", ids);
-  if (error) return [];
+  if (error) {
+    failed("the people you can write to", error);
+    return [];
+  }
   return (data as unknown as Reaction[]) ?? [];
 }
 

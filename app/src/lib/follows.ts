@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { failed } from "./trouble";
 import { friendlyDbError } from "./dbError";
 
 export interface FollowActivity {
@@ -28,7 +29,7 @@ export async function loadFollows(): Promise<FollowActivity[]> {
     )
     .order("created_at", { ascending: false });
   if (error) {
-    console.warn("Could not load follows:", error.message);
+    failed("the repositories you follow", error);
     return [];
   }
   return (data as FollowActivity[]) ?? [];

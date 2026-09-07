@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { failed } from "./trouble";
 import { friendlyDbError } from "./dbError";
 import type { AccentId } from "./profile";
 
@@ -52,7 +53,10 @@ export async function amIModerator(): Promise<boolean> {
 export async function loadFilings(): Promise<Filing[] | null> {
   if (!supabase) return null;
   const { data, error } = await supabase.rpc("moderation_queue");
-  if (error) return null;
+  if (error) {
+    failed("the moderation queue", error);
+    return null;
+  }
   return (data as unknown as Filing[]) ?? [];
 }
 
@@ -107,14 +111,20 @@ export async function unsuppressOwner(login: string): Promise<string | null> {
 export async function loadSuppressed(): Promise<SuppressedOwner[] | null> {
   if (!supabase) return null;
   const { data, error } = await supabase.rpc("suppression_list");
-  if (error) return null;
+  if (error) {
+    failed("the list of left-out accounts", error);
+    return null;
+  }
   return (data as unknown as SuppressedOwner[]) ?? [];
 }
 
 export async function loadVerified(): Promise<VerifiedMember[] | null> {
   if (!supabase) return null;
   const { data, error } = await supabase.rpc("verified_list");
-  if (error) return null;
+  if (error) {
+    failed("the verified list", error);
+    return null;
+  }
   return (data as unknown as VerifiedMember[]) ?? [];
 }
 

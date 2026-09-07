@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { failed } from "./trouble";
 import { friendlyDbError } from "./dbError";
 import type { FeedItem, FeedKind } from "./feed";
 import type { AccentId } from "./profile";
@@ -55,7 +56,10 @@ export async function followedIds(): Promise<string[]> {
     .from("people_follows")
     .select("followee_id")
     .eq("follower_id", userId);
-  if (error) return [];
+  if (error) {
+    failed("your saved items", error);
+    return [];
+  }
   return (data ?? []).map(
     (row) => (row as { followee_id: string }).followee_id,
   );
@@ -192,7 +196,10 @@ export async function loadFollowRequests(): Promise<FollowRequest[]> {
     .select("from_id, created_at, gh_login, avatar_url, accent, shown_name, verified")
     .eq("to_id", me)
     .order("created_at", { ascending: false });
-  if (error) return [];
+  if (error) {
+    failed("your follow requests", error);
+    return [];
+  }
   return (data as unknown as FollowRequest[]) ?? [];
 }
 
@@ -233,7 +240,10 @@ export interface FollowNews {
 export async function loadFollowNews(): Promise<FollowNews[]> {
   if (!supabase) return [];
   const { data, error } = await supabase.rpc("my_follow_news");
-  if (error) return [];
+  if (error) {
+    failed("your follow notices", error);
+    return [];
+  }
   return (data as unknown as FollowNews[]) ?? [];
 }
 

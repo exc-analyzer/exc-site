@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { failed } from "./trouble";
 import type { CommandId } from "../engine";
 
 export interface Reply {
@@ -38,7 +39,7 @@ export async function loadMyReplies(limit = 30): Promise<Reply[]> {
     .order("created_at", { ascending: false })
     .limit(limit);
   if (error) {
-    console.warn("Could not load replies:", error.message);
+    failed("the replies to you", error);
     return [];
   }
   return (data as unknown as Reply[]) ?? [];
@@ -102,7 +103,7 @@ export async function loadMyMentions(limit = 30): Promise<Mention[]> {
     .order("created_at", { ascending: false })
     .limit(limit);
   if (error) {
-    console.warn("Could not load mentions:", error.message);
+    failed("your mentions", error);
     return [];
   }
   return (data as unknown as Mention[]) ?? [];

@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { failed } from "./trouble";
 import { friendlyDbError } from "./dbError";
 
 export type FeedbackKind = "idea" | "problem" | "other";
@@ -31,7 +32,10 @@ export async function sendFeedback(
 export async function loadFeedback(): Promise<FeedbackEntry[] | null> {
   if (!supabase) return null;
   const { data, error } = await supabase.rpc("feedback_queue");
-  if (error) return null;
+  if (error) {
+    failed("the feedback inbox", error);
+    return null;
+  }
   return (data as unknown as FeedbackEntry[]) ?? [];
 }
 

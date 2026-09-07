@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { failed } from "./trouble";
 import { getCommand, type CommandId, type CommandResult } from "../engine";
 export interface StoredReport {
   id: string;
@@ -151,7 +152,7 @@ export async function loadReport(
     .eq("kind", kind)
     .maybeSingle();
   if (error) {
-    console.warn("Could not load report:", error.message);
+    failed("this scan", error);
     return null;
   }
   return (data as StoredReport | null) ?? null;
@@ -169,7 +170,7 @@ export async function loadTargetReports(
     .eq("repo", repo)
     .order("updated_at", { ascending: false });
   if (error) {
-    console.warn("Could not load reports:", error.message);
+    failed("these scans", error);
     return [];
   }
   return (data as StoredReport[]) ?? [];

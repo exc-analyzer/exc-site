@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { failed } from "./trouble";
 import type { AccentId, AvatarShape } from "./profile";
 import { friendlyDbError } from "./dbError";
 import { followedIds } from "./social";
@@ -70,7 +71,7 @@ export async function loadFeed(
 
   const { data, error } = await query;
   if (error) {
-    console.warn("Could not load the feed:", error.message);
+    failed("the feed", error);
     return [];
   }
   return (data as unknown as FeedItem[]) ?? [];
@@ -90,7 +91,7 @@ export async function loadRepoFeed(
     .order("happened_at", { ascending: false })
     .limit(limit);
   if (error) {
-    console.warn("Could not load the feed:", error.message);
+    failed("the feed for this repository", error);
     return [];
   }
   return (data as unknown as FeedItem[]) ?? [];
@@ -104,7 +105,10 @@ export async function loadPost(id: string): Promise<FeedItem | null> {
     .eq("kind", "post")
     .eq("id", id)
     .maybeSingle();
-  if (error) return null;
+  if (error) {
+    failed("this post", error);
+    return null;
+  }
   return (data as unknown as FeedItem | null) ?? null;
 }
 

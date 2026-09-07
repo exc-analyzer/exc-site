@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { failed } from "./trouble";
 import { friendlyDbError } from "./dbError";
 import { getGithubToken } from "./githubToken";
 
@@ -126,7 +127,10 @@ export async function loadPins(ownerId: string): Promise<PinnedRepo[]> {
     .eq("owner_id", ownerId)
     .order("position", { ascending: true })
     .order("created_at", { ascending: true });
-  if (error) return [];
+  if (error) {
+    failed("the pinned repositories", error);
+    return [];
+  }
   return (data as unknown as PinnedRepo[]) ?? [];
 }
 

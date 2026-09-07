@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { failed } from "./trouble";
 import { friendlyDbError } from "./dbError";
 import type { SourceChoice } from "./profile";
 export type CommentTarget = { kind: "report" | "post"; id: string };
@@ -33,7 +34,7 @@ export async function loadComments(target: CommentTarget): Promise<Comment[]> {
     .eq(column, target.id)
     .order("created_at", { ascending: true });
   if (error) {
-    console.warn("Could not load comments:", error.message);
+    failed("the comments", error);
     return [];
   }
   return (data as Comment[]) ?? [];
@@ -136,7 +137,7 @@ export async function loadRepoComments(
     .order("created_at", { ascending: false })
     .limit(limit);
   if (error) {
-    console.warn("Could not load discussion:", error.message);
+    failed("the discussion", error);
     return [];
   }
   return (data as unknown as RepoComment[]) ?? [];
