@@ -57,12 +57,14 @@ interface FeedRow {
   kind: string;
   id: string;
   author_login: string | null;
+  author_name: string | null;
+  body: string | null;
   happened_at: string;
 }
 
 async function fetchFeed(): Promise<FeedRow[]> {
   const url = new URL('/rest/v1/feed', SUPABASE_URL);
-  url.searchParams.set('select', 'kind,id,author_login,happened_at');
+  url.searchParams.set('select', 'kind,id,author_login,author_name,body,happened_at');
   url.searchParams.set('order', 'happened_at.desc');
   url.searchParams.set('limit', '500');
   const res = await fetch(url, {
@@ -225,6 +227,41 @@ function buildPage(shell: string, report: Report): string {
   html = html.replace(/(<body[^>]*>)/, `$1${readable}`);
   return html;
 }
+function buildPostPage(shell: string, post: FeedRow): string {
+  const who = post.author_name ?? post.author_login ?? 'someone';
+  const words = (post.body ?? '').replace(/\s+/g, ' ').trim();
+  const opening = words.length > 70 ? `${words.slice(0, 69)}…` : words;
+  const title = opening ? `${opening} · EXC` : `A post by ${who} · EXC`;
+  const description =
+    words.length > 200 ? `${words.slice(0, 199)}…` : words || `A post by ${who} on EXC.`;
+  const canonical = `${SITE}/app/p/${post.id}/`;
+  const head = [
+    `<title>${escapeHtml(title)}</title>`,
+    `<meta name="description" content="${escapeHtml(description)}">`,
+    `<link rel="canonical" href="${escapeHtml(canonical)}">`,
+    `<meta property="og:type" content="article">`,
+    `<meta property="og:title" content="${escapeHtml(title)}">`,
+    `<meta property="og:description" content="${escapeHtml(description)}">`,
+    `<meta property="og:url" content="${escapeHtml(canonical)}">`,
+    `<meta property="og:image" content="${escapeHtml(`${SITE}/og/default.png`)}">`,
+    `<meta property="og:image:width" content="1200">`,
+    `<meta property="og:image:height" content="630">`,
+    `<meta name="twitter:card" content="summary_large_image">`,
+  ].join('\n    ');
+  const html = shell
+    .replace(/<title>[\s\S]*?<\/title>/, '')
+    .replace(/<meta\s+name="description"[^>]*>/, '')
+    .replace(/\s*<meta\s+(?:property="og:|name="twitter:)[^>]*>/g, '')
+    .replace('</head>', `    ${head}\n  </head>`);
+  const readable = `
+    <div id="exc-prerendered">
+      <h1>${escapeHtml(`A post by ${who}`)}</h1>
+      <p>${escapeHtml(words || 'This post has no text.')}</p>
+      <p>Posted ${post.happened_at.slice(0, 10)}</p>
+    </div>`;
+  return html.replace(/(<body[^>]*>)/, `$1${readable}`);
+}
+
 interface Target {
   owner: string;
   repo: string;
@@ -556,7 +593,12 @@ async function main(): Promise<void> {
   }
   const people = members.map((member) => member.gh_login);
 
+  const postShell = await fs.readFile(path.join(PUBLIC_DIR, 'app/p/index.html'), 'utf8');
+  await fs.rm(path.join(PUBLIC_DIR, 'app/p'), { recursive: true, force: true });
+  await writeFile('app/p/index.html', postShell);
   for (const post of posts) {
+    await writeFile(`app/p/${post.id}/index.html`, buildPostPage(postShell, post));
+    pages += 1;
     urls.push({ loc: `${SITE}/app/p/${post.id}/`, lastmod: post.happened_at.slice(0, 10) });
   }
   for (const member of members) {
