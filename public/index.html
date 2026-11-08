@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EXC</title>
     <meta name="description"
-        content="Rate a repository before you build on it. EXC scores open-source projects on public GitHub metadata, in your browser or from the command line.">
+        content="Rate a repository before you build on it. EXC scores open-source projects on public GitHub metadata, from the command line.">
     <meta name="keywords"
         content="EXC, GitHub analyzer, repository security score, open source auditing, dependency review, CLI tool, Python security tool">
     <meta name="author" content="EXC">
@@ -17,9 +17,9 @@
     <meta property="og:type" content="website">
     <meta property="og:title" content="EXC">
     <meta property="og:description"
-        content="Rate a repository before you build on it, see what everyone else found, and say what you found.">
+        content="Rate a repository before you build on it. Security score, secret scanning, workflow audits and more, from the command line.">
     <meta property="og:url" content="https://exc-analyzer.web.app/" id="og-url-meta">
-    <meta property="og:image" content="https://exc-analyzer.web.app/og/default.png?v=1">
+    <meta property="og:image" content="https://exc-analyzer.web.app/og-card.png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta name="twitter:card" content="summary_large_image">
@@ -36,7 +36,7 @@
             "applicationCategory": "DeveloperApplication",
             "operatingSystem": "Windows, Linux, macOS",
             "url": "/",
-            "description": "Rate a repository before you build on it. EXC scores open-source projects on public GitHub metadata, in your browser or from the command line.",
+            "description": "Rate a repository before you build on it. EXC scores open-source projects on public GitHub metadata, from the command line.",
             "author": {
                 "@type": "Person",
                 "name": "Berat Gökdemir"
@@ -1628,9 +1628,7 @@
             </a>
             <nav>
                 <ul>
-                    <li><a href="/app/">App</a></li>
                     <li><a href="#features">Features</a></li>
-                    <li><a href="#app">Sign in</a></li>
                     <li><a href="#install">Installation</a></li>
                     <li><a href="#quickstart">Quick Start</a></li>
                     <li><a href="#readme-card">README</a></li>
@@ -1648,9 +1646,7 @@
         </button>
         <nav>
             <ul>
-                <li><a href="/app/" onclick="toggleMobileMenu()">App</a></li>
                 <li><a href="#features" onclick="toggleMobileMenu()">Features</a></li>
-                <li><a href="#app" onclick="toggleMobileMenu()">Sign in</a></li>
                 <li><a href="#install" onclick="toggleMobileMenu()">Installation</a></li>
                 <li><a href="#quickstart" onclick="toggleMobileMenu()">Quick Start</a></li>
                 <li><a href="#readme-card" onclick="toggleMobileMenu()">README</a></li>
@@ -1664,17 +1660,17 @@
             Know what you are <span class="gradient-text">depending on</span>
         </h1>
         <p>
-            Rate a repository before you build on it, see what everyone else found, and say what
-            you found.
+            Rate a repository before you build on it. A command-line tool that scores open-source
+            projects on what GitHub already knows about them.
         </p>
         <div class="hero-actions">
-            <a href="/app/?signin=1" class="btn btn-primary btn-lg">
-                <svg class="brand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5a4.3 4.3 0 0 0-1.2-3 4 4 0 0 0-.1-3S17.5 3 15 4.7a13 13 0 0 0-6 0C6.5 3 5.3 3 5.3 3a4 4 0 0 0-.1 3A4.3 4.3 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.4.5-.7 1.2-.8 2V22"/><path d="M9 19c-4.3 1.4-4.3-2.5-6-3"/></svg>
-                Sign in with GitHub
+            <a href="#install" class="btn btn-primary btn-lg">
+                Get started
+                <i data-lucide="arrow-right" size="18"></i>
             </a>
-            <a href="/app/explore/" class="btn btn-outline btn-lg">
-                <i data-lucide="compass" size="18"></i>
-                Look around first
+            <a href="https://github.com/exc-analyzer/exc" target="_blank" rel="noopener" class="btn btn-outline btn-lg">
+                <svg class="brand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5a4.3 4.3 0 0 0-1.2-3 4 4 0 0 0-.1-3S17.5 3 15 4.7a13 13 0 0 0-6 0C6.5 3 5.3 3 5.3 3a4 4 0 0 0-.1 3A4.3 4.3 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.4.5-.7 1.2-.8 2V22"/><path d="M9 19c-4.3 1.4-4.3-2.5-6-3"/></svg>
+                View on GitHub
             </a>
         </div>
 
@@ -1692,7 +1688,7 @@
     <section id="features" class="container features">
         <div class="section-header reveal">
             <h2>What it does</h2>
-            <p>Every check reads public GitHub metadata through the documented API. Nothing here reads your code.</p>
+            <p>Every check goes through GitHub's documented API on your own token. Nothing passes through a server of ours.</p>
         </div>
 
         <div class="grid">
@@ -1711,14 +1707,14 @@
             <div class="card reveal">
                 <div class="card-icon"><i data-lucide="key-round"></i></div>
                 <h3>Secret Scanning</h3>
-                <p>Finds keys left in recent commits, restricted to repositories you can push to. Your own code, your
-                    own leaks, yours to rotate.</p>
+                <p>Finds keys and tokens left in recent commits and in current file contents, so they can be rotated
+                    before someone else finds them.</p>
             </div>
             <div class="card reveal">
-                <div class="card-icon"><i data-lucide="messages-square"></i></div>
-                <h3>Shared Findings</h3>
-                <p>Publish a scan of a repository you maintain, dispute one you disagree with, and talk it over.
-                    Every published score carries the date it was computed.</p>
+                <div class="card-icon"><i data-lucide="git-commit-horizontal"></i></div>
+                <h3>Commit Anomalies</h3>
+                <p>Flags commits made at unusual hours, mass deletions and odd messages, the patterns that deserve a
+                    second look.</p>
             </div>
             <div class="card reveal">
                 <div class="card-icon"><i data-lucide="activity"></i></div>
@@ -1732,42 +1728,6 @@
                 <p>Infrastructure open to community support and ready for global expansion.</p>
             </div>
         </div>
-    </section>
-
-    <!-- The app -->
-    <section id="app" class="container features">
-        <div class="section-header reveal">
-            <h2>Use it in your browser</h2>
-            <p>No install, no server of ours in the middle. Sign in with GitHub and scan from the page you are on.</p>
-        </div>
-
-        <div class="grid">
-            <div class="card reveal">
-                <div class="card-icon"><i data-lucide="log-in"></i></div>
-                <h3>Signing in</h3>
-                <p>One button, GitHub handles it. The first time you sign in, your account here is created — there is
-                    no separate form to fill in and no password for us to hold.</p>
-            </div>
-            <div class="card reveal">
-                <div class="card-icon"><i data-lucide="lock"></i></div>
-                <h3>What we ask for</h3>
-                <p>Read-only access to your public profile. EXC cannot write to your repositories, open issues, or
-                    push code. You can revoke it from GitHub settings at any time.</p>
-            </div>
-            <div class="card reveal">
-                <div class="card-icon"><i data-lucide="monitor"></i></div>
-                <h3>Where the work happens</h3>
-                <p>Scans run in your browser against GitHub's API on your own rate limit. Your code never reaches us,
-                    and we never receive your token.</p>
-            </div>
-        </div>
-
-        <p class="reveal" style="text-align: center; margin-top: 36px; font-size: 0.85rem; color: var(--text-muted); max-width: 620px; margin-left: auto; margin-right: auto; line-height: 1.7;">
-            Reading and scanning need no account. An account is what lets you publish a result, post, and follow.
-            Publishing a scan of a repository is limited to repositories you can push to. By signing in you accept the
-            <a href="/app/terms/" style="color: var(--text-main);">Terms of Use</a> and the
-            <a href="/app/privacy/" style="color: var(--text-main);">Privacy Notice</a>.
-        </p>
     </section>
 
     <!-- Installation -->
@@ -2000,15 +1960,6 @@
             <div style="text-align: left;">
                 <a href="#" class="logo" style="margin-bottom: 12px; display: inline-flex;">EXC</a>
                 <p style="color: var(--text-muted); font-size: 0.9rem;">Rate a repository before you build on it.</p>
-                <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 12px;">
-                    <a href="/app/terms/" style="color: var(--text-muted);">Terms</a>
-                    <span style="opacity: 0.4; padding: 0 6px;">&middot;</span>
-                    <a href="/app/privacy/" style="color: var(--text-muted);">Privacy</a>
-                    <span style="opacity: 0.4; padding: 0 6px;">&middot;</span>
-                    <a href="/app/methodology/" style="color: var(--text-muted);">How the score works</a>
-                    <span style="opacity: 0.4; padding: 0 6px;">&middot;</span>
-                    <a href="/app/takedown/" style="color: var(--text-muted);">Correction or removal</a>
-                </p>
                 <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 12px; line-height: 1.7; max-width: 460px;">
                     Operated by Berat G&ouml;kdemir. EXC is an independent project and is not affiliated with, endorsed
                     by, or sponsored by GitHub, Inc. GitHub is a trademark of GitHub, Inc.

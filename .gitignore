@@ -50,21 +50,10 @@ node_modules/
 
 _media-archive/
 
-app/node_modules/
-app/.astro/
-app/dist/
-app/.env
-.verify-out.mjs
-.prerender.mjs
 
-public/badge/
-public/og/
-public/sitemap.xml
-public/robots.txt
-public/app/
-.rls.mjs
 .env.*
 !.env.example
-.rules.mjs
-.richtext.mjs
 .supabase-token
+
+app/
+supabase/

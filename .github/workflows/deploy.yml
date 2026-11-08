@@ -15,14 +15,9 @@ concurrency:
 
 jobs:
   publish:
-    name: Test, build and publish
+    name: Publish
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-
-    env:
-      PUBLIC_SUPABASE_URL: ${{ vars.PUBLIC_SUPABASE_URL }}
-      PUBLIC_SUPABASE_ANON_KEY: ${{ vars.PUBLIC_SUPABASE_ANON_KEY }}
-      PUBLIC_SITE_URL: https://exc-analyzer.web.app
+    timeout-minutes: 10
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -30,27 +25,6 @@ jobs:
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: 22
-          cache: npm
-          cache-dependency-path: app/package-lock.json
-
-      - name: Install dependencies
-        working-directory: app
-        run: npm ci
-
-      - name: Type check, test and build
-        working-directory: app
-        run: npm test
-
-      - name: Verify the security policies
-        working-directory: app
-        run: npm run check:rls
-
-      - name: Check the browser that renders the share cards
-        run: google-chrome --version
-
-      - name: Generate badges and pages
-        working-directory: app
-        run: npm run prerender
 
       - name: Write the Firebase credentials
         env:
@@ -69,11 +43,9 @@ jobs:
       - name: Confirm the site answers
         run: |
           set -e
-          for path in "" "explore/" "messages/" "r/torvalds/linux/"; do
-            code=$(curl -s -o /dev/null -w '%{http_code}' "https://exc-analyzer.web.app/app/$path")
-            echo "/app/$path -> $code"
-            test "$code" = "200"
-          done
-          missing=$(curl -s -o /dev/null -w '%{http_code}' https://exc-analyzer.web.app/app/nonsense)
-          echo "/app/nonsense -> $missing"
-          test "$missing" = "404"
+          home=$(curl -s -o /dev/null -w '%{http_code}' https://exc-analyzer.web.app/)
+          echo "/ -> $home"
+          test "$home" = "200"
+          gone=$(curl -s -o /dev/null -w '%{http_code}' https://exc-analyzer.web.app/app/)
+          echo "/app/ -> $gone"
+          test "$gone" = "404"

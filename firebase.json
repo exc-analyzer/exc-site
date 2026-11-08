@@ -9,24 +9,6 @@
       "**/*.tmp",
       "**/*.log"
     ],
-    "rewrites": [
-      {
-        "source": "/app/r/**",
-        "destination": "/app/r/index.html"
-      },
-      {
-        "source": "/app/u/**",
-        "destination": "/app/u/index.html"
-      },
-      {
-        "source": "/app/p/**",
-        "destination": "/app/p/index.html"
-      },
-      {
-        "source": "/app/people/**",
-        "destination": "/app/people/index.html"
-      }
-    ],
     "headers": [
       {
         "source": "/",
@@ -56,51 +38,6 @@
         ]
       },
       {
-        "source": "/app",
-        "headers": [
-          {
-            "key": "Cache-Control",
-            "value": "public, max-age=0, must-revalidate"
-          }
-        ]
-      },
-      {
-        "source": "/app/",
-        "headers": [
-          {
-            "key": "Cache-Control",
-            "value": "public, max-age=0, must-revalidate"
-          }
-        ]
-      },
-      {
-        "source": "/app/index.html",
-        "headers": [
-          {
-            "key": "Cache-Control",
-            "value": "public, max-age=0, must-revalidate"
-          }
-        ]
-      },
-      {
-        "source": "/app/r/**",
-        "headers": [
-          {
-            "key": "Cache-Control",
-            "value": "public, max-age=0, must-revalidate"
-          }
-        ]
-      },
-      {
-        "source": "/app/u/**",
-        "headers": [
-          {
-            "key": "Cache-Control",
-            "value": "public, max-age=0, must-revalidate"
-          }
-        ]
-      },
-      {
         "source": "**",
         "headers": [
           {
@@ -115,24 +52,6 @@
           {
             "key": "Cache-Control",
             "value": "public, max-age=31536000, immutable"
-          }
-        ]
-      },
-      {
-        "source": "/og/**",
-        "headers": [
-          {
-            "key": "Cache-Control",
-            "value": "public, max-age=900, must-revalidate"
-          }
-        ]
-      },
-      {
-        "source": "/badge/**",
-        "headers": [
-          {
-            "key": "Cache-Control",
-            "value": "public, max-age=900, must-revalidate"
           }
         ]
       },
@@ -153,7 +72,7 @@
           },
           {
             "key": "Content-Security-Policy",
-            "value": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; form-action 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https://avatars.githubusercontent.com https://*.githubusercontent.com; connect-src 'self' https://api.github.com https://dfffwcesbxhvtiomhicb.supabase.co wss://dfffwcesbxhvtiomhicb.supabase.co; frame-src https://www.youtube-nocookie.com https://www.youtube.com"
+            "value": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; form-action 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https://avatars.githubusercontent.com https://*.githubusercontent.com; connect-src 'self' https://api.github.com; frame-src https://www.youtube-nocookie.com https://www.youtube.com"
           },
           {
             "key": "Cross-Origin-Opener-Policy",
